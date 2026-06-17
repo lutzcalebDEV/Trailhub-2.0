@@ -826,8 +826,13 @@ async function fetchLatestData() {
   const raw = parseDataScript(await res.text());
   return normalizePayload(raw);
 }
-const API_BASE = typeof window !== "undefined" && window.TRAILHUB_API_BASE ? String(window.TRAILHUB_API_BASE).replace(/\/$/, "") : "http://127.0.0.1:8787";
+const IS_LOCALHOST = typeof window !== "undefined" && /^(localhost|127\.0\.0\.1)$/i.test(window.location.hostname || "");
+const API_BASE = typeof window !== "undefined" && window.TRAILHUB_API_BASE ? String(window.TRAILHUB_API_BASE).replace(/\/$/, "") : IS_LOCALHOST ? "http://127.0.0.1:8787" : "";
+const CAN_MANUAL_FETCH = !!API_BASE;
 async function requestManualFetch() {
+  if (!API_BASE) {
+    throw new Error("Manual fetch is only available with a configured backend API.");
+  }
   const res = await fetch(`${API_BASE}/api/fetch-photos`, {
     method: "POST",
     headers: {
@@ -1655,6 +1660,10 @@ function TrailHub() {
   };
   const runManualFetch = async () => {
     if (manualFetchBusy || demo) return;
+    if (!CAN_MANUAL_FETCH) {
+      setManualFetchNote("Published mode detected. This button needs a backend API. Run the Update TrailHub GitHub Action to pull new photos.");
+      return;
+    }
     setManualFetchBusy(true);
     setManualFetchNote("Fetching from SPYPOINT...");
     try {
@@ -1914,9 +1923,9 @@ function TrailHub() {
     className: "text-base font-bold text-white"
   }, dayLabel(d.date)), /*#__PURE__*/React.createElement("span", {
     className: "text-xs text-neutral-500"
-  }, d.caps.length, " capture", d.caps.length !== 1 ? "s" : "")), /*#__PURE__*/React.createElement(SpeciesSections, {
+    disabled: manualFetchBusy || demo || !CAN_MANUAL_FETCH,
     caps: d.caps,
-    onOpen: setActive
+    title: demo ? "Disabled while demo data is loaded" : !CAN_MANUAL_FETCH ? "Needs backend API in hosted mode" : "Fetch new photos from SPYPOINT now"
   }))))), view === "Patterns" && /*#__PURE__*/React.createElement(Patterns, {
     caps: filteredAll,
     hasTemp: hasTemp,
