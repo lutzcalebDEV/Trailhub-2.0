@@ -37,28 +37,44 @@ jobs:
 
       - name: Commit and push any new photos
         run: |
+          set -e
           git config user.name "trailhub-bot"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data.js store.json photos
-          if git diff --staged --quiet; then
+          git add data.js store.json photos 2>&1 || true
+          echo "Git status:"
+          git status
+          echo "Staged files:"
+          git diff --cached --name-only
+          if git diff --cached --quiet; then
             echo "No new photos this run."
-          else
-            git commit -m "Update trail-cam photos ($(date -u +'%Y-%m-%dT%H:%MZ'))"
-            for attempt in 1 2 3; do
-              echo "Push attempt ${attempt}"
-              if git pull --rebase origin main; then
-                if git push origin HEAD:main; then
-                  echo "Push successful."
-                  break
-                fi
-              else
-                echo "Pull/rebase failed. Aborting rebase."
-                git rebase --abort || true
-              fi
-              if [ "${attempt}" -eq 3 ]; then
-                echo "Failed to sync and push after 3 attempts."
-                exit 1
-              fi
-              sleep $((attempt * 5))
-            done
+            exit 0
           fi
+          TIMESTAMP=$(date -u +'%Y-%m-%dT%H:%MZ')
+          echo "Creating commit with timestamp: $TIMESTAMP"
+          git commit -m "Update trail-cam photos ($TIMESTAMP)" || { echo "ERROR: Commit failed"; git status; exit 1; }
+          echo "Commit created. Current HEAD:"
+          git log --oneline -1
+          for attempt in 1 2 3; do
+            echo "=== Push attempt ${attempt}/3 ==="
+            echo "Fetching latest origin/main..."
+            if ! git fetch origin main 2>&1; then
+              echo "ERROR: Fetch failed"
+              [ "${attempt}" -lt 3 ] && sleep $((attempt * 5)) && continue || exit 1
+            fi
+            echo "Rebasing onto origin/main..."
+            if ! git rebase origin/main 2>&1; then
+              echo "ERROR: Rebase conflict or failure"
+              git rebase --abort 2>/dev/null || true
+              [ "${attempt}" -lt 3 ] && sleep $((attempt * 5)) && continue || exit 1
+            fi
+            echo "Pushing to origin/main..."
+            if git push origin main 2>&1; then
+              echo "SUCCESS: Push completed."
+              exit 0
+            else
+              echo "ERROR: Push failed on attempt ${attempt}"
+              [ "${attempt}" -lt 3 ] && sleep $((attempt * 5)) && continue || exit 1
+            fi
+          done
+          echo "ERROR: Failed after 3 attempts"
+          exit 1
