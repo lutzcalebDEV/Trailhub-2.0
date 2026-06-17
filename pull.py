@@ -40,6 +40,7 @@ PHOTOS_DIR = HERE / "photos"
 DATA_FILE = HERE / "data.js"
 STORE_FILE = HERE / "store.json"   # durable source of truth (NOT uploaded)
 CAMERA_FILE = HERE / "cameras.json"  # durable camera metadata for map rendering
+TAGS_FILE = HERE / "tags.json"     # user-applied tags/classifications (shared, baked into data.js)
 
 MAX_PUBLISHED = 1500   # cap captures written to data.js so the site stays light
 MAX_KEEP = 3000        # cap stored photos+images so the repo doesn't grow forever
@@ -282,6 +283,37 @@ def save_cameras(cameras):
     atomic_write_text(CAMERA_FILE, json.dumps(cameras, indent=1))
 
 
+def load_tags():
+    """Load user-applied tags keyed by photo id: {id: ["Deer", "Turkey"]}.
+
+    These are edited from the site and saved to tags.json (the durable, shared
+    source of truth for classifications). We bake them into data.js so every
+    visitor sees them. Accepts either a list or a {"tags": [...]} object per id.
+    """
+    if not TAGS_FILE.exists():
+        return {}
+    try:
+        data = json.loads(TAGS_FILE.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        print("  [warn] tags.json unreadable; skipping user tags.")
+        return {}
+    out = {}
+    if isinstance(data, dict):
+        for key, val in data.items():
+            arr = val if isinstance(val, list) else (val.get("tags") if isinstance(val, dict) else None)
+            if not isinstance(arr, list):
+                continue
+            clean, seen = [], set()
+            for t in arr:
+                s = str(t).strip()
+                if s and s not in seen:
+                    seen.add(s)
+                    clean.append(s)
+            if clean:
+                out[str(key)] = clean
+    return out
+
+
 def prune_store(store):
     """Keep only the newest MAX_KEEP captures; delete image files for the rest."""
     items = sorted(store.values(), key=lambda c: c.get("date", ""), reverse=True)
@@ -297,17 +329,33 @@ def prune_store(store):
     return {c["id"]: c for c in items[:MAX_KEEP]}
 
 
-def write_data_js(captures, cameras=None, demo=False):
-    """Render the published data.js from a list of captures (atomic write)."""
+def write_data_js(captures, cameras=None, demo=False, tags_map=None):
+    """Render the published data.js from a list of captures (atomic write).
+
+    tags_map (optional) overlays user-applied tags by photo id; the first tag
+    becomes the primary species. Captures without user tags default to a single
+    tag matching their detected species.
+    """
+    tags_map = tags_map or {}
     captures = sorted(captures, key=lambda c: c.get("date", ""), reverse=True)[:MAX_PUBLISHED]
+    out_caps = []
+    for c in captures:
+        c = dict(c)
+        user_tags = tags_map.get(str(c.get("id")))
+        if user_tags:
+            c["tags"] = user_tags
+            c["species"] = user_tags[0]
+        elif not c.get("tags"):
+            c["tags"] = [c.get("species", "Animal")]
+        out_caps.append(c)
     payload = {
         "generatedAt": dt.datetime.now().isoformat(timespec="seconds"),
         "demo": demo,
         "cameras": cameras or [],
-        "captures": captures,
+        "captures": out_caps,
     }
     atomic_write_text(DATA_FILE, "window.TRAILHUB_DATA = " + json.dumps(payload, indent=2) + ";\n")
-    print(f"Wrote {DATA_FILE.name}  ({len(captures)} captures)")
+    print(f"Wrote {DATA_FILE.name}  ({len(out_caps)} captures)")
 
 
 def _coerce_latlng(value):
@@ -473,7 +521,7 @@ def run_pull(limit, inspect):
     store = prune_store(store)
     save_store(store)
     save_cameras(camera_meta)
-    write_data_js(list(store.values()), cameras=camera_meta, demo=False)
+    write_data_js(list(store.values()), cameras=camera_meta, demo=False, tags_map=load_tags())
     print(f"\nStore: {before} -> {len(store)} captures (+{new_count} new this run).")
     print("Done. Open index.html, or upload index.html + data.js + photos/ to Cloudflare.")
 
@@ -483,7 +531,7 @@ def run_rebuild():
     store = load_store()
     if not store:
         sys.exit("No store.json yet. Run `python pull.py` first (or `--demo` to preview).")
-    write_data_js(list(store.values()), cameras=load_cameras(), demo=False)
+    write_data_js(list(store.values()), cameras=load_cameras(), demo=False, tags_map=load_tags())
     print(f"Rebuilt data.js from store ({len(store)} captures).")
 
 

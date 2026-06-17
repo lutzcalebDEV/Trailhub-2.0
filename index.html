@@ -296,7 +296,7 @@ c,!1,d,e);a[Ja]=b.current;sc(8===a.nodeType?a.parentNode:a);return new Xf(b)};Q.
 var d=null!=c&&c.hydratedSources||null,e=!1,f="",g=aj;null!==c&&void 0!==c&&(!0===c.unstable_strictMode&&(e=!0),void 0!==c.identifierPrefix&&(f=c.identifierPrefix),void 0!==c.onRecoverableError&&(g=c.onRecoverableError));b=Wi(b,null,a,1,null!=c?c:null,e,!1,f,g);a[Ja]=b.current;sc(a);if(d)for(a=0;a<d.length;a++)c=d[a],e=c._getVersion,e=e(c._source),null==b.mutableSourceEagerHydrationData?b.mutableSourceEagerHydrationData=[c,e]:b.mutableSourceEagerHydrationData.push(c,e);return new Ud(b)};Q.render=
 function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmountComponentAtNode=function(a){if(!Vd(a))throw Error(m(40));return a._reactRootContainer?(yb(function(){Wd(null,null,a,!1,function(){a._reactRootContainer=null;a[Ja]=null})}),!0):!1};Q.unstable_batchedUpdates=Tf;Q.unstable_renderSubtreeIntoContainer=function(a,b,c,d){if(!Vd(c))throw Error(m(200));if(null==a||void 0===a._reactInternals)throw Error(m(38));return Wd(a,b,c,!1,d)};Q.version="18.3.1-next-f1338f8080-20240426"});
 })();
-</script><script src="data.js"></script><script>
+</script><script src="config.js"></script><script src="data.js"></script><script>
 const {
   useState,
   useMemo,
@@ -468,6 +468,61 @@ const styleFor = s => SPECIES[s] || {
   text: "text-neutral-300",
   ring: "border-neutral-400"
 };
+const ALL_TAG_OPTIONS = [...SPECIES_ORDER, "Animal"];
+// A capture's tags are the source of truth; fall back to the legacy single species.
+const tagsOf = c => Array.isArray(c.tags) && c.tags.length ? c.tags : [c.species || "Animal"];
+const cleanTags = arr => [...new Set((arr || []).map(t => String(t).trim()).filter(Boolean))];
+// Optional shared write endpoint (set window.TRAILHUB_TAGS_API in config.js). When
+// present, tag edits are saved globally so every visitor sees them. Without it, edits
+// stay in this browser only.
+const TAGS_API = typeof window !== "undefined" && window.TRAILHUB_TAGS_API ? String(window.TRAILHUB_TAGS_API).replace(/\/$/, "") : "";
+function normalizeTagMap(raw) {
+  const out = {};
+  if (raw && typeof raw === "object") {
+    for (const [id, v] of Object.entries(raw)) {
+      const arr = Array.isArray(v) ? v : v && Array.isArray(v.tags) ? v.tags : null;
+      const clean = cleanTags(arr);
+      if (clean.length) out[String(id)] = clean;
+    }
+  }
+  return out;
+}
+// Read the shared tag overlay: prefer the live endpoint, fall back to a committed tags.json.
+async function remoteLoadTags() {
+  const urls = [];
+  if (TAGS_API) urls.push(TAGS_API + (TAGS_API.includes("?") ? "&" : "?") + "t=" + Date.now());
+  urls.push("tags.json?t=" + Date.now());
+  for (const u of urls) {
+    try {
+      const r = await fetch(u, {
+        cache: "no-store"
+      });
+      if (r.ok) return normalizeTagMap(await r.json());
+    } catch (e) {}
+  }
+  return null;
+}
+// Save one photo's tags to the shared endpoint. Throws on failure so the UI can warn.
+async function remoteSaveTags(id, tags) {
+  if (!TAGS_API) return {
+    ok: false,
+    reason: "no-endpoint"
+  };
+  const r = await fetch(TAGS_API, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      id: String(id),
+      tags
+    })
+  });
+  if (!r.ok) throw new Error("Tag save failed (" + r.status + ")");
+  return {
+    ok: true
+  };
+}
 const MOONS = ["New", "Wax Cres", "1st Qtr", "Wax Gib", "Full", "Wan Gib", "Last Qtr", "Wan Cres"];
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const WEEKDAYS = ["S", "M", "T", "W", "T", "F", "S"];
@@ -784,9 +839,12 @@ function normalizePayload(d) {
   const caps = (d.captures || []).map((c, i) => {
     const parsedDate = new Date(c.date);
     if (isNaN(parsedDate.getTime())) return null;
+    const baseTags = Array.isArray(c.tags) && c.tags.length ? cleanTags(c.tags) : null;
+    const species = baseTags && baseTags[0] || c.species || "Animal";
     return {
       id: c.id != null ? c.id : i,
-      species: c.species || "Animal",
+      species,
+      tags: baseTags || [species],
       camera: c.camera || "Camera",
       date: parsedDate,
       image: c.image || "",
@@ -839,7 +897,8 @@ function Frame({
     fontSize: "10px"
   };
   const pct = c.confidence != null ? ` ${Math.round(c.confidence * 100)}%` : "";
-  const label = `${c.species.toUpperCase()}${pct}`;
+  const extraTags = tagsOf(c).length - 1;
+  const label = `${c.species.toUpperCase()}${extraTags > 0 ? ` +${extraTags}` : ""}${pct}`;
   const showBar = c.temp != null || big && c.moon;
   return /*#__PURE__*/React.createElement("div", {
     className: "relative h-full w-full overflow-hidden bg-neutral-950"
@@ -902,14 +961,18 @@ function FrameCard({
     className: "flex items-center gap-1.5 text-xs font-medium text-neutral-200"
   }, /*#__PURE__*/React.createElement("span", {
     className: `h-2 w-2 rounded-full ${styleFor(c.species).dot}`
-  }), c.species), /*#__PURE__*/React.createElement("span", {
+  }), c.species, tagsOf(c).length > 1 && /*#__PURE__*/React.createElement("span", {
+    className: "text-neutral-500"
+  }, " +", tagsOf(c).length - 1)), /*#__PURE__*/React.createElement("span", {
     className: "text-xs text-neutral-500"
   }, relTime(c.date))));
 }
 function groupBySpecies(caps) {
   const m = {};
   caps.forEach(c => {
-    (m[c.species] || (m[c.species] = [])).push(c);
+    tagsOf(c).forEach(sp => {
+      (m[sp] || (m[sp] = [])).push(c);
+    });
   });
   return Object.entries(m).map(([species, items]) => ({
     species,
@@ -939,6 +1002,77 @@ function SpeciesSections({
     c: c,
     onClick: () => onOpen(c)
   }))))));
+}
+function TagEditor({
+  tags,
+  note,
+  onAdd,
+  onRemove,
+  onPrimary
+}) {
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState("");
+  const present = new Set(tags);
+  const quick = ALL_TAG_OPTIONS.filter(s => !present.has(s));
+  const submit = () => {
+    const t = text.trim();
+    if (t) {
+      onAdd(t);
+      setText("");
+    }
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    className: "mt-1"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "mb-1.5 text-xs font-semibold uppercase tracking-wide text-neutral-500"
+  }, "Tags"), /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-wrap items-center gap-1.5"
+  }, tags.map((t, i) => /*#__PURE__*/React.createElement("span", {
+    key: t,
+    className: `inline-flex items-center gap-1 rounded-full border bg-neutral-800/60 px-2.5 py-1 text-xs font-medium ${styleFor(t).ring} ${styleFor(t).text}`
+  }, /*#__PURE__*/React.createElement("span", {
+    className: `h-2 w-2 rounded-full ${styleFor(t).dot}`
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: () => onPrimary(t),
+    title: i === 0 ? "Primary tag" : "Make primary",
+    className: "max-w-[10rem] truncate"
+  }, t), i === 0 && /*#__PURE__*/React.createElement("span", {
+    className: "text-[9px] uppercase tracking-wide text-neutral-500"
+  }, "primary"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => onRemove(t),
+    title: "Remove tag",
+    className: "ml-0.5 text-sm leading-none text-neutral-400 hover:text-red-400"
+  }, "\u00D7"))), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setOpen(o => !o),
+    className: "inline-flex items-center gap-1 rounded-full border border-dashed border-neutral-600 px-2.5 py-1 text-xs font-medium text-neutral-300 hover:border-neutral-400"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-sm leading-none"
+  }, "+"), "Add")), open && /*#__PURE__*/React.createElement("div", {
+    className: "mt-2 rounded-lg border border-neutral-800 bg-neutral-900 p-2"
+  }, quick.length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "mb-2 flex flex-wrap gap-1.5"
+  }, quick.map(s => /*#__PURE__*/React.createElement("button", {
+    key: s,
+    onClick: () => onAdd(s),
+    className: "inline-flex items-center gap-1 rounded-full border border-neutral-700 bg-neutral-800/60 px-2.5 py-1 text-xs text-neutral-300 hover:border-neutral-500"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: `h-2 w-2 rounded-full ${styleFor(s).dot}`
+  }), s))), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-2"
+  }, /*#__PURE__*/React.createElement("input", {
+    value: text,
+    onChange: e => setText(e.target.value),
+    onKeyDown: e => {
+      if (e.key === "Enter") submit();
+    },
+    placeholder: "Add a custom tag\u2026",
+    className: "flex-1 rounded-lg border border-neutral-700 bg-neutral-800 px-2.5 py-1.5 text-sm text-neutral-200 placeholder-neutral-500 focus:border-neutral-500 focus:outline-none"
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: submit,
+    className: "rounded-lg bg-emerald-500 px-3 py-1.5 text-sm font-semibold text-black"
+  }, "Add"))), note && /*#__PURE__*/React.createElement("div", {
+    className: "mt-2 text-xs text-neutral-400"
+  }, note));
 }
 function Empty() {
   return /*#__PURE__*/React.createElement("div", {
@@ -1144,11 +1278,13 @@ function Patterns({
     })).sort((x, y) => y.n - x.n);
     const spMap = {};
     caps.forEach(c => {
-      const m = spMap[c.species] || (spMap[c.species] = {
-        day: 0,
-        night: 0
+      tagsOf(c).forEach(sp => {
+        const m = spMap[sp] || (spMap[sp] = {
+          day: 0,
+          night: 0
+        });
+        c.isNight ? m.night++ : m.day++;
       });
-      c.isNight ? m.night++ : m.day++;
     });
     const species = Object.entries(spMap).map(([name, v]) => ({
       name,
@@ -1352,13 +1488,21 @@ function TrailHub() {
   const [lastSyncAt, setLastSyncAt] = useState(null);
   const [syncNote, setSyncNote] = useState("live");
   const [weather, setWeather] = useState(null);
-  const [speciesOverrides, setSpeciesOverrides] = useState(() => {
+  const [tagOverrides, setTagOverrides] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem("trailhub-species-overrides") || "{}");
+      const stored = JSON.parse(localStorage.getItem("trailhub-tag-overrides") || "null");
+      if (stored && typeof stored === "object") return normalizeTagMap(stored);
+      // One-time migration from the old single-species override format.
+      const legacy = JSON.parse(localStorage.getItem("trailhub-species-overrides") || "{}");
+      const out = {};
+      for (const [id, sp] of Object.entries(legacy)) if (sp) out[String(id)] = [String(sp)];
+      return out;
     } catch (e) {
       return {};
     }
   });
+  const [tagNote, setTagNote] = useState("");
+  const dirtyTagIds = useRef(new Set());
   const [archivedIds, setArchivedIds] = useState(() => {
     try {
       return new Set(JSON.parse(localStorage.getItem("trailhub-archived-ids") || "[]"));
@@ -1369,11 +1513,16 @@ function TrailHub() {
   const [reviewCursor, setReviewCursor] = useState(0);
   const swipeStartX = useRef(null);
 
-  const captures = useMemo(() => sourceCaptures.map(c => ({
-    ...c,
-    species: speciesOverrides[String(c.id)] || c.species,
-    moon: c.moon || moonFromDate(c.date)
-  })).filter(c => !archivedIds.has(String(c.id))), [sourceCaptures, speciesOverrides, archivedIds]);
+  const captures = useMemo(() => sourceCaptures.map(c => {
+    const ov = tagOverrides[String(c.id)];
+    const tags = ov && ov.length ? ov : Array.isArray(c.tags) && c.tags.length ? c.tags : [c.species || "Animal"];
+    return {
+      ...c,
+      tags,
+      species: tags[0] || "Animal",
+      moon: c.moon || moonFromDate(c.date)
+    };
+  }).filter(c => !archivedIds.has(String(c.id))), [sourceCaptures, tagOverrides, archivedIds]);
 
   useEffect(() => {
     document.body.setAttribute("data-theme", theme);
@@ -1384,9 +1533,33 @@ function TrailHub() {
 
   useEffect(() => {
     try {
-      localStorage.setItem("trailhub-species-overrides", JSON.stringify(speciesOverrides));
+      localStorage.setItem("trailhub-tag-overrides", JSON.stringify(tagOverrides));
     } catch (e) {}
-  }, [speciesOverrides]);
+  }, [tagOverrides]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      const remote = await remoteLoadTags();
+      if (cancelled || !remote) return;
+      // Shared tags win, except ids edited on this device this session (don't clobber fresh edits).
+      setTagOverrides(prev => {
+        const merged = {
+          ...remote
+        };
+        dirtyTagIds.current.forEach(id => {
+          if (prev[id]) merged[id] = prev[id];
+        });
+        return merged;
+      });
+    };
+    load();
+    const id = setInterval(load, 60000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, []);
 
   useEffect(() => {
     try {
@@ -1500,11 +1673,13 @@ function TrailHub() {
       };
     }).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
   }, [captures, sourceCameraMeta, cameras]);
-  const present = useMemo(() => [...new Set(captures.map(c => c.species))].sort((a, b) => (SPECIES_ORDER.indexOf(a) + 1 || 99) - (SPECIES_ORDER.indexOf(b) + 1 || 99) || a.localeCompare(b)), [captures]);
+  const present = useMemo(() => [...new Set(captures.flatMap(tagsOf))].sort((a, b) => (SPECIES_ORDER.indexOf(a) + 1 || 99) - (SPECIES_ORDER.indexOf(b) + 1 || 99) || a.localeCompare(b)), [captures]);
   const counts = useMemo(() => {
     const m = {};
     captures.forEach(c => {
-      m[c.species] = (m[c.species] || 0) + 1;
+      tagsOf(c).forEach(t => {
+        m[t] = (m[t] || 0) + 1;
+      });
     });
     return m;
   }, [captures]);
@@ -1515,15 +1690,42 @@ function TrailHub() {
     if (reviewCursor >= reviewQueue.length) setReviewCursor(Math.max(0, reviewQueue.length - 1));
   }, [reviewCursor, reviewQueue.length]);
 
-  const relabelCapture = (id, species) => {
-    setSpeciesOverrides(prev => ({
+  const commitTags = (id, tags) => {
+    const next = cleanTags(tags);
+    const finalTags = next.length ? next : ["Animal"];
+    dirtyTagIds.current.add(String(id));
+    setTagOverrides(prev => ({
       ...prev,
-      [String(id)]: species
+      [String(id)]: finalTags
     }));
     setActive(a => a && String(a.id) === String(id) ? {
       ...a,
-      species
+      tags: finalTags,
+      species: finalTags[0]
     } : a);
+    if (TAGS_API) {
+      setTagNote("Saving\u2026");
+      remoteSaveTags(id, finalTags).then(() => setTagNote("Saved \u2014 everyone can see this")).catch(e => setTagNote(e && e.message ? e.message : "Couldn't save online; kept on this device"));
+    } else {
+      setTagNote("Saved on this device. Turn on sharing so others see it.");
+    }
+  };
+  const currentTags = id => {
+    const c = captures.find(x => String(x.id) === String(id));
+    return c ? tagsOf(c) : [];
+  };
+  const addTag = (id, tag) => {
+    const t = String(tag).trim();
+    if (!t) return;
+    commitTags(id, [...currentTags(id), t]);
+  };
+  const removeTag = (id, tag) => {
+    commitTags(id, currentTags(id).filter(t => t !== tag));
+  };
+  const setPrimaryTag = (id, tag) => {
+    const t = String(tag).trim();
+    if (!t) return;
+    commitTags(id, [t, ...currentTags(id).filter(x => x !== t)]);
   };
   const archiveCapture = id => {
     setArchivedIds(prev => {
@@ -1553,8 +1755,9 @@ function TrailHub() {
     if (dx <= -55) archiveAndAdvanceReview();
   };
   const passes = c => {
-    if (bucksOnly && c.species !== "Buck") return false;
-    if (selSpecies.size && !selSpecies.has(c.species)) return false;
+    const tags = tagsOf(c);
+    if (bucksOnly && !tags.includes("Buck")) return false;
+    if (selSpecies.size && !tags.some(t => selSpecies.has(t))) return false;
     if (cameraFilter.size && !cameraFilter.has(c.camera)) return false;
     if (timeOfDay === "Day" && c.isNight) return false;
     if (timeOfDay === "Night" && !c.isNight) return false;
@@ -2110,19 +2313,16 @@ function TrailHub() {
     style: {
       width: `${active.confidence * 100}%`
     }
-  })), /*#__PURE__*/React.createElement("div", {
-    className: "flex items-center gap-2"
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: () => relabelCapture(active.id, "Person"),
-    className: "rounded-lg border border-red-400/40 bg-red-400/10 px-3 py-2.5 text-sm font-semibold text-red-400"
-  }, "Mark Person"), /*#__PURE__*/React.createElement("select", {
-    value: active.species,
-    onChange: e => relabelCapture(active.id, e.target.value),
-    className: "rounded-lg border border-neutral-700 bg-neutral-800 px-2 py-2.5 text-sm text-neutral-200"
-  }, ["Animal", ...SPECIES_ORDER].map(s => /*#__PURE__*/React.createElement("option", {
-    key: s,
-    value: s
-  }, s))), /*#__PURE__*/React.createElement("a", {
+  })), /*#__PURE__*/React.createElement(TagEditor, {
+    key: active.id,
+    tags: tagsOf(active),
+    note: tagNote,
+    onAdd: t => addTag(active.id, t),
+    onRemove: t => removeTag(active.id, t),
+    onPrimary: t => setPrimaryTag(active.id, t)
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "mt-3 flex items-center gap-2"
+  }, /*#__PURE__*/React.createElement("a", {
     href: active.image,
     download: true,
     target: "_blank",

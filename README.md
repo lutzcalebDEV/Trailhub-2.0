@@ -13,6 +13,9 @@ just static files — no server, no AI, no credentials in the cloud.
 - `store.json` — durable history of every photo seen (created on first run; the source of truth, not uploaded)
 - `photos/` — downloaded images (created on first real run)
 - `requirements.txt` — the one required dependency (`pyspypoint`)
+- `config.js` — site config (optional tag-sharing endpoint; safe to commit, no secrets)
+- `tags.json` — your photo tags/reclassifications (shared source of truth, baked into `data.js`)
+- `tag-worker.js` — optional Cloudflare Worker that saves tags for everyone (see "Shared tags")
 
 The dashboard has four views: **Recent** (last 7 days), **Patterns** (scouting
 analytics — daylight-movement %, peak hours, day/night split by species, plus
@@ -71,7 +74,8 @@ Upload these three things via the **"Upload your static files"** flow:
 
 (You don't need to upload `pull.py`, `README.md`, or `requirements.txt`.)
 
-To update the live site later: re-run `python pull.py`, then re-upload.
+To update the live site later: re-run `python pull.py`, then re-upload. (If you
+turn on tag sharing below, also upload `config.js`.)
 
 ## 4. Run it autonomously (GitHub) — set it and forget it
 
@@ -116,6 +120,54 @@ Once a normal `python pull.py` pulls your real photos, you're clear to automate:
   the GitHub repo (Cloudflare auto-deploys on every commit) — same automation, just
   a different host.
 
+## 5. Tag and reclassify photos
+
+Open any photo and use the **Tags** panel to classify what's in it:
+
+- **Add more than one tag.** A single frame can be both **Deer** and **Turkey** —
+  click **+ Add** and pick from the list or type your own tag. The photo then
+  shows up under *each* of its tags in Recent, Calendar, and the filters.
+- **Reclassify.** Click a tag to make it the **primary** label (the headline name
+  and color); click the **×** to remove a tag.
+- Tags are remembered. By default they're saved **in your browser** only — great
+  for solo use, but other people/machines won't see them. To share them with
+  everyone, set up the one-time sync below.
+
+### Shared tags (so everyone sees them)
+
+The site is static (GitHub Pages can serve files but not save them), so saving a
+tag for *everyone* needs one tiny helper that holds a GitHub token securely and
+writes `tags.json` for you. A free **Cloudflare Worker** does this; `tag-worker.js`
+is included and ready to deploy.
+
+1. **Make a GitHub token.** GitHub → **Settings → Developer settings →
+   Fine-grained tokens → Generate new token.** Limit it to **only this repo**, and
+   under **Repository permissions** set **Contents: Read and write.** Copy the token.
+2. **Create the Worker.** Cloudflare dashboard → **Workers & Pages → Create →
+   Worker.** Replace the starter code with the contents of `tag-worker.js` and
+   **Deploy.**
+3. **Add the Worker's variables.** Worker → **Settings → Variables and Secrets**:
+   - `GITHUB_TOKEN` — your token (add it as a **Secret**)
+   - `GITHUB_OWNER` — your GitHub username (e.g. `lutzcalebDEV`)
+   - `GITHUB_REPO` — the repo name (e.g. `Trailhub-2.0`)
+   - `GITHUB_BRANCH` — `main` (optional)
+
+   Deploy again so the variables take effect.
+4. **Point the site at it.** Copy your Worker URL (looks like
+   `https://trailhub-tags.<you>.workers.dev`) and paste it into `config.js`:
+   ```js
+   window.TRAILHUB_TAGS_API = "https://trailhub-tags.<you>.workers.dev";
+   ```
+   Commit `config.js`. Now anyone who tags a photo updates `tags.json` for
+   everyone, and the next `pull.py` run bakes those tags into `data.js`.
+
+Notes:
+- This intentionally lets **any visitor** edit tags (no login), matching a shared
+  family/camp dashboard. Anyone with the Worker URL can write tags, so keep it to
+  people you'd share the site with.
+- No Worker yet? Everything still works — tags just stay on each device until you
+  finish the setup.
+
 ## Useful flags
 
 ```
@@ -151,7 +203,8 @@ nothing else needs to change.
 ### Notes & limits
 
 - **Buck vs Doe** comes from SPYPOINT's own Buck Tracker tags. Untagged photos
-  show up as "Animal" or a generic label — you can't filter what isn't tagged.
+  show up as "Animal" — but you can classify them yourself with **Tags** (see
+  "Tag and reclassify photos"), including more than one tag per photo.
 - The free SPYPOINT plan transmits a limited number of photos per month, so this
   is meant for modest volumes.
 - Anything you publish to the static site is public to anyone with the URL.
