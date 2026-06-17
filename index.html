@@ -826,26 +826,6 @@ async function fetchLatestData() {
   const raw = parseDataScript(await res.text());
   return normalizePayload(raw);
 }
-const IS_LOCALHOST = typeof window !== "undefined" && /^(localhost|127\.0\.0\.1)$/i.test(window.location.hostname || "");
-const API_BASE = typeof window !== "undefined" && window.TRAILHUB_API_BASE ? String(window.TRAILHUB_API_BASE).replace(/\/$/, "") : IS_LOCALHOST ? "http://127.0.0.1:8787" : "";
-const FETCH_ENDPOINT = API_BASE ? `${API_BASE}/api/fetch-photos` : "/api/fetch-photos";
-const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-async function requestManualFetch() {
-  const res = await fetch(FETCH_ENDPOINT, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      limit: 100
-    })
-  });
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok || !json.ok) {
-    throw new Error(json.error || `Fetch endpoint failed (${res.status})`);
-  }
-  return json;
-}
 function loadData() {
   const d = typeof window !== "undefined" && window.TRAILHUB_DATA || {};
   return normalizePayload(d);
@@ -1371,8 +1351,6 @@ function TrailHub() {
   const [refreshSec, setRefreshSec] = useState(60);
   const [lastSyncAt, setLastSyncAt] = useState(null);
   const [syncNote, setSyncNote] = useState("live");
-  const [manualFetchBusy, setManualFetchBusy] = useState(false);
-  const [manualFetchNote, setManualFetchNote] = useState("");
   const [weather, setWeather] = useState(null);
   const [speciesOverrides, setSpeciesOverrides] = useState(() => {
     try {
@@ -1656,58 +1634,6 @@ function TrailHub() {
     setBucksOnly(false);
     setMinConf(60);
   };
-  const runManualFetch = async () => {
-    if (manualFetchBusy || demo) return;
-    setManualFetchBusy(true);
-    setManualFetchNote("Starting photo fetch...");
-    try {
-      const beforeGeneratedAt = dataState.generatedAt || null;
-      await requestManualFetch();
-      setManualFetchNote("Fetch started. Waiting for updated data...");
-      const prevIds = new Set(dataState.captures.map(c => String(c.id)));
-      let next = null;
-      let refreshed = false;
-
-      for (let attempt = 0; attempt < 30; attempt++) {
-        await sleep(5000);
-        try {
-          next = await fetchLatestData();
-        } catch (e) {
-          continue;
-        }
-        const changedPayload = !!next.generatedAt && next.generatedAt !== beforeGeneratedAt;
-        const addedNow = next.captures.reduce((n, c) => n + (prevIds.has(String(c.id)) ? 0 : 1), 0);
-        if (changedPayload || addedNow > 0) {
-          refreshed = true;
-          break;
-        }
-      }
-
-      if (!next) {
-        next = await fetchLatestData();
-      }
-
-      const added = next.captures.reduce((n, c) => n + (prevIds.has(String(c.id)) ? 0 : 1), 0);
-      setDataState(next);
-      setLastSyncAt(new Date());
-      if (added > 0) {
-        setSyncNote(`+${added} new`);
-        setManualFetchNote(`Pulled ${added} new photo${added === 1 ? "" : "s"}.`);
-      } else if (refreshed) {
-        setSyncNote("up to date");
-        setManualFetchNote("Fetch completed. No new photos this run.");
-      } else {
-        setSyncNote("pending");
-        setManualFetchNote("Fetch was triggered, but new data is still processing. Check back in a minute.");
-      }
-    } catch (e) {
-      const msg = e && e.message ? e.message : "Unable to fetch from SPYPOINT.";
-      setSyncNote("fetch failed");
-      setManualFetchNote(msg);
-    } finally {
-      setManualFetchBusy(false);
-    }
-  };
   const idx = active == null ? -1 : flatVisible.findIndex(c => c.id === active.id);
   const go = d => {
     const ni = idx + d;
@@ -1811,14 +1737,6 @@ function TrailHub() {
   }, captures.length, " captures \xB7 ", cameras.length, " camera", cameras.length !== 1 ? "s" : "", " \xB7 since ", MONTHS[minDate.getMonth()], " ", minDate.getFullYear()))), /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-2"
   }, /*#__PURE__*/React.createElement("button", {
-    onClick: runManualFetch,
-    disabled: manualFetchBusy || demo,
-    className: `inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition ${manualFetchBusy ? "border-emerald-400/60 bg-emerald-500/20 text-emerald-200" : "border-neutral-700 bg-neutral-900 text-neutral-300 hover:border-neutral-500"} ${demo ? "opacity-50" : ""}`,
-    title: demo ? "Disabled while demo data is loaded" : "Fetch new photos from SPYPOINT now"
-  }, /*#__PURE__*/React.createElement(Icon, {
-    name: "camera",
-    size: 13
-  }), manualFetchBusy ? "Fetching..." : "Fetch Photos"), /*#__PURE__*/React.createElement("button", {
     onClick: () => setTheme(theme === "dark" ? "light" : "dark"),
     className: "inline-flex items-center gap-1.5 rounded-full border border-neutral-700 bg-neutral-900 px-3 py-1 text-xs font-medium text-neutral-300 transition hover:border-neutral-500",
     title: theme === "dark" ? "Switch to light mode" : "Switch to dark mode"
@@ -1831,9 +1749,7 @@ function TrailHub() {
     className: `hidden items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium sm:flex ${demo ? "bg-amber-500/10 text-amber-400" : "bg-emerald-500/10 text-emerald-400"}`
   }, /*#__PURE__*/React.createElement("span", {
     className: `h-2 w-2 rounded-full ${demo ? "bg-amber-400" : "bg-emerald-400"}`
-  }), demo ? "sample data" : syncNote))), manualFetchNote && /*#__PURE__*/React.createElement("div", {
-    className: "mb-2 rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-2 text-xs text-neutral-300"
-  }, manualFetchNote), demo ? /*#__PURE__*/React.createElement("div", {
+  }), demo ? "sample data" : syncNote))), demo ? /*#__PURE__*/React.createElement("div", {
     className: "mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-xs text-amber-300"
   }, "Showing sample data so you can see the layout. Run ", /*#__PURE__*/React.createElement("span", {
     className: "font-mono"

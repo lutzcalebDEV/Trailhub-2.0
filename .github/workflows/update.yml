@@ -10,7 +10,7 @@ permissions:
 
 concurrency:
   group: trailhub-update
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   update:
@@ -21,12 +21,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Ensure local checkout is up-to-date with origin/main
-        run: |
-          git fetch origin main --quiet
-          # Make sure we're on main and matching origin/main
-          git checkout -B main origin/main
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -35,37 +29,53 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Pull photos from SPYPOINT
+      - name: Pull photos and publish
         env:
           SPYPOINT_USERNAME: ${{ secrets.SPYPOINT_USERNAME }}
           SPYPOINT_PASSWORD: ${{ secrets.SPYPOINT_PASSWORD }}
-        run: python pull.py --limit 100
-
-      - name: Commit and push any new photos
         run: |
           set -e
           git config user.name "trailhub-bot"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data.js store.json photos 2>&1 || true
-          echo "Git status:"
-          git status
-          echo "Staged files:"
-          git diff --cached --name-only
-          if git diff --cached --quiet; then
-            echo "No new photos this run."
-            exit 0
-          fi
-          TIMESTAMP=$(date -u +'%Y-%m-%dT%H:%MZ')
-          echo "Creating commit with timestamp: $TIMESTAMP"
-          git commit -m "Update trail-cam photos ($TIMESTAMP)" || { echo "ERROR: Commit failed"; git status; exit 1; }
-          echo "Commit created. Current HEAD:"
-          git log --oneline -1
 
-          # Single safe push. --force-with-lease avoids blind overwrites.
-          if git push origin main --force-with-lease; then
-            echo "SUCCESS: Push completed."
-            exit 0
-          else
-            echo "ERROR: Push failed. The remote changed since we fetched."
+          published=0
+          for attempt in 1 2 3 4 5; do
+            echo "=== Attempt ${attempt}/5 ==="
+
+            # Always start from the very latest remote state so our commit is a
+            # clean fast-forward. This is what prevents data.js merge conflicts:
+            # we never rebase or merge, we rebuild on top of current origin/main.
+            git fetch origin main --quiet
+            git reset --hard origin/main
+
+            # Regenerate data.js / store.json / cameras.json / photos. pull.py only
+            # downloads photos it hasn't seen (tracked in store.json), so re-running
+            # is cheap and idempotent.
+            python pull.py --limit 100
+
+            git add -A
+            if git diff --cached --quiet; then
+              echo "No changes to publish this run."
+              published=1
+              break
+            fi
+
+            TIMESTAMP=$(date -u +'%Y-%m-%dT%H:%MZ')
+            git commit -m "Update trail-cam photos (${TIMESTAMP})"
+
+            # Plain fast-forward push. No --force, no rebase: our commit sits
+            # directly on top of the origin/main we just reset to.
+            if git push origin HEAD:main; then
+              echo "SUCCESS: Published update."
+              published=1
+              break
+            fi
+
+            echo "Remote moved while we were working; retrying from latest main..."
+            sleep $((attempt * 3))
+          done
+
+          if [ "${published}" -ne 1 ]; then
+            echo "ERROR: Could not publish after multiple attempts."
             exit 1
           fi
