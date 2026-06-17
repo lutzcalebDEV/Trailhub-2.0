@@ -21,6 +21,12 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Ensure local checkout is up-to-date with origin/main
+        run: |
+          git fetch origin main --quiet
+          # Make sure we're on main and matching origin/main
+          git checkout -B main origin/main
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -52,35 +58,14 @@ jobs:
           TIMESTAMP=$(date -u +'%Y-%m-%dT%H:%MZ')
           echo "Creating commit with timestamp: $TIMESTAMP"
           git commit -m "Update trail-cam photos ($TIMESTAMP)" || { echo "ERROR: Commit failed"; git status; exit 1; }
-          UPDATE_COMMIT=$(git rev-parse HEAD)
           echo "Commit created. Current HEAD:"
           git log --oneline -1
-          echo "Generated update commit: $UPDATE_COMMIT"
-          for attempt in 1 2 3; do
-            echo "=== Push attempt ${attempt}/3 ==="
-            echo "Fetching latest origin/main..."
-            if ! git fetch origin main 2>&1; then
-              echo "ERROR: Fetch failed"
-              [ "${attempt}" -lt 3 ] && sleep $((attempt * 5)) && continue || exit 1
-            fi
-            echo "Resetting to origin/main to ensure clean state..."
-            git reset --hard origin/main
-            echo "Cherry-picking our commit..."
-            if ! git cherry-pick "$UPDATE_COMMIT" 2>&1; then
-              echo "ERROR: Cherry-pick failed"
-              git cherry-pick --abort 2>/dev/null || true
-              git reset --hard origin/main
-              [ "${attempt}" -lt 3 ] && sleep $((attempt * 5)) && continue || exit 1
-            fi
-            echo "Pushing to origin/main..."
-            if git push origin HEAD:main 2>&1; then
-              echo "SUCCESS: Push completed."
-              exit 0
-            else
-              echo "ERROR: Push failed on attempt ${attempt}"
-              git reset --hard origin/main
-              [ "${attempt}" -lt 3 ] && sleep $((attempt * 5)) && continue || exit 1
-            fi
-          done
-          echo "ERROR: Failed after 3 attempts"
-          exit 1
+
+          # Single safe push. --force-with-lease avoids blind overwrites.
+          if git push origin main --force-with-lease; then
+            echo "SUCCESS: Push completed."
+            exit 0
+          else
+            echo "ERROR: Push failed. The remote changed since we fetched."
+            exit 1
+          fi
