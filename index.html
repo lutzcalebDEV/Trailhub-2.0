@@ -561,7 +561,6 @@ function Silhouette({
       }), /*#__PURE__*/React.createElement("path", {
         d: "M91 8 L86 3"
       })));
-      })));
       break;
     case "Raccoon":
       body = /*#__PURE__*/React.createElement("g", null, /*#__PURE__*/React.createElement("ellipse", {
@@ -797,8 +796,19 @@ function normalizePayload(d) {
       moon: c.moon || moonFromDate(parsedDate)
     };
   }).filter(Boolean).sort((a, b) => b.date - a.date);
+  const cameras = (d.cameras || []).map((camera, i) => {
+    const lat = camera.latitude == null ? null : Number(camera.latitude);
+    const lng = camera.longitude == null ? null : Number(camera.longitude);
+    return {
+      id: camera.id != null ? String(camera.id) : `camera-${i}`,
+      name: camera.name || `Camera ${i + 1}`,
+      latitude: Number.isFinite(lat) ? lat : null,
+      longitude: Number.isFinite(lng) ? lng : null
+    };
+  });
   return {
     captures: caps,
+    cameras,
     demo: !!d.demo,
     generatedAt: d.generatedAt || null
   };
@@ -934,6 +944,91 @@ function Empty() {
   return /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl border border-dashed border-neutral-800 py-16 text-center text-sm text-neutral-500"
   }, "No captures match these filters.");
+}
+function mapSrcDoc(cameras) {
+  const payload = JSON.stringify(cameras).replace(/<\//g, "<\\/");
+  return `<!DOCTYPE html>
+  <html>
+    <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+      <style>
+        html, body, #map { height: 100%; margin: 0; }
+        body { background: #111827; }
+        .leaflet-container { font-family: ui-sans-serif, system-ui, sans-serif; }
+      </style>
+    </head>
+    <body>
+      <div id="map"></div>
+      <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"><\/script>
+      <script>
+        const cameras = ${payload};
+        const map = L.map('map', { zoomControl: true });
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+        const points = [];
+        cameras.forEach(camera => {
+          if (camera.latitude == null || camera.longitude == null) return;
+          const marker = L.marker([camera.latitude, camera.longitude]).addTo(map);
+          marker.bindPopup('<strong>' + camera.name + '</strong><br/>' + camera.count + ' captures<br/>' + (camera.lastSeen || 'No captures yet'));
+          points.push([camera.latitude, camera.longitude]);
+        });
+        if (points.length === 1) {
+          map.setView(points[0], 14);
+        } else if (points.length > 1) {
+          map.fitBounds(points, { padding: [24, 24] });
+        } else {
+          map.setView([39.8283, -98.5795], 4);
+        }
+      <\/script>
+    </body>
+  </html>`;
+}
+function MapView({
+  cameras
+}) {
+  const withCoords = cameras.filter(camera => camera.latitude != null && camera.longitude != null);
+  return /*#__PURE__*/React.createElement("div", {
+    className: "space-y-4"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "overflow-hidden rounded-xl border border-neutral-800 bg-neutral-900"
+  }, withCoords.length > 0 ? /*#__PURE__*/React.createElement("iframe", {
+    title: "TrailHub camera map",
+    srcDoc: mapSrcDoc(withCoords),
+    className: "w-full border-0",
+    style: {
+      height: 520
+    }
+  }) : /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-center px-6 text-center text-sm text-neutral-400",
+    style: {
+      height: 520
+    }
+  }, "No camera coordinates are available yet. Run python pull.py to fetch GPS metadata from your cameras.")), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "rounded-xl border border-neutral-800 bg-neutral-900 p-4"
+  }, /*#__PURE__*/React.createElement("h2", {
+    className: "mb-2 text-sm font-semibold text-neutral-200"
+  }, "Camera list"), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-2"
+  }, cameras.length === 0 ? /*#__PURE__*/React.createElement("div", {
+    className: "text-sm text-neutral-500"
+  }, "No cameras available yet.") : cameras.map(camera => /*#__PURE__*/React.createElement("div", {
+    key: camera.id || camera.name,
+    className: "rounded-lg border border-neutral-800 bg-neutral-800/50 p-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-sm font-semibold text-neutral-200"
+  }, camera.name), /*#__PURE__*/React.createElement("div", {
+    className: "mt-1 text-xs text-neutral-400"
+  }, camera.count || 0, " capture", camera.count === 1 ? "" : "s"), /*#__PURE__*/React.createElement("div", {
+    className: "mt-1 text-xs text-neutral-500"
+  }, camera.latitude != null && camera.longitude != null ? `${camera.latitude.toFixed(5)}, ${camera.longitude.toFixed(5)}` : "No coordinates available"), camera.lastSeen && /*#__PURE__*/React.createElement("div", {
+    className: "mt-1 text-xs text-neutral-500"
+  }, "Last seen ", camera.lastSeen)))))));
 }
 function MiniBars({
   data,
@@ -1248,11 +1343,12 @@ function TrailHub() {
   const [dataState, setDataState] = useState(loadData);
   const {
     captures: sourceCaptures,
+    cameras: sourceCameraMeta = [],
     demo,
     generatedAt
   } = dataState;
   const [liveRefresh, setLiveRefresh] = useState(true);
-  const [refreshSec, setRefreshSec] = useState(45);
+  const [refreshSec, setRefreshSec] = useState(60);
   const [lastSyncAt, setLastSyncAt] = useState(null);
   const [syncNote, setSyncNote] = useState("live");
   const [weather, setWeather] = useState(null);
@@ -1271,7 +1367,6 @@ function TrailHub() {
     }
   });
   const [reviewCursor, setReviewCursor] = useState(0);
-  const [qaCursor, setQaCursor] = useState(0);
   const swipeStartX = useRef(null);
 
   const captures = useMemo(() => sourceCaptures.map(c => ({
@@ -1367,7 +1462,7 @@ function TrailHub() {
   const hasMoon = useMemo(() => captures.some(c => !!c.moon), [captures]);
   const [view, setView] = useState("Recent");
   const [selSpecies, setSelSpecies] = useState(new Set());
-  const [camera, setCamera] = useState("All");
+  const [cameraFilter, setCameraFilter] = useState(new Set());
   const [timeOfDay, setTimeOfDay] = useState("All");
   const [bucksOnly, setBucksOnly] = useState(false);
   const [minConf, setMinConf] = useState(60);
@@ -1377,6 +1472,34 @@ function TrailHub() {
   const [calDay, setCalDay] = useState(null);
   const [visibleCount, setVisibleCount] = useState(48);
   const cameras = useMemo(() => [...new Set(captures.map(c => c.camera))], [captures]);
+  const mapCameras = useMemo(() => {
+    const stats = new Map();
+    captures.forEach(c => {
+      const current = stats.get(c.camera) || {
+        count: 0,
+        lastSeen: null
+      };
+      current.count += 1;
+      if (!current.lastSeen || c.date > current.lastSeen) current.lastSeen = c.date;
+      stats.set(c.camera, current);
+    });
+    const names = new Set([...sourceCameraMeta.map(camera => camera.name), ...cameras]);
+    return [...names].map((name, index) => {
+      const meta = sourceCameraMeta.find(camera => camera.name === name) || null;
+      const stat = stats.get(name) || {
+        count: 0,
+        lastSeen: null
+      };
+      return {
+        id: meta && meta.id ? meta.id : `camera-${index}`,
+        name,
+        latitude: meta ? meta.latitude : null,
+        longitude: meta ? meta.longitude : null,
+        count: stat.count,
+        lastSeen: stat.lastSeen ? stat.lastSeen.toLocaleString() : null
+      };
+    }).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+  }, [captures, sourceCameraMeta, cameras]);
   const present = useMemo(() => [...new Set(captures.map(c => c.species))].sort((a, b) => (SPECIES_ORDER.indexOf(a) + 1 || 99) - (SPECIES_ORDER.indexOf(b) + 1 || 99) || a.localeCompare(b)), [captures]);
   const counts = useMemo(() => {
     const m = {};
@@ -1386,16 +1509,11 @@ function TrailHub() {
     return m;
   }, [captures]);
   const reviewQueue = useMemo(() => captures.slice(0, 400), [captures]);
-  const uncertain = useMemo(() => captures.filter(c => c.species === "Animal" || c.confidence != null && c.confidence < 0.7), [captures]);
   const activeReview = reviewQueue[Math.min(reviewCursor, Math.max(0, reviewQueue.length - 1))] || null;
 
   useEffect(() => {
     if (reviewCursor >= reviewQueue.length) setReviewCursor(Math.max(0, reviewQueue.length - 1));
   }, [reviewCursor, reviewQueue.length]);
-
-  useEffect(() => {
-    if (qaCursor >= uncertain.length) setQaCursor(Math.max(0, uncertain.length - 1));
-  }, [qaCursor, uncertain.length]);
 
   const relabelCapture = (id, species) => {
     setSpeciesOverrides(prev => ({
@@ -1437,13 +1555,13 @@ function TrailHub() {
   const passes = c => {
     if (bucksOnly && c.species !== "Buck") return false;
     if (selSpecies.size && !selSpecies.has(c.species)) return false;
-    if (camera !== "All" && c.camera !== camera) return false;
+    if (cameraFilter.size && !cameraFilter.has(c.camera)) return false;
     if (timeOfDay === "Day" && c.isNight) return false;
     if (timeOfDay === "Night" && !c.isNight) return false;
     if (c.confidence != null && c.confidence * 100 < minConf) return false;
     return true;
   };
-  const filteredAll = useMemo(() => captures.filter(passes).sort((a, b) => b.date - a.date), [captures, selSpecies, camera, timeOfDay, bucksOnly, minConf]);
+  const filteredAll = useMemo(() => captures.filter(passes).sort((a, b) => b.date - a.date), [captures, selSpecies, cameraFilter, timeOfDay, bucksOnly, minConf]);
   const recentDays = useMemo(() => {
     const map = new Map();
     filteredAll.forEach(c => {
@@ -1511,7 +1629,7 @@ function TrailHub() {
   };
   const reset = () => {
     setSelSpecies(new Set());
-    setCamera("All");
+    setCameraFilter(new Set());
     setTimeOfDay("All");
     setBucksOnly(false);
     setMinConf(60);
@@ -1538,7 +1656,36 @@ function TrailHub() {
     onClick: () => set(o),
     className: `rounded-md px-3 py-1.5 text-xs font-medium transition ${value === o ? "bg-neutral-700 text-white shadow" : "text-neutral-400"}`
   }, o))));
-  const VIEWS = [["Recent", "clock", "Recent"], ["Patterns", "activity", "Patterns"], ["Calendar", "calendar", "Calendar"], ["All", "grid", "All"], ["Review", "camera", "Review"]];
+  const CameraPicker = ({
+    cameras,
+    value,
+    set
+  }) => {
+    const toggle = name => set(prev => {
+      const next = new Set(prev);
+      next.has(name) ? next.delete(name) : next.add(name);
+      return next;
+    });
+    const allSelected = value.size === 0;
+    return /*#__PURE__*/React.createElement("div", {
+      className: "flex flex-col gap-1.5"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "text-xs text-neutral-500"
+    }, "Camera"), /*#__PURE__*/React.createElement("div", {
+      className: "flex flex-wrap gap-1.5"
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: () => set(new Set()),
+      className: `rounded-full border px-3 py-1.5 text-xs font-medium transition ${allSelected ? "border-emerald-400 bg-emerald-500/15 text-emerald-300" : "border-neutral-800 bg-neutral-800/50 text-neutral-400"}`
+    }, "All cameras"), cameras.map(name => {
+      const on = value.has(name);
+      return /*#__PURE__*/React.createElement("button", {
+        key: name,
+        onClick: () => toggle(name),
+        className: `rounded-full border px-3 py-1.5 text-xs font-medium transition ${on ? "border-neutral-500 bg-neutral-700 text-white" : "border-neutral-800 bg-neutral-800/50 text-neutral-400"}`
+      }, name);
+    })));
+  };
+  const VIEWS = [["Recent", "clock", "Recent"], ["Patterns", "activity", "Patterns"], ["Calendar", "calendar", "Calendar"], ["Map", "camera", "Map"], ["All", "grid", "All"], ["Review", "camera", "Review"]];
   if (captures.length === 0) {
     return /*#__PURE__*/React.createElement("div", {
       className: "relative flex min-h-screen items-center justify-center bg-neutral-950 px-4 text-neutral-200",
@@ -1662,11 +1809,10 @@ function TrailHub() {
     }, counts[s]));
   })), /*#__PURE__*/React.createElement("div", {
     className: "flex flex-col gap-3 border-t border-neutral-800 pt-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-5 sm:gap-y-3"
-  }, cameras.length > 1 && /*#__PURE__*/React.createElement(Seg, {
-    value: camera,
-    set: setCamera,
-    options: ["All", ...cameras],
-    label: "Camera"
+  }, cameras.length > 1 && /*#__PURE__*/React.createElement(CameraPicker, {
+    cameras: cameras,
+    value: cameraFilter,
+    set: setCameraFilter
   }), /*#__PURE__*/React.createElement(Seg, {
     value: timeOfDay,
     set: setTimeOfDay,
@@ -1700,40 +1846,15 @@ function TrailHub() {
     value: refreshSec,
     onChange: e => setRefreshSec(+e.target.value),
     className: "rounded-md border border-neutral-700 bg-neutral-900 px-2 py-1 text-xs text-neutral-300"
-  }, [15, 30, 45, 60, 120].map(s => /*#__PURE__*/React.createElement("option", {
-    key: s,
-    value: s
-  }, s, "s"))), archivedIds.size > 0 && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
+  }, [[30, "30 seconds"], [60, "1 minute"], [300, "5 minutes"], [1800, "30 minutes"]].map(([value, label]) => /*#__PURE__*/React.createElement("option", {
+    key: value,
+    value: value
+  }, label))), archivedIds.size > 0 && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
     className: "text-xs text-neutral-500"
   }, archivedIds.size, " archived"), /*#__PURE__*/React.createElement("button", {
     onClick: () => setArchivedIds(new Set()),
     className: "rounded-md border border-neutral-700 bg-neutral-900 px-2 py-1 text-xs text-neutral-300"
-  }, "Restore all")))), uncertain.length > 0 && /*#__PURE__*/React.createElement("div", {
-    className: "mb-4 rounded-xl border border-neutral-800 bg-neutral-900 p-3"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "mb-2 flex items-center justify-between"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "text-xs font-semibold text-neutral-300"
-  }, "Detection QA"), /*#__PURE__*/React.createElement("span", {
-    className: "text-xs text-neutral-500"
-  }, Math.min(qaCursor + 1, uncertain.length), " / ", uncertain.length)), uncertain[qaCursor] && /*#__PURE__*/React.createElement("div", {
-    className: "grid grid-cols-1 gap-2 sm:grid-cols-3"
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: () => setActive(uncertain[qaCursor]),
-    className: "rounded-lg border border-neutral-700 bg-neutral-800/60 px-3 py-2 text-xs text-neutral-300"
-  }, "Open current photo"), /*#__PURE__*/React.createElement("div", {
-    className: "sm:col-span-2 flex flex-wrap gap-1.5"
-  }, ["Buck", "Doe", "Deer", "Raccoon", "Fox", "Coyote", "Turkey", "Person", "Animal"].map(s => /*#__PURE__*/React.createElement("button", {
-    key: s,
-    onClick: () => {
-      relabelCapture(uncertain[qaCursor].id, s);
-      setQaCursor(i => Math.min(i + 1, Math.max(0, uncertain.length - 1)));
-    },
-    className: "rounded-full border border-neutral-700 bg-neutral-800/60 px-2.5 py-1 text-xs text-neutral-300"
-  }, s)), /*#__PURE__*/React.createElement("button", {
-    onClick: () => setQaCursor(i => Math.min(i + 1, Math.max(0, uncertain.length - 1))),
-    className: "rounded-full border border-neutral-600 bg-neutral-700 px-2.5 py-1 text-xs text-white"
-  }, "Skip")))), view === "Recent" && (recentDays.length === 0 ? /*#__PURE__*/React.createElement(Empty, null) : /*#__PURE__*/React.createElement("div", {
+  }, "Restore all")))), view === "Recent" && (recentDays.length === 0 ? /*#__PURE__*/React.createElement(Empty, null) : /*#__PURE__*/React.createElement("div", {
     className: "space-y-6"
   }, recentDays.map(d => /*#__PURE__*/React.createElement("div", {
     key: d.k
@@ -1817,7 +1938,9 @@ function TrailHub() {
   }, dayCaps.length, " capture", dayCaps.length !== 1 ? "s" : "")), /*#__PURE__*/React.createElement(SpeciesSections, {
     caps: dayCaps,
     onOpen: setActive
-  })))), view === "Review" && /*#__PURE__*/React.createElement("div", {
+  })))), view === "Map" && /*#__PURE__*/React.createElement(MapView, {
+    cameras: mapCameras
+  }), view === "Review" && /*#__PURE__*/React.createElement("div", {
     className: "space-y-3"
   }, !activeReview ? /*#__PURE__*/React.createElement(Empty, null) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     className: "text-xs text-neutral-500"

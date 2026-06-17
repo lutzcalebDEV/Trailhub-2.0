@@ -39,6 +39,7 @@ HERE = Path(__file__).resolve().parent
 PHOTOS_DIR = HERE / "photos"
 DATA_FILE = HERE / "data.js"
 STORE_FILE = HERE / "store.json"   # durable source of truth (NOT uploaded)
+CAMERA_FILE = HERE / "cameras.json"  # durable camera metadata for map rendering
 
 MAX_PUBLISHED = 1500   # cap captures written to data.js so the site stays light
 MAX_KEEP = 3000        # cap stored photos+images so the repo doesn't grow forever
@@ -266,6 +267,21 @@ def save_store(store):
     atomic_write_text(STORE_FILE, json.dumps(store, indent=1))
 
 
+def load_cameras():
+    if not CAMERA_FILE.exists():
+        return []
+    try:
+        data = json.loads(CAMERA_FILE.read_text(encoding="utf-8"))
+        return data if isinstance(data, list) else []
+    except (json.JSONDecodeError, OSError):
+        print("  [warn] cameras.json unreadable; skipping saved camera metadata.")
+        return []
+
+
+def save_cameras(cameras):
+    atomic_write_text(CAMERA_FILE, json.dumps(cameras, indent=1))
+
+
 def prune_store(store):
     """Keep only the newest MAX_KEEP captures; delete image files for the rest."""
     items = sorted(store.values(), key=lambda c: c.get("date", ""), reverse=True)
@@ -281,16 +297,46 @@ def prune_store(store):
     return {c["id"]: c for c in items[:MAX_KEEP]}
 
 
-def write_data_js(captures, demo=False):
+def write_data_js(captures, cameras=None, demo=False):
     """Render the published data.js from a list of captures (atomic write)."""
     captures = sorted(captures, key=lambda c: c.get("date", ""), reverse=True)[:MAX_PUBLISHED]
     payload = {
         "generatedAt": dt.datetime.now().isoformat(timespec="seconds"),
         "demo": demo,
+        "cameras": cameras or [],
         "captures": captures,
     }
     atomic_write_text(DATA_FILE, "window.TRAILHUB_DATA = " + json.dumps(payload, indent=2) + ";\n")
     print(f"Wrote {DATA_FILE.name}  ({len(captures)} captures)")
+
+
+def _coerce_latlng(value):
+    try:
+        n = float(value)
+    except (TypeError, ValueError):
+        return None
+    return n
+
+
+def extract_camera_meta(cam):
+    raw = _raw(cam)
+    cid = _first(raw, "id", "cameraId", "_id")
+    name = _first(raw, "name", "cameraName", "config_name", default=None)
+    geo = raw.get("gps") if isinstance(raw, dict) else None
+    if not isinstance(geo, dict):
+        geo = raw.get("location") if isinstance(raw, dict) and isinstance(raw.get("location"), dict) else {}
+    lat = _coerce_latlng(_first(raw, "latitude", "lat", "gpsLat", "gps_lat", default=None))
+    lng = _coerce_latlng(_first(raw, "longitude", "lng", "lon", "gpsLng", "gpsLon", "gps_long", default=None))
+    if lat is None and isinstance(geo, dict):
+        lat = _coerce_latlng(_first(geo, "latitude", "lat", default=None))
+    if lng is None and isinstance(geo, dict):
+        lng = _coerce_latlng(_first(geo, "longitude", "lng", "lon", default=None))
+    return {
+        "id": str(cid) if cid is not None else str(name or "unknown"),
+        "name": name or (f"Camera {cid}" if cid is not None else "Camera"),
+        "latitude": lat,
+        "longitude": lng,
+    }
 
 
 # ---- modes -----------------------------------------------------------------
@@ -302,6 +348,17 @@ def run_demo():
     species_pool = (["Buck"] * 3 + ["Doe"] * 5 + ["Raccoon"] * 3 +
                     ["Squirrel"] * 3 + ["Fox", "Coyote", "Turkey", "Opossum", "Person"])
     cams = ["North Field", "Creek Crossing"]
+    camera_meta = [{
+        "id": "north-field",
+        "name": "North Field",
+        "latitude": 34.1134,
+        "longitude": -84.1821,
+    }, {
+        "id": "creek-crossing",
+        "name": "Creek Crossing",
+        "latitude": 34.1087,
+        "longitude": -84.1763,
+    }]
     moons = ["New", "Wax Cres", "1st Qtr", "Wax Gib", "Full", "Wan Gib", "Last Qtr", "Wan Cres"]
     caps = []
     now = dt.datetime.now()
@@ -323,7 +380,7 @@ def run_demo():
             "moon": moons[(days_ago // 4) % 8],
         })
     caps.sort(key=lambda c: c["date"], reverse=True)
-    write_data_js(caps, demo=True)
+    write_data_js(caps, cameras=camera_meta, demo=True)
     print("Demo data ready. Open index.html to preview.")
 
 
@@ -366,12 +423,14 @@ def run_pull(limit, inspect):
 
     # build a camera-id -> friendly-name lookup (best effort)
     cam_name_by_id = {}
+    camera_meta = []
     for cam in cameras:
-        craw = _raw(cam)
-        cid = _first(craw, "id", "cameraId", "_id")
-        cname = _first(craw, "name", "cameraName", "config_name", default=None)
+        meta = extract_camera_meta(cam)
+        cid = meta["id"]
+        cname = meta["name"]
         if cid is not None:
             cam_name_by_id[str(cid)] = cname or f"Camera {cid}"
+        camera_meta.append(meta)
 
     PHOTOS_DIR.mkdir(exist_ok=True)
     store = load_store()          # durable history, keyed by stable id
@@ -413,7 +472,8 @@ def run_pull(limit, inspect):
 
     store = prune_store(store)
     save_store(store)
-    write_data_js(list(store.values()), demo=False)
+    save_cameras(camera_meta)
+    write_data_js(list(store.values()), cameras=camera_meta, demo=False)
     print(f"\nStore: {before} -> {len(store)} captures (+{new_count} new this run).")
     print("Done. Open index.html, or upload index.html + data.js + photos/ to Cloudflare.")
 
@@ -423,7 +483,7 @@ def run_rebuild():
     store = load_store()
     if not store:
         sys.exit("No store.json yet. Run `python pull.py` first (or `--demo` to preview).")
-    write_data_js(list(store.values()), demo=False)
+    write_data_js(list(store.values()), cameras=load_cameras(), demo=False)
     print(f"Rebuilt data.js from store ({len(store)} captures).")
 
 

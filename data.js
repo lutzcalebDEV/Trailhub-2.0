@@ -1,6 +1,7 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-06-17T13:09:58",
+  "generatedAt": "2026-06-17T11:25:23",
   "demo": false,
+  "cameras": [],
   "captures": [
     {
       "species": "Animal",
