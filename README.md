@@ -78,6 +78,33 @@ Then open `index.html` and click **Fetch Photos** in the top-right.
 
 If the API is not running, the page will show an error note.
 
+## 2c. Fetch from a button in production
+
+Production fetch requires a secure backend endpoint. This repo includes Cloudflare
+Pages Functions under [functions/api/fetch-photos.js](functions/api/fetch-photos.js)
+that safely trigger the GitHub workflow instead of exposing SPYPOINT credentials
+to the browser.
+
+Required Cloudflare environment variables:
+
+- `GITHUB_OWNER` (example: `lutzcalebDEV`)
+- `GITHUB_REPO` (example: `Trailhub-2.0`)
+- `GITHUB_TOKEN` (GitHub PAT with `repo` and `workflow`/`actions:write` scope)
+- Optional: `GITHUB_WORKFLOW_FILE` (default: `update.yml`)
+- Optional: `GITHUB_REF` (default: `main`)
+- Optional: `FETCH_API_KEY` (if set, requests must include this key)
+
+How it works:
+
+1. Browser calls `POST /api/fetch-photos`
+2. Function dispatches the `Update TrailHub` workflow on GitHub
+3. Workflow runs `pull.py` and commits fresh `data.js`/photos
+4. Page polls `data.js` and loads new captures when available
+
+Health check endpoint:
+
+- `GET /api/health` returns whether GitHub env vars are configured.
+
 ## 3. Publish manually (Cloudflare) — the simple, hands-on option
 
 Upload these three things via the **"Upload your static files"** flow:

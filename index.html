@@ -828,12 +828,10 @@ async function fetchLatestData() {
 }
 const IS_LOCALHOST = typeof window !== "undefined" && /^(localhost|127\.0\.0\.1)$/i.test(window.location.hostname || "");
 const API_BASE = typeof window !== "undefined" && window.TRAILHUB_API_BASE ? String(window.TRAILHUB_API_BASE).replace(/\/$/, "") : IS_LOCALHOST ? "http://127.0.0.1:8787" : "";
-const CAN_MANUAL_FETCH = !!API_BASE;
+const FETCH_ENDPOINT = API_BASE ? `${API_BASE}/api/fetch-photos` : "/api/fetch-photos";
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 async function requestManualFetch() {
-  if (!API_BASE) {
-    throw new Error("Manual fetch is only available with a configured backend API.");
-  }
-  const res = await fetch(`${API_BASE}/api/fetch-photos`, {
+  const res = await fetch(FETCH_ENDPOINT, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -1660,21 +1658,48 @@ function TrailHub() {
   };
   const runManualFetch = async () => {
     if (manualFetchBusy || demo) return;
-    if (!CAN_MANUAL_FETCH) {
-      setManualFetchNote("Published mode detected. This button needs a backend API. Run the Update TrailHub GitHub Action to pull new photos.");
-      return;
-    }
     setManualFetchBusy(true);
-    setManualFetchNote("Fetching from SPYPOINT...");
+    setManualFetchNote("Starting photo fetch...");
     try {
+      const beforeGeneratedAt = dataState.generatedAt || null;
       await requestManualFetch();
-      const next = await fetchLatestData();
+      setManualFetchNote("Fetch started. Waiting for updated data...");
       const prevIds = new Set(dataState.captures.map(c => String(c.id)));
+      let next = null;
+      let refreshed = false;
+
+      for (let attempt = 0; attempt < 30; attempt++) {
+        await sleep(5000);
+        try {
+          next = await fetchLatestData();
+        } catch (e) {
+          continue;
+        }
+        const changedPayload = !!next.generatedAt && next.generatedAt !== beforeGeneratedAt;
+        const addedNow = next.captures.reduce((n, c) => n + (prevIds.has(String(c.id)) ? 0 : 1), 0);
+        if (changedPayload || addedNow > 0) {
+          refreshed = true;
+          break;
+        }
+      }
+
+      if (!next) {
+        next = await fetchLatestData();
+      }
+
       const added = next.captures.reduce((n, c) => n + (prevIds.has(String(c.id)) ? 0 : 1), 0);
       setDataState(next);
       setLastSyncAt(new Date());
-      setSyncNote(added > 0 ? `+${added} new` : "up to date");
-      setManualFetchNote(added > 0 ? `Pulled ${added} new photo${added === 1 ? "" : "s"}.` : "No new photos available.");
+      if (added > 0) {
+        setSyncNote(`+${added} new`);
+        setManualFetchNote(`Pulled ${added} new photo${added === 1 ? "" : "s"}.`);
+      } else if (refreshed) {
+        setSyncNote("up to date");
+        setManualFetchNote("Fetch completed. No new photos this run.");
+      } else {
+        setSyncNote("pending");
+        setManualFetchNote("Fetch was triggered, but new data is still processing. Check back in a minute.");
+      }
     } catch (e) {
       const msg = e && e.message ? e.message : "Unable to fetch from SPYPOINT.";
       setSyncNote("fetch failed");
@@ -1923,9 +1948,9 @@ function TrailHub() {
     className: "text-base font-bold text-white"
   }, dayLabel(d.date)), /*#__PURE__*/React.createElement("span", {
     className: "text-xs text-neutral-500"
-  }, d.caps.length, " capture", d.caps.length !== 1 ? "s" : "")), /*#__PURE__*/React.createElement(SpeciesSections, {
+    disabled: manualFetchBusy || demo,
     caps: d.caps,
-    onOpen: setActive
+    title: demo ? "Disabled while demo data is loaded" : "Fetch new photos from SPYPOINT now"
   }))))), view === "Patterns" && /*#__PURE__*/React.createElement(Patterns, {
     caps: filteredAll,
     hasTemp: hasTemp,
