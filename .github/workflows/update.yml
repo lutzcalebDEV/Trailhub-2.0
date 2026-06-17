@@ -61,10 +61,12 @@ jobs:
               echo "ERROR: Fetch failed"
               [ "${attempt}" -lt 3 ] && sleep $((attempt * 5)) && continue || exit 1
             fi
-            echo "Rebasing onto origin/main..."
-            if ! git rebase origin/main 2>&1; then
-              echo "ERROR: Rebase conflict or failure"
-              git rebase --abort 2>/dev/null || true
+            echo "Resetting to origin/main to ensure clean state..."
+            git reset --hard origin/main
+            echo "Cherry-picking our commit..."
+            if ! git cherry-pick -n HEAD@{1} 2>&1; then
+              echo "ERROR: Cherry-pick failed"
+              git reset --hard origin/main
               [ "${attempt}" -lt 3 ] && sleep $((attempt * 5)) && continue || exit 1
             fi
             echo "Pushing to origin/main..."
@@ -73,6 +75,7 @@ jobs:
               exit 0
             else
               echo "ERROR: Push failed on attempt ${attempt}"
+              git reset --hard origin/main
               [ "${attempt}" -lt 3 ] && sleep $((attempt * 5)) && continue || exit 1
             fi
           done
