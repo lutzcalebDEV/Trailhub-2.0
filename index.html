@@ -1923,9 +1923,9 @@ function TrailHub() {
     className: "text-base font-bold text-white"
   }, dayLabel(d.date)), /*#__PURE__*/React.createElement("span", {
     className: "text-xs text-neutral-500"
-    disabled: manualFetchBusy || demo || !CAN_MANUAL_FETCH,
+  }, d.caps.length, " capture", d.caps.length !== 1 ? "s" : "")), /*#__PURE__*/React.createElement(SpeciesSections, {
     caps: d.caps,
-    title: demo ? "Disabled while demo data is loaded" : !CAN_MANUAL_FETCH ? "Needs backend API in hosted mode" : "Fetch new photos from SPYPOINT now"
+    onOpen: setActive
   }))))), view === "Patterns" && /*#__PURE__*/React.createElement(Patterns, {
     caps: filteredAll,
     hasTemp: hasTemp,
