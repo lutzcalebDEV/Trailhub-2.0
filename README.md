@@ -61,6 +61,23 @@ This downloads images into `photos/` and rewrites `data.js`. Refresh
 `index.html` and you'll see your real captures. Re-run `python pull.py` whenever
 you want fresh photos.
 
+## 2b. Fetch from a button in the page (local)
+
+If you want to click a button in the dashboard to fetch new photos on demand,
+run the local API service in a terminal:
+
+```
+python fetch_api.py
+```
+
+Then open `index.html` and click **Fetch Photos** in the top-right.
+
+- The page calls `http://127.0.0.1:8787/api/fetch-photos`
+- That endpoint runs `pull.py --limit 100`
+- After it finishes, the page reloads `data.js` and shows any new captures
+
+If the API is not running, the page will show an error note.
+
 ## 3. Publish manually (Cloudflare) — the simple, hands-on option
 
 Upload these three things via the **"Upload your static files"** flow:
