@@ -42,5 +42,7 @@ jobs:
             echo "No new photos this run."
           else
             git commit -m "Update trail-cam photos ($(date -u +'%Y-%m-%dT%H:%MZ'))"
-            git push
+            git fetch origin main
+            git rebase origin/main
+            git push origin HEAD:main
           fi
