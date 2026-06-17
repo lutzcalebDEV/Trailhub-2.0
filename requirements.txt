@@ -1,0 +1,5 @@
+pyspypoint
+
+# Optional: enables automatic image downscaling for faster page loads / smaller uploads.
+# Everything works without it.
+# Pillow
