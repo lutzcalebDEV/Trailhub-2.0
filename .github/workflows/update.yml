@@ -18,6 +18,8 @@ jobs:
     steps:
       - name: Check out the repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -42,7 +44,21 @@ jobs:
             echo "No new photos this run."
           else
             git commit -m "Update trail-cam photos ($(date -u +'%Y-%m-%dT%H:%MZ'))"
-            git fetch origin main
-            git rebase origin/main
-            git push origin HEAD:main
+            for attempt in 1 2 3; do
+              echo "Push attempt ${attempt}"
+              git fetch origin main
+              if ! git rebase origin/main; then
+                echo "Rebase conflict while syncing with origin/main."
+                git rebase --abort || true
+                exit 1
+              fi
+              if git push origin HEAD:main; then
+                echo "Push successful."
+                break
+              fi
+              if [ "${attempt}" -eq 3 ]; then
+                echo "Push failed after 3 attempts."
+                exit 1
+              fi
+            done
           fi
