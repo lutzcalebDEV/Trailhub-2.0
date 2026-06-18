@@ -162,6 +162,81 @@ def load_credentials():
     return user, pw
 
 
+# ---- Cloudflare R2 image hosting (optional) --------------------------------
+# When the R2_* env vars are set, new photos are uploaded to a Cloudflare R2
+# bucket and the site links to them there instead of committing images into the
+# repo. Leave the vars unset to keep the original behavior (images under photos/).
+#
+# Required: R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET, R2_PUBLIC_BASE_URL
+#           and one of R2_ACCOUNT_ID or R2_ENDPOINT.
+# R2_PUBLIC_BASE_URL is the bucket's public URL (e.g. https://pub-xxxx.r2.dev).
+def _r2_config():
+    return {
+        "account_id": os.environ.get("R2_ACCOUNT_ID", "").strip(),
+        "access_key_id": os.environ.get("R2_ACCESS_KEY_ID", "").strip(),
+        "secret_access_key": os.environ.get("R2_SECRET_ACCESS_KEY", "").strip(),
+        "bucket": os.environ.get("R2_BUCKET", "").strip(),
+        "public_base_url": os.environ.get("R2_PUBLIC_BASE_URL", "").strip().rstrip("/"),
+        "endpoint": os.environ.get("R2_ENDPOINT", "").strip().rstrip("/"),
+    }
+
+
+class R2Uploader:
+    """Thin wrapper over the S3-compatible R2 API. One client, reused per run."""
+
+    def __init__(self, cfg):
+        import boto3  # lazy import: only needed when R2 is configured
+        from botocore.config import Config as BotoConfig
+        endpoint = cfg["endpoint"] or f"https://{cfg['account_id']}.r2.cloudflarestorage.com"
+        self.bucket = cfg["bucket"]
+        self.public_base_url = cfg["public_base_url"]
+        self._client = boto3.client(
+            "s3",
+            endpoint_url=endpoint,
+            aws_access_key_id=cfg["access_key_id"],
+            aws_secret_access_key=cfg["secret_access_key"],
+            region_name="auto",
+            config=BotoConfig(signature_version="s3v4", retries={"max_attempts": 3, "mode": "standard"}),
+        )
+
+    def upload(self, local_path: Path, key: str) -> str:
+        """Upload one file and return its public URL. Cached forever (stable ids)."""
+        low = key.lower()
+        ctype = "image/jpeg"
+        if low.endswith(".png"):
+            ctype = "image/png"
+        elif low.endswith(".webp"):
+            ctype = "image/webp"
+        elif low.endswith(".gif"):
+            ctype = "image/gif"
+        self._client.upload_file(
+            str(local_path), self.bucket, key,
+            ExtraArgs={"ContentType": ctype, "CacheControl": "public, max-age=31536000, immutable"},
+        )
+        return f"{self.public_base_url}/{key}"
+
+
+def make_r2_uploader():
+    """Return an R2Uploader if the env is fully configured, else None (with a note)."""
+    cfg = _r2_config()
+    missing = [k for k in ("access_key_id", "secret_access_key", "bucket", "public_base_url") if not cfg[k]]
+    if missing:
+        if any(cfg[k] for k in cfg):  # partially configured -- warn so typos are obvious
+            print(f"  [r2] ignoring R2 config; missing {', '.join(sorted(missing))}. Using local photos/.")
+        return None
+    if not cfg["endpoint"] and not cfg["account_id"]:
+        print("  [r2] set R2_ACCOUNT_ID or R2_ENDPOINT to enable R2. Using local photos/.")
+        return None
+    try:
+        return R2Uploader(cfg)
+    except ImportError:
+        print("  [r2] boto3 not installed (pip install boto3). Using local photos/.")
+        return None
+    except Exception as e:
+        print(f"  [r2] disabled ({e}). Using local photos/.")
+        return None
+
+
 # ---- field extraction ------------------------------------------------------
 # pyspypoint's documented surface is small (Client / cameras() / photos() / url()).
 # Each photo object wraps SPYPOINT's raw JSON; field names below are best-guesses
@@ -708,6 +783,10 @@ def run_pull(limit, inspect):
     before = len(store)
     new_count = 0
 
+    r2 = make_r2_uploader()
+    if r2 is not None:
+        print(f"R2: hosting images on bucket '{r2.bucket}' -> {r2.public_base_url}")
+
     for i, p in enumerate(photos):
         raw = _raw(p)
         try:
@@ -724,21 +803,38 @@ def run_pull(limit, inspect):
         fname = f"{sid}{ext}"
         dest = PHOTOS_DIR / fname
 
-        # Already have this photo? Refresh its metadata (tags can change) but skip re-download.
-        already = sid in store and dest.exists()
         meta = extract_meta(p, cam_name_by_id)
         meta["id"] = sid
-        meta["image"] = f"photos/{fname}"
 
-        if not already:
-            try:
-                if not dest.exists():
-                    download_with_retry(url, dest)
-                new_count += 1
-                print(f"  [new] {meta['species']:<10} {meta['camera']}")
-            except Exception as e:
-                print(f"  [skip] {sid}: download failed after retries ({e})")
-                continue
+        if r2 is not None:
+            # Host on R2. Reuse an already-uploaded URL from the store so we don't
+            # re-download from SPYPOINT (and re-upload) the same photo every run.
+            prev_img = str((store.get(sid) or {}).get("image", ""))
+            if prev_img.startswith("http"):
+                meta["image"] = prev_img
+            else:
+                try:
+                    if not dest.exists():
+                        download_with_retry(url, dest)
+                    meta["image"] = r2.upload(dest, fname)
+                    new_count += 1
+                    print(f"  [new] {meta['species']:<10} {meta['camera']}")
+                except Exception as e:
+                    print(f"  [skip] {sid}: upload failed ({e})")
+                    continue
+        else:
+            # Legacy: keep the image in the repo under photos/.
+            already = sid in store and dest.exists()
+            meta["image"] = f"photos/{fname}"
+            if not already:
+                try:
+                    if not dest.exists():
+                        download_with_retry(url, dest)
+                    new_count += 1
+                    print(f"  [new] {meta['species']:<10} {meta['camera']}")
+                except Exception as e:
+                    print(f"  [skip] {sid}: download failed after retries ({e})")
+                    continue
         store[sid] = meta
 
     store = prune_store(store)

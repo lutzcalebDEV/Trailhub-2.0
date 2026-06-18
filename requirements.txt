@@ -1,5 +1,9 @@
 pyspypoint
 
+# Cloudflare R2 image hosting (S3-compatible). Needed only when the R2_* env vars
+# are set to host photos outside the repo; harmless to have installed otherwise.
+boto3
+
 # Optional: enables automatic image downscaling for faster page loads / smaller uploads.
 # Everything works without it.
 # Pillow
