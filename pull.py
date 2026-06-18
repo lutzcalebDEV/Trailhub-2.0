@@ -81,10 +81,20 @@ _SPECIES_KEYWORDS = (
     ("vehicle", "Vehicle"), ("truck", "Vehicle"),
 )
 
-# Tag values that mean "we don't actually know what this is" -- treated as no tag.
+# Tag values that don't name a species -- treated as "no tag" so they never
+# become the displayed species. Covers generic buckets plus the day/night and
+# capture-type markers SPYPOINT attaches to photos (these were showing up as a
+# bogus "Day" species before they were filtered out here).
 _GENERIC_TAGS = {
     "", "animal", "other", "other animal", "unidentified", "unknown",
-    "false trigger", "false", "none", "n/a", "misc", "miscellaneous",
+    "false trigger", "false", "none", "n/a", "na", "misc", "miscellaneous",
+    # time-of-day / lighting markers -- not a species
+    "day", "night", "daytime", "nighttime", "daylight", "dawn", "dusk",
+    "twilight", "morning", "afternoon", "evening", "midday", "noon",
+    "midnight", "sunrise", "sunset", "am", "pm",
+    # capture / trigger types -- not a species
+    "motion", "timelapse", "time lapse", "test", "video", "photo", "image",
+    "multishot", "multi shot", "burst", "trigger", "battery",
 }
 
 
@@ -206,6 +216,14 @@ _SPECIES_TAG_KEYS = {
     "species", "recognition", "recognitions", "aitags", "ai_tags", "detections",
 }
 
+# Nested keys worth descending into when no top-level tag is found. Kept narrow on
+# purpose so we don't scoop up unrelated nested values (e.g. image descriptors or
+# a day/night marker) and mistake them for a species.
+_NESTED_CONTAINER_KEYS = {
+    "recognition", "recognitions", "detections", "detection", "predictions",
+    "objects", "analysis", "ai", "meta", "metadata", "results", "result",
+}
+
 
 def _tag_to_str(t):
     """Coerce one tag entry (a string, or a dict like {'nameId': 'BUCK'}) to text."""
@@ -222,8 +240,11 @@ def _tag_to_str(t):
 def _collect_species_tags(raw, depth=0):
     """Gather species/recognition tag strings from a (plain) photo dict.
 
-    Checks known tag-bearing keys first; only if none are found does it descend
-    into nested structures, so unrelated nested values aren't mistaken for tags.
+    Reads explicit tag-bearing keys (e.g. SPYPOINT's "tag"); if none are present,
+    descends only into nested containers likely to hold recognitions (not arbitrary
+    fields like image descriptors), so unrelated values such as a day/night marker
+    aren't mistaken for a species. normalize_species() then filters non-species
+    values, so a real species listed alongside a "DAY" marker still wins.
     """
     out = []
     if depth > 5 or raw is None:
@@ -236,17 +257,13 @@ def _collect_species_tags(raw, depth=0):
                     if s:
                         out.append(s)
         if not out:
-            for val in raw.values():
-                if isinstance(val, (dict, list, tuple)):
+            for key, val in raw.items():
+                if str(key).lower() in _NESTED_CONTAINER_KEYS and isinstance(val, (dict, list, tuple)):
                     out.extend(_collect_species_tags(val, depth + 1))
-                    if out:
-                        break
     elif isinstance(raw, (list, tuple)):
         for val in raw:
             if isinstance(val, (dict, list, tuple)):
                 out.extend(_collect_species_tags(val, depth + 1))
-                if out:
-                    break
     return out
 
 
@@ -626,6 +643,40 @@ def run_pull(limit, inspect):
     photos = client.photos(cameras, limit=limit)
     photos = list(photos)
     print(f"Retrieved {len(photos)} photo record(s).")
+
+    # --- TEMP DIAGNOSTIC (remove once the real species field is confirmed) ---
+    # Writes a sanitized snapshot of the first few photos so we can see SPYPOINT's
+    # actual tag schema. Field NAMES plus tag-like VALUES only; anything that could
+    # be sensitive (image URLs, GPS, account ids, tokens) is omitted.
+    try:
+        _SENSITIVE = ("host", "path", "url", "gps", "lat", "lng", "lon", "coord",
+                      "token", "user", "account", "uuid", "email", "pass",
+                      "secret", "key", "hash", "sig")
+
+        def _safe(k, v):
+            if any(s in str(k).lower() for s in _SENSITIVE):
+                return "<omitted>"
+            sv = json.dumps(v, default=str)
+            if len(sv) > 240 or "http" in sv.lower():
+                return "<omitted>"
+            return v
+
+        probe = []
+        for p in photos[:5]:
+            r = _raw(p)
+            if not isinstance(r, dict):
+                continue
+            det = _collect_species_tags(r)
+            probe.append({
+                "fields": {k: _safe(k, v) for k, v in r.items()},
+                "detected": det,
+                "normalized": normalize_species(det),
+            })
+        atomic_write_text(HERE / "_schema_probe.json", json.dumps(probe, indent=2, default=str))
+        print("Wrote _schema_probe.json (temporary tag diagnostic).")
+    except Exception as _e:
+        print(f"  [probe] skipped: {_e}")
+    # --- END TEMP DIAGNOSTIC -------------------------------------------------
 
     if inspect:
         if not photos:
