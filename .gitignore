@@ -9,6 +9,10 @@ __pycache__/
 *.tmp
 *.part
 
+# Local backup of the old precompiled UI (kept on disk, not deployed)
+_legacy_index.html
+_schema_probe.json
+
 # NOTE: once Cloudflare R2 hosting is live (the R2_* secrets are set and uploads
 # are confirmed), add "photos/" below so newly downloaded images stop being
 # committed to the repo. Don't add it before R2 works, or new captures would have
