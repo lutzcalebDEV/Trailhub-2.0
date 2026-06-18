@@ -9,9 +9,22 @@
 .th-thumb{position:relative;width:100%;overflow:hidden}
 .th-thumb img{transition:transform .5s cubic-bezier(.2,.7,.2,1)}
 .th-card:hover .th-thumb img{transform:scale(1.06)}
+.th-masonry{column-width:var(--th-tile);column-gap:var(--th-gap)}
+.th-masonry .th-card{break-inside:avoid;margin-bottom:var(--th-gap);display:inline-block;width:100%}
+.th-heatcell{border-radius:3px;transition:transform .1s ease}
+.th-heatcell:hover{transform:scale(1.18);outline:1.5px solid rgba(255,255,255,.5)}
+.th-map{height:520px;width:100%;background:#0f172a}
+.leaflet-container{font-family:ui-sans-serif,system-ui,sans-serif;background:#0f172a}
+.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#171717;color:#e5e5e5;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.leaflet-popup-content{margin:.6rem .8rem;font-size:12px}
+.leaflet-bar a{background:#171717;color:#e5e5e5;border-bottom-color:#333}
+.leaflet-bar a:hover{background:#262626}
+.th-maptip{position:absolute;z-index:1000;top:10px;left:50%;transform:translateX(-50%);background:rgba(16,185,129,.95);color:#06231a;font-size:12px;font-weight:600;padding:.4rem .8rem;border-radius:9999px;box-shadow:0 6px 18px rgba(0,0,0,.4);pointer-events:none}
+.th-stickynav{position:sticky;top:.5rem;z-index:30;box-shadow:0 10px 30px -12px rgba(0,0,0,.7)}
 body[data-theme="light"] .th-card{border-color:#dbe2ea;background:#fff}
 body[data-theme="light"] .th-card:hover{border-color:#b4c2d0}
-</style></head><body><div id="root"></div><script>/**
+body[data-theme="light"] .leaflet-container,body[data-theme="light"] .th-map{background:#e8eef4}
+</style><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script></head><body><div id="root"></div><script>/**
  * @license React
  * react.production.min.js
  *
@@ -409,7 +422,52 @@ function Icon({
     })),
     download: /*#__PURE__*/React.createElement("path", {
       d: "M12 3v12M7 11l5 5 5-5M5 21h14"
-    })
+    }),
+    mapPin: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
+      d: "M12 21s-6-5.3-6-10a6 6 0 1 1 12 0c0 4.7-6 10-6 10z"
+    }), /*#__PURE__*/React.createElement("circle", {
+      cx: "12",
+      cy: "11",
+      r: "2.5"
+    })),
+    layers: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
+      d: "M12 3l9 5-9 5-9-5 9-5z"
+    }), /*#__PURE__*/React.createElement("path", {
+      d: "M3 13l9 5 9-5"
+    })),
+    trophy: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
+      d: "M7 4h10v4a5 5 0 0 1-10 0z"
+    }), /*#__PURE__*/React.createElement("path", {
+      d: "M7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3M9 20h6M12 13v4"
+    })),
+    sparkle: /*#__PURE__*/React.createElement("path", {
+      d: "M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8z"
+    }),
+    flame: /*#__PURE__*/React.createElement("path", {
+      d: "M12 3c1 3-2 4-2 7a4 4 0 0 0 8 0c0-2-1-3-1-5 2 1 4 3 4 7a7 7 0 1 1-14 0c0-4 3-6 5-9z"
+    }),
+    target: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("circle", {
+      cx: "12",
+      cy: "12",
+      r: "8"
+    }), /*#__PURE__*/React.createElement("circle", {
+      cx: "12",
+      cy: "12",
+      r: "3"
+    })),
+    image: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("rect", {
+      x: "3",
+      y: "4",
+      width: "18",
+      height: "16",
+      rx: "2"
+    }), /*#__PURE__*/React.createElement("path", {
+      d: "M3 16l5-5 4 4 3-3 6 6"
+    }), /*#__PURE__*/React.createElement("circle", {
+      cx: "8.5",
+      cy: "9",
+      r: "1.5"
+    }))
   };
   return /*#__PURE__*/React.createElement("svg", {
     width: size,
@@ -901,9 +959,91 @@ function loadData() {
   const d = typeof window !== "undefined" && window.TRAILHUB_DATA || {};
   return normalizePayload(d);
 }
+function StatCard({
+  icon,
+  value,
+  label,
+  sub,
+  accent = "text-white",
+  iconClass = "text-neutral-400"
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    className: "rounded-2xl border border-neutral-800 bg-neutral-900 p-3.5 transition hover:border-neutral-700"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "mb-1.5 flex items-center justify-between"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-[11px] font-semibold uppercase tracking-wide text-neutral-500"
+  }, label), icon && /*#__PURE__*/React.createElement("span", {
+    className: `flex h-7 w-7 items-center justify-center rounded-lg bg-neutral-800/70 ${iconClass}`
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: icon,
+    size: 15
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: `truncate text-2xl font-bold leading-tight ${accent}`
+  }, value), sub && /*#__PURE__*/React.createElement("div", {
+    className: "mt-0.5 truncate text-xs text-neutral-500"
+  }, sub));
+}
+function heatColor(v, max) {
+  if (!v) return "rgba(255,255,255,0.04)";
+  const t = Math.min(1, v / (max || 1));
+  // emerald ramp: dim -> bright
+  const a = 0.14 + 0.86 * t;
+  return `rgba(16,185,129,${a.toFixed(3)})`;
+}
+function HeatGrid({
+  rows,
+  colCount,
+  ticks,
+  unit = ""
+}) {
+  const max = Math.max(1, ...rows.flatMap(r => r.values));
+  return /*#__PURE__*/React.createElement("div", {
+    className: "space-y-1"
+  }, rows.map(r => /*#__PURE__*/React.createElement("div", {
+    key: r.label,
+    className: "flex items-center gap-2"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "flex w-16 shrink-0 items-center gap-1.5 text-xs font-medium text-neutral-300"
+  }, r.dot && /*#__PURE__*/React.createElement("span", {
+    className: `h-2 w-2 shrink-0 rounded-full ${r.dot}`
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "truncate"
+  }, r.label)), /*#__PURE__*/React.createElement("div", {
+    className: "grid flex-1 gap-px",
+    style: {
+      gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))`
+    }
+  }, r.values.map((v, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    className: "th-heatcell",
+    title: `${r.label} \xB7 ${ticks && ticks.full ? ticks.full(i) : i}: ${v}${unit}`,
+    style: {
+      height: 16,
+      background: heatColor(v, max)
+    }
+  }))))), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-2"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "w-16 shrink-0"
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "relative flex-1 text-neutral-600",
+    style: {
+      fontSize: 10,
+      height: 12
+    }
+  }, ticks && ticks.marks.map(m => /*#__PURE__*/React.createElement("span", {
+    key: m.at,
+    className: "absolute -translate-x-1/2",
+    style: {
+      left: `${(m.at + 0.5) / colCount * 100}%`
+    }
+  }, m.text)))));
+}
 function Frame({
   c,
-  big
+  big,
+  natural
 }) {
   const st = styleFor(c.species);
   const tiny = {
@@ -914,18 +1054,18 @@ function Frame({
   const label = `${c.species.toUpperCase()}${extraTags > 0 ? ` +${extraTags}` : ""}${pct}`;
   const showBar = c.temp != null || big && c.moon;
   return /*#__PURE__*/React.createElement("div", {
-    className: "relative h-full w-full overflow-hidden bg-neutral-950"
+    className: natural ? "relative w-full overflow-hidden bg-neutral-950" : "relative h-full w-full overflow-hidden bg-neutral-950"
   }, c.image ? /*#__PURE__*/React.createElement("img", {
     src: c.image,
     alt: c.species,
     loading: "lazy",
-    className: "h-full w-full object-cover",
+    className: natural ? "block h-auto w-full" : "h-full w-full object-cover",
     onError: e => {
       e.currentTarget.style.display = "none";
-      e.currentTarget.insertAdjacentHTML("afterend", '<div class="flex h-full w-full items-center justify-center text-xs text-neutral-600">image unavailable</div>');
+      e.currentTarget.insertAdjacentHTML("afterend", '<div class="flex aspect-video w-full items-center justify-center text-xs text-neutral-600">image unavailable</div>');
     }
   }) : /*#__PURE__*/React.createElement("div", {
-    className: "flex h-full w-full items-center justify-center text-xs text-neutral-600"
+    className: natural ? "flex aspect-video w-full items-center justify-center text-xs text-neutral-600" : "flex h-full w-full items-center justify-center text-xs text-neutral-600"
   }, "no image"), /*#__PURE__*/React.createElement("span", {
     className: `absolute left-0 top-0 border border-l-0 border-t-0 bg-black/75 px-1.5 py-0.5 font-bold tracking-wide ${st.text}`,
     style: {
@@ -959,15 +1099,17 @@ function Frame({
 }
 function FrameCard({
   c,
-  onClick
+  onClick,
+  masonry
 }) {
   return /*#__PURE__*/React.createElement("button", {
     onClick: onClick,
     className: "th-card"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "th-thumb aspect-video"
+    className: masonry ? "th-thumb" : "th-thumb aspect-video"
   }, /*#__PURE__*/React.createElement(Frame, {
-    c: c
+    c: c,
+    natural: masonry
   })), /*#__PURE__*/React.createElement("div", {
     className: "flex items-center justify-between px-2.5 py-1.5"
   }, /*#__PURE__*/React.createElement("span", {
@@ -1008,6 +1150,36 @@ function GridSizeControl({
     rx: 2.5,
     fill: "currentColor"
   }))))));
+}
+function GridLayoutControl({
+  value,
+  set
+}) {
+  const opts = [["grid", "Uniform grid", [[3, 3, 8, 8], [13, 3, 8, 8], [3, 13, 8, 8], [13, 13, 8, 8]]], ["masonry", "Masonry", [[3, 3, 8, 6], [13, 3, 8, 10], [3, 11, 8, 10], [13, 15, 8, 6]]]];
+  return /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-1.5 text-xs text-neutral-400"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "whitespace-nowrap"
+  }, "Layout"), /*#__PURE__*/React.createElement("div", {
+    className: "inline-flex rounded-lg bg-neutral-800/60 p-0.5"
+  }, opts.map(([k, title, rects]) => /*#__PURE__*/React.createElement("button", {
+    key: k,
+    onClick: () => set(k),
+    title: title,
+    className: `flex h-7 w-7 items-center justify-center rounded-md transition ${value === k ? "bg-neutral-700 text-white" : "text-neutral-400 hover:text-neutral-200"}`
+  }, /*#__PURE__*/React.createElement("svg", {
+    width: 16,
+    height: 16,
+    viewBox: "0 0 24 24"
+  }, rects.map((r, i) => /*#__PURE__*/React.createElement("rect", {
+    key: i,
+    x: r[0],
+    y: r[1],
+    width: r[2],
+    height: r[3],
+    rx: 1.5,
+    fill: "currentColor"
+  })))))));
 }
 function groupBySpecies(caps) {
   const m = {};
@@ -1164,47 +1336,177 @@ function mapSrcDoc(cameras) {
   </html>`;
 }
 function MapView({
-  cameras
+  cameras,
+  onPickCamera,
+  onSetCoord,
+  onClearCoord
 }) {
-  const withCoords = cameras.filter(camera => camera.latitude != null && camera.longitude != null);
-  return /*#__PURE__*/React.createElement("div", {
+  const h = React.createElement;
+  const elRef = useRef(null);
+  const mapRef = useRef(null);
+  const layerRef = useRef(null);
+  const placeRef = useRef(null);
+  const [placeFor, setPlaceFor] = useState(null);
+  const withCoords = cameras.filter(c => c.latitude != null && c.longitude != null);
+  const hasL = typeof window !== "undefined" && !!window.L;
+  useEffect(() => {
+    placeRef.current = placeFor;
+  }, [placeFor]);
+  useEffect(() => {
+    if (!hasL || !elRef.current || mapRef.current) return;
+    const L = window.L;
+    const map = L.map(elRef.current, {
+      zoomControl: true,
+      scrollWheelZoom: false
+    });
+    const sat = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+      maxZoom: 19,
+      attribution: "Tiles &copy; Esri"
+    });
+    const street = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: "&copy; OpenStreetMap"
+    });
+    const topo = L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", {
+      maxZoom: 17,
+      attribution: "&copy; OpenTopoMap"
+    });
+    sat.addTo(map);
+    L.control.layers({
+      Satellite: sat,
+      Street: street,
+      Topographic: topo
+    }, null, {
+      position: "topright"
+    }).addTo(map);
+    map.setView([39.8283, -98.5795], 4);
+    map.on("click", e => {
+      const name = placeRef.current;
+      if (name) {
+        onSetCoord(name, +e.latlng.lat.toFixed(6), +e.latlng.lng.toFixed(6));
+        setPlaceFor(null);
+      }
+    });
+    layerRef.current = L.layerGroup().addTo(map);
+    mapRef.current = map;
+    setTimeout(() => map.invalidateSize(), 60);
+    return () => {
+      map.remove();
+      mapRef.current = null;
+      layerRef.current = null;
+    };
+  }, [hasL]);
+  useEffect(() => {
+    const map = mapRef.current,
+      layer = layerRef.current,
+      L = window.L;
+    if (!map || !layer || !L) return;
+    layer.clearLayers();
+    const pts = [];
+    const max = Math.max(1, ...withCoords.map(c => c.count || 0));
+    withCoords.forEach(c => {
+      const t = (c.count || 0) / max;
+      const radius = 7 + 15 * Math.sqrt(t);
+      const fill = `rgb(${Math.round(56 + 196 * t)}, ${Math.round(208 - 40 * t)}, ${Math.round(150 - 110 * t)})`;
+      const m = L.circleMarker([c.latitude, c.longitude], {
+        radius,
+        color: "#0a0a0a",
+        weight: 1.5,
+        fillColor: fill,
+        fillOpacity: 0.85
+      });
+      m.bindTooltip(`${c.name} \xB7 ${c.count || 0} capture${c.count === 1 ? "" : "s"}`, {
+        direction: "top"
+      });
+      m.on("click", () => onPickCamera(c.name));
+      m.addTo(layer);
+      pts.push([c.latitude, c.longitude]);
+    });
+    if (pts.length === 1) map.setView(pts[0], 14);else if (pts.length > 1) map.fitBounds(pts, {
+      padding: [34, 34]
+    });
+  }, [cameras]);
+  return h("div", {
     className: "space-y-4"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "overflow-hidden rounded-xl border border-neutral-800 bg-neutral-900"
-  }, withCoords.length > 0 ? /*#__PURE__*/React.createElement("iframe", {
-    title: "TrailHub camera map",
-    srcDoc: mapSrcDoc(withCoords),
-    className: "w-full border-0",
-    style: {
-      height: 520
-    }
-  }) : /*#__PURE__*/React.createElement("div", {
+  }, h("div", {
+    className: "relative overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-900"
+  }, !hasL && h("div", {
     className: "flex items-center justify-center px-6 text-center text-sm text-neutral-400",
     style: {
       height: 520
     }
-  }, "No camera coordinates are available yet. Run python pull.py to fetch GPS metadata from your cameras.")), /*#__PURE__*/React.createElement("div", {
-    className: "space-y-3"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "rounded-xl border border-neutral-800 bg-neutral-900 p-4"
-  }, /*#__PURE__*/React.createElement("h2", {
-    className: "mb-2 text-sm font-semibold text-neutral-200"
-  }, "Camera list"), /*#__PURE__*/React.createElement("div", {
-    className: "space-y-2"
-  }, cameras.length === 0 ? /*#__PURE__*/React.createElement("div", {
+  }, "The map needs an internet connection to load. Reconnect and refresh to see your cameras."), hasL && h("div", {
+    ref: elRef,
+    className: "th-map"
+  }), hasL && placeFor && h("div", {
+    className: "th-maptip"
+  }, `Click the map to set \u201C${placeFor}\u201D \u2014 `, h("button", {
+    onClick: () => setPlaceFor(null),
+    className: "underline"
+  }, "cancel")), hasL && !placeFor && withCoords.length === 0 && h("div", {
+    className: "th-maptip",
+    style: {
+      background: "rgba(38,38,38,.95)",
+      color: "#e5e5e5"
+    }
+  }, "No camera locations yet \u2014 use \u201CSet location\u201D below.")), withCoords.length > 0 && h("div", {
+    className: "flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-xs text-neutral-500"
+  }, h("span", {
+    className: "flex items-center gap-1.5"
+  }, h("span", {
+    className: "h-2 w-2 rounded-full",
+    style: {
+      background: "#38d399"
+    }
+  }), "fewer captures"), h("span", {
+    className: "flex items-center gap-1.5"
+  }, h("span", {
+    className: "h-3.5 w-3.5 rounded-full",
+    style: {
+      background: "#f0a020"
+    }
+  }), "more captures"), h("span", null, "Hover a marker for details \xB7 click it to filter the dashboard")), h("div", {
+    className: "rounded-2xl border border-neutral-800 bg-neutral-900 p-4"
+  }, h("h2", {
+    className: "mb-3 flex items-center gap-2 text-sm font-semibold text-neutral-200"
+  }, h(Icon, {
+    name: "mapPin",
+    size: 15,
+    className: "text-emerald-400"
+  }), "Cameras"), cameras.length === 0 ? h("div", {
     className: "text-sm text-neutral-500"
-  }, "No cameras available yet.") : cameras.map(camera => /*#__PURE__*/React.createElement("div", {
-    key: camera.id || camera.name,
-    className: "rounded-lg border border-neutral-800 bg-neutral-800/50 p-3"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "text-sm font-semibold text-neutral-200"
-  }, camera.name), /*#__PURE__*/React.createElement("div", {
-    className: "mt-1 text-xs text-neutral-400"
-  }, camera.count || 0, " capture", camera.count === 1 ? "" : "s"), /*#__PURE__*/React.createElement("div", {
-    className: "mt-1 text-xs text-neutral-500"
-  }, camera.latitude != null && camera.longitude != null ? `${camera.latitude.toFixed(5)}, ${camera.longitude.toFixed(5)}` : "No coordinates available"), camera.lastSeen && /*#__PURE__*/React.createElement("div", {
-    className: "mt-1 text-xs text-neutral-500"
-  }, "Last seen ", camera.lastSeen)))))));
+  }, "No cameras available yet.") : h("div", {
+    className: "grid gap-2 sm:grid-cols-2"
+  }, cameras.map(c => {
+    const located = c.latitude != null && c.longitude != null;
+    return h("div", {
+      key: c.id || c.name,
+      className: "rounded-xl border border-neutral-800 bg-neutral-800/40 p-3"
+    }, h("div", {
+      className: "flex items-start justify-between gap-2"
+    }, h("div", {
+      className: "min-w-0"
+    }, h("div", {
+      className: "truncate text-sm font-semibold text-neutral-200"
+    }, c.name), h("div", {
+      className: "mt-0.5 text-xs text-neutral-400"
+    }, (c.count || 0) + " capture" + (c.count === 1 ? "" : "s") + (c.lastSeen ? " \xB7 last " + c.lastSeen : "")), h("div", {
+      className: "mt-0.5 text-xs text-neutral-500"
+    }, located ? `${c.latitude.toFixed(5)}, ${c.longitude.toFixed(5)}${c.manual ? " (manual)" : ""}` : "No coordinates")), c.count > 0 && h("button", {
+      onClick: () => onPickCamera(c.name),
+      title: "Filter dashboard to this camera",
+      className: "shrink-0 rounded-lg border border-neutral-700 bg-neutral-800 px-2.5 py-1 text-xs font-medium text-neutral-300 hover:border-neutral-500"
+    }, "Filter")), h("div", {
+      className: "mt-2 flex items-center gap-2"
+    }, h("button", {
+      onClick: () => setPlaceFor(c.name),
+      disabled: !hasL,
+      className: `rounded-lg px-2.5 py-1 text-xs font-semibold ${placeFor === c.name ? "bg-emerald-500 text-black" : "border border-emerald-500/40 bg-emerald-500/10 text-emerald-300"} ${hasL ? "" : "opacity-40"}`
+    }, located ? "Move pin" : "Set location"), c.manual && h("button", {
+      onClick: () => onClearCoord(c.name),
+      className: "rounded-lg border border-neutral-700 bg-neutral-800 px-2.5 py-1 text-xs text-neutral-400 hover:text-neutral-200"
+    }, "Clear")));
+  }))));
 }
 function MiniBars({
   data,
@@ -1333,6 +1635,19 @@ function Patterns({
       ...v,
       n: v.day + v.night
     })).sort((x, y) => y.n - x.n).sort((x, y) => (x.name === "Buck" ? -1 : 0) - (y.name === "Buck" ? -1 : 0)).slice(0, 6);
+    const spHourMap = {};
+    caps.forEach(c => {
+      const hh = c.date.getHours();
+      tagsOf(c).forEach(sp => {
+        (spHourMap[sp] || (spHourMap[sp] = Array(24).fill(0)))[hh]++;
+      });
+    });
+    const spHour = Object.entries(spHourMap).map(([name, values]) => ({
+      name,
+      values,
+      n: values.reduce((s, v) => s + v, 0)
+    })).sort((x, y) => y.n - x.n).slice(0, 8);
+    const speciesAll = Object.keys(spHourMap).sort((x, y) => (SPECIES_ORDER.indexOf(x) + 1 || 99) - (SPECIES_ORDER.indexOf(y) + 1 || 99) || x.localeCompare(y));
     const moonOrder = {};
     MOONS.forEach((m, i) => moonOrder[m] = i);
     const moonMap = {};
@@ -1374,11 +1689,26 @@ function Patterns({
       peak,
       cams,
       species,
+      spHour,
+      speciesAll,
       moon,
       bestMoon,
       temp
     };
   }, [caps]);
+  const [hmSpecies, setHmSpecies] = useState("");
+  const weekRows = useMemo(() => {
+    const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const grid = days.map(() => Array(24).fill(0));
+    caps.forEach(c => {
+      if (hmSpecies && !tagsOf(c).includes(hmSpecies)) return;
+      grid[c.date.getDay()][c.date.getHours()]++;
+    });
+    return days.map((d, i) => ({
+      label: d,
+      values: grid[i]
+    }));
+  }, [caps, hmSpecies]);
   if (a.total === 0) return /*#__PURE__*/React.createElement(Empty, null);
   const fmtWin = h => `${fmtHourFull(h)}–${fmtHourFull((h + 1) % 24)}`;
   const card = "rounded-xl border border-neutral-800 bg-neutral-900 p-3";
@@ -1386,39 +1716,33 @@ function Patterns({
     className: "space-y-4"
   }, /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-2 gap-3 sm:grid-cols-4"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: card
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "text-2xl font-bold text-emerald-400"
-  }, a.dayPct, "%"), /*#__PURE__*/React.createElement("div", {
-    className: "text-xs font-medium text-neutral-300"
-  }, "Daylight movement"), /*#__PURE__*/React.createElement("div", {
-    className: "text-xs text-neutral-500"
-  }, "in huntable light")), /*#__PURE__*/React.createElement("div", {
-    className: card
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "text-2xl font-bold text-white"
-  }, fmtWin(a.peak)), /*#__PURE__*/React.createElement("div", {
-    className: "text-xs font-medium text-neutral-300"
-  }, "Peak window"), /*#__PURE__*/React.createElement("div", {
-    className: "text-xs text-neutral-500"
-  }, "most activity")), /*#__PURE__*/React.createElement("div", {
-    className: card
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "truncate text-2xl font-bold text-white"
-  }, a.cams[0]?.name || "—"), /*#__PURE__*/React.createElement("div", {
-    className: "text-xs font-medium text-neutral-300"
-  }, "Top location"), /*#__PURE__*/React.createElement("div", {
-    className: "text-xs text-neutral-500"
-  }, a.cams[0] ? `${a.cams[0].n} captures` : "")), /*#__PURE__*/React.createElement("div", {
-    className: card
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "text-2xl font-bold text-amber-400"
-  }, hasMoon && a.bestMoon ? a.bestMoon.label : "—"), /*#__PURE__*/React.createElement("div", {
-    className: "text-xs font-medium text-neutral-300"
-  }, "Best moon phase"), /*#__PURE__*/React.createElement("div", {
-    className: "text-xs text-neutral-500"
-  }, hasMoon && a.bestMoon ? `${a.bestMoon.count} captures` : "no moon data"))), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement(StatCard, {
+    icon: "activity",
+    iconClass: "text-emerald-400",
+    accent: "text-emerald-400",
+    value: a.dayPct + "%",
+    label: "Daylight movement",
+    sub: "in huntable light"
+  }), /*#__PURE__*/React.createElement(StatCard, {
+    icon: "clock",
+    iconClass: "text-sky-400",
+    value: fmtWin(a.peak),
+    label: "Peak window",
+    sub: "most activity"
+  }), /*#__PURE__*/React.createElement(StatCard, {
+    icon: "mapPin",
+    iconClass: "text-emerald-400",
+    value: a.cams[0] && a.cams[0].name || "—",
+    label: "Top location",
+    sub: a.cams[0] ? `${a.cams[0].n} captures` : ""
+  }), /*#__PURE__*/React.createElement(StatCard, {
+    icon: "moon",
+    iconClass: "text-amber-400",
+    accent: "text-amber-400",
+    value: hasMoon && a.bestMoon ? a.bestMoon.label : "—",
+    label: "Best moon phase",
+    sub: hasMoon && a.bestMoon ? `${a.bestMoon.count} captures` : "no moon data"
+  })), /*#__PURE__*/React.createElement("div", {
     className: card
   }, /*#__PURE__*/React.createElement("div", {
     className: "mb-2 flex items-center gap-1.5 text-xs font-medium text-neutral-300"
@@ -1450,6 +1774,77 @@ function Patterns({
   }), "Night"), /*#__PURE__*/React.createElement("span", {
     className: "ml-auto"
   }, "Dawn & dusk are typically prime."))), /*#__PURE__*/React.createElement("div", {
+    className: card
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "mb-2.5 flex items-center gap-1.5 text-xs font-medium text-neutral-300"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "flame",
+    size: 13,
+    className: "text-emerald-400"
+  }), "When species move ", /*#__PURE__*/React.createElement("span", {
+    className: "text-neutral-500"
+  }, "\xB7 hour of day")), /*#__PURE__*/React.createElement(HeatGrid, {
+    rows: a.spHour.map(s => ({
+      label: s.name,
+      dot: styleFor(s.name).dot,
+      values: s.values
+    })),
+    colCount: 24,
+    ticks: {
+      marks: [{
+        at: 0,
+        text: "12a"
+      }, {
+        at: 6,
+        text: "6a"
+      }, {
+        at: 12,
+        text: "12p"
+      }, {
+        at: 18,
+        text: "6p"
+      }],
+      full: fmtHourFull
+    }
+  })), /*#__PURE__*/React.createElement("div", {
+    className: card
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "mb-2.5 flex items-center justify-between gap-2"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "flex items-center gap-1.5 text-xs font-medium text-neutral-300"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "calendar",
+    size: 13,
+    className: "text-emerald-400"
+  }), "Day \xD7 time hotspots"), /*#__PURE__*/React.createElement("select", {
+    value: hmSpecies,
+    onChange: e => setHmSpecies(e.target.value),
+    className: "rounded-lg border border-neutral-700 bg-neutral-800 px-2 py-1 text-xs text-neutral-200"
+  }, /*#__PURE__*/React.createElement("option", {
+    value: ""
+  }, "All species"), a.speciesAll.map(sp => /*#__PURE__*/React.createElement("option", {
+    key: sp,
+    value: sp
+  }, sp)))), /*#__PURE__*/React.createElement(HeatGrid, {
+    rows: weekRows,
+    colCount: 24,
+    ticks: {
+      marks: [{
+        at: 0,
+        text: "12a"
+      }, {
+        at: 6,
+        text: "6a"
+      }, {
+        at: 12,
+        text: "12p"
+      }, {
+        at: 18,
+        text: "6p"
+      }],
+      full: fmtHourFull
+    }
+  })), /*#__PURE__*/React.createElement("div", {
     className: card
   }, /*#__PURE__*/React.createElement("div", {
     className: "mb-2.5 text-xs font-medium text-neutral-300"
@@ -1700,6 +2095,30 @@ function TrailHub() {
       localStorage.setItem("trailhub-grid-size", gridSize);
     } catch (e) {}
   }, [gridSize]);
+  const [gridLayout, setGridLayout] = useState(() => {
+    try {
+      return localStorage.getItem("trailhub-grid-layout") || "grid";
+    } catch (e) {
+      return "grid";
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem("trailhub-grid-layout", gridLayout);
+    } catch (e) {}
+  }, [gridLayout]);
+  const [camCoords, setCamCoords] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("trailhub-camera-coords") || "{}") || {};
+    } catch (e) {
+      return {};
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem("trailhub-camera-coords", JSON.stringify(camCoords));
+    } catch (e) {}
+  }, [camCoords]);
   const cameras = useMemo(() => [...new Set(captures.map(c => c.camera))], [captures]);
   const mapCameras = useMemo(() => {
     const stats = new Map();
@@ -1719,16 +2138,38 @@ function TrailHub() {
         count: 0,
         lastSeen: null
       };
+      const ov = camCoords[name];
+      const latitude = ov ? ov.lat : meta ? meta.latitude : null;
+      const longitude = ov ? ov.lng : meta ? meta.longitude : null;
       return {
         id: meta && meta.id ? meta.id : `camera-${index}`,
         name,
-        latitude: meta ? meta.latitude : null,
-        longitude: meta ? meta.longitude : null,
+        latitude,
+        longitude,
+        manual: !!ov,
         count: stat.count,
         lastSeen: stat.lastSeen ? stat.lastSeen.toLocaleString() : null
       };
     }).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
-  }, [captures, sourceCameraMeta, cameras]);
+  }, [captures, sourceCameraMeta, cameras, camCoords]);
+  const pickCamera = name => {
+    setCameraFilter(new Set([name]));
+    setView("All");
+  };
+  const setCameraCoord = (name, lat, lng) => setCamCoords(prev => ({
+    ...prev,
+    [name]: {
+      lat,
+      lng
+    }
+  }));
+  const clearCameraCoord = name => setCamCoords(prev => {
+    const next = {
+      ...prev
+    };
+    delete next[name];
+    return next;
+  });
   const present = useMemo(() => [...new Set(captures.flatMap(tagsOf))].sort((a, b) => (SPECIES_ORDER.indexOf(a) + 1 || 99) - (SPECIES_ORDER.indexOf(b) + 1 || 99) || a.localeCompare(b)), [captures]);
   const counts = useMemo(() => {
     const m = {};
@@ -1869,6 +2310,28 @@ function TrailHub() {
     filteredAll.forEach(c => arr[c.date.getHours()].count++);
     return arr;
   }, [filteredAll]);
+  const allStats = useMemo(() => {
+    const weekAgo = Date.now() - 7 * 24 * 3600 * 1000;
+    let newWeek = 0;
+    const camCount = {},
+      dayCount = {};
+    filteredAll.forEach(c => {
+      if (c.date.getTime() >= weekAgo) newWeek++;
+      camCount[c.camera] = (camCount[c.camera] || 0) + 1;
+      const k = c.date.toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric"
+      });
+      dayCount[k] = (dayCount[k] || 0) + 1;
+    });
+    const busiest = Object.entries(camCount).sort((x, y) => y[1] - x[1])[0] || null;
+    const peakDay = Object.entries(dayCount).sort((x, y) => y[1] - x[1])[0] || null;
+    return {
+      newWeek,
+      busiest,
+      peakDay
+    };
+  }, [filteredAll]);
   const isAll = !bucksOnly && selSpecies.size === 0;
   const selectAll = () => {
     setBucksOnly(false);
@@ -1898,6 +2361,22 @@ function TrailHub() {
     const ni = idx + d;
     if (ni >= 0 && ni < flatVisible.length) setActive(flatVisible[ni]);
   };
+  useEffect(() => {
+    if (!active) return;
+    const onKey = e => {
+      if (e.key === "ArrowLeft") {
+        const ni = idx - 1;
+        if (ni >= 0) setActive(flatVisible[ni]);
+      } else if (e.key === "ArrowRight") {
+        const ni = idx + 1;
+        if (ni < flatVisible.length) setActive(flatVisible[ni]);
+      } else if (e.key === "Escape") {
+        setActive(null);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [active, idx, flatVisible]);
   const minDate = captures.length ? captures.reduce((m, c) => c.date < m ? c.date : m, captures[0].date) : NOW;
   const Seg = ({
     value,
@@ -1944,7 +2423,7 @@ function TrailHub() {
       }, name);
     })));
   };
-  const VIEWS = [["Recent", "clock", "Recent"], ["Patterns", "activity", "Patterns"], ["Calendar", "calendar", "Calendar"], ["Map", "camera", "Map"], ["All", "grid", "All"], ["Review", "camera", "Review"]];
+  const VIEWS = [["Recent", "clock", "Recent"], ["Patterns", "activity", "Patterns"], ["Calendar", "calendar", "Calendar"], ["Map", "mapPin", "Map"], ["All", "grid", "All"], ["Review", "camera", "Review"]];
   if (captures.length === 0) {
     return /*#__PURE__*/React.createElement("div", {
       className: "relative flex min-h-screen items-center justify-center bg-neutral-950 px-4 text-neutral-200",
@@ -2015,7 +2494,7 @@ function TrailHub() {
   }, "python pull.py"), " to replace this with your real SPYPOINT photos.") : generatedAt && /*#__PURE__*/React.createElement("div", {
     className: "mb-4 text-xs text-neutral-600"
   }, "Last updated ", new Date(generatedAt).toLocaleString(), lastSyncAt ? ` \xB7 checked ${lastSyncAt.toLocaleTimeString()}` : ""), /*#__PURE__*/React.createElement("div", {
-    className: "mb-4 inline-flex w-full rounded-xl bg-neutral-900 p-1 sm:w-auto"
+    className: "th-stickynav mb-4 inline-flex w-full rounded-xl bg-neutral-900 p-1 sm:w-auto"
   }, VIEWS.map(([v, ic, lbl]) => /*#__PURE__*/React.createElement("button", {
     key: v,
     onClick: () => setView(v),
@@ -2079,6 +2558,9 @@ function TrailHub() {
   }), /*#__PURE__*/React.createElement(GridSizeControl, {
     value: gridSize,
     set: setGridSize
+  }), /*#__PURE__*/React.createElement(GridLayoutControl, {
+    value: gridLayout,
+    set: setGridLayout
   }), hasConf && /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-2 text-xs text-neutral-400"
   }, /*#__PURE__*/React.createElement("span", {
@@ -2201,7 +2683,10 @@ function TrailHub() {
     caps: dayCaps,
     onOpen: setActive
   })))), view === "Map" && /*#__PURE__*/React.createElement(MapView, {
-    cameras: mapCameras
+    cameras: mapCameras,
+    onPickCamera: pickCamera,
+    onSetCoord: setCameraCoord,
+    onClearCoord: clearCameraCoord
   }), view === "Review" && /*#__PURE__*/React.createElement("div", {
     className: "space-y-3"
   }, !activeReview ? /*#__PURE__*/React.createElement(Empty, null) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
@@ -2233,35 +2718,55 @@ function TrailHub() {
   }, "Details")))))), view === "All" && /*#__PURE__*/React.createElement("div", {
     className: "space-y-5"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "grid grid-cols-2 gap-3 sm:grid-cols-4"
+    className: "grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4"
   }, [{
     label: "Captures",
     value: filteredAll.length,
-    sub: "matching filters"
+    sub: "matching filters",
+    icon: "image",
+    iconClass: "text-emerald-400"
+  }, {
+    label: "New this week",
+    value: allStats.newWeek,
+    sub: "last 7 days",
+    icon: "sparkle",
+    accent: "text-emerald-400",
+    iconClass: "text-emerald-400"
   }, {
     label: "Bucks",
-    value: filteredAll.filter(c => c.species === "Buck").length,
+    value: filteredAll.filter(c => tagsOf(c).includes("Buck")).length,
     sub: "antlered",
-    accent: "text-amber-400"
+    icon: "trophy",
+    accent: "text-amber-400",
+    iconClass: "text-amber-400"
+  }, {
+    label: "Species",
+    value: new Set(filteredAll.flatMap(tagsOf)).size,
+    sub: "identified",
+    icon: "target",
+    iconClass: "text-sky-400"
   }, {
     label: "Cameras",
     value: new Set(filteredAll.map(c => c.camera)).size,
     sub: "active",
-    accent: "text-neutral-400"
+    icon: "camera",
+    iconClass: "text-neutral-400"
   }, {
-    label: "Species",
-    value: new Set(filteredAll.map(c => c.species)).size,
-    sub: "identified"
-  }].map(s => /*#__PURE__*/React.createElement("div", {
+    label: "Busiest camera",
+    value: allStats.busiest ? allStats.busiest[0] : "\u2014",
+    sub: allStats.busiest ? allStats.busiest[1] + " captures" : "no data",
+    icon: "mapPin",
+    iconClass: "text-emerald-400"
+  }, {
+    label: "Peak day",
+    value: allStats.peakDay ? allStats.peakDay[0] : "\u2014",
+    sub: allStats.peakDay ? allStats.peakDay[1] + " captures" : "no data",
+    icon: "calendar",
+    iconClass: "text-sky-400"
+  }].map(s => /*#__PURE__*/React.createElement(StatCard, {
     key: s.label,
-    className: "rounded-xl border border-neutral-800 bg-neutral-900 p-3"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: `text-xl font-bold sm:text-2xl ${s.accent || "text-white"}`
-  }, s.value), /*#__PURE__*/React.createElement("div", {
-    className: "text-xs font-medium text-neutral-300"
-  }, s.label), /*#__PURE__*/React.createElement("div", {
-    className: "text-xs text-neutral-500"
-  }, s.sub)))), /*#__PURE__*/React.createElement("div", {
+    ...s
+  }))), /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl border border-neutral-800 bg-neutral-900 p-3"
   }, /*#__PURE__*/React.createElement("div", {
     className: "mb-2 flex items-center gap-1.5 text-xs font-medium text-neutral-300"
@@ -2290,10 +2795,11 @@ function TrailHub() {
       background: "#6366f1"
     }
   }), "Night"))), filteredAll.length === 0 ? /*#__PURE__*/React.createElement(Empty, null) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
-    className: "th-grid"
+    className: gridLayout === "masonry" ? "th-masonry" : "th-grid"
   }, filteredAll.slice(0, visibleCount).map(c => /*#__PURE__*/React.createElement(FrameCard, {
     key: c.id,
     c: c,
+    masonry: gridLayout === "masonry",
     onClick: () => setActive(c)
   }))), filteredAll.length > visibleCount && /*#__PURE__*/React.createElement("button", {
     onClick: () => setVisibleCount(v => v + 48),
@@ -2305,11 +2811,23 @@ function TrailHub() {
     className: "max-h-full w-full max-w-2xl overflow-y-auto rounded-2xl border border-neutral-700 bg-neutral-900",
     onClick: e => e.stopPropagation()
   }, /*#__PURE__*/React.createElement("div", {
-    className: "relative aspect-video"
+    className: "relative aspect-video",
+    onTouchStart: e => {
+      swipeStartX.current = e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientX : null;
+    },
+    onTouchEnd: e => {
+      if (swipeStartX.current == null) return;
+      const endX = e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientX : swipeStartX.current;
+      const dx = endX - swipeStartX.current;
+      swipeStartX.current = null;
+      if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1);
+    }
   }, /*#__PURE__*/React.createElement(Frame, {
     c: active,
     big: true
-  }), /*#__PURE__*/React.createElement("button", {
+  }), flatVisible.length > 1 && /*#__PURE__*/React.createElement("div", {
+    className: "absolute left-2 top-2 rounded-full bg-black/60 px-2.5 py-1 text-xs font-medium text-white"
+  }, idx + 1, " / ", flatVisible.length), /*#__PURE__*/React.createElement("button", {
     onClick: () => setActive(null),
     className: "absolute right-2 top-2 rounded-full bg-black/60 p-2 text-white"
   }, /*#__PURE__*/React.createElement(Icon, {
@@ -2359,7 +2877,14 @@ function TrailHub() {
   }, /*#__PURE__*/React.createElement(Icon, {
     name: active.isNight ? "moon" : "sun",
     size: 12
-  }), active.isNight ? "Night" : "Day"))), active.confidence != null && /*#__PURE__*/React.createElement("div", {
+  }), active.isNight ? "Night" : "Day"), active.temp != null && /*#__PURE__*/React.createElement("span", {
+    className: "flex items-center gap-1"
+  }, active.temp, "\xB0F"), active.moon && /*#__PURE__*/React.createElement("span", {
+    className: "flex items-center gap-1"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "moon",
+    size: 12
+  }), active.moon))), active.confidence != null && /*#__PURE__*/React.createElement("div", {
     className: "text-right"
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-xs text-neutral-500"

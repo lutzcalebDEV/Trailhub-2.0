@@ -366,6 +366,49 @@ def _coerce_latlng(value):
     return n
 
 
+def _deep_find_latlng(obj, depth=0):
+    """Best-effort recursive scan for a (lat, lng) pair when the schema is unknown.
+
+    Looks for a dict that holds both a latitude-like and longitude-like key, or a
+    GeoJSON-style ``coordinates``/``coordinate`` ``[lng, lat]`` pair. Bounded depth
+    keeps it cheap and avoids picking up unrelated nested data.
+    """
+    if depth > 4 or obj is None:
+        return (None, None)
+    if isinstance(obj, dict):
+        lat = lng = None
+        for key, val in obj.items():
+            k = str(key).lower()
+            if isinstance(val, (int, float, str)):
+                if lat is None and ("latitude" in k or k in ("lat", "gpslat", "gps_lat")):
+                    lat = _coerce_latlng(val)
+                elif lng is None and ("longitude" in k or k in ("lng", "lon", "long", "gpslng", "gpslon", "gps_long")):
+                    lng = _coerce_latlng(val)
+        # GeoJSON-style [lng, lat] under a coordinates key
+        coords = obj.get("coordinates") or obj.get("coordinate")
+        if (lat is None or lng is None) and isinstance(coords, (list, tuple)) and len(coords) >= 2:
+            clng, clat = _coerce_latlng(coords[0]), _coerce_latlng(coords[1])
+            if clat is not None and lat is None:
+                lat = clat
+            if clng is not None and lng is None:
+                lng = clng
+        if lat is not None and lng is not None:
+            return (lat, lng)
+        for val in obj.values():
+            if isinstance(val, (dict, list)):
+                rlat, rlng = _deep_find_latlng(val, depth + 1)
+                if rlat is not None and rlng is not None:
+                    return (rlat, rlng)
+        return (lat, lng)
+    if isinstance(obj, list):
+        for val in obj:
+            if isinstance(val, (dict, list)):
+                rlat, rlng = _deep_find_latlng(val, depth + 1)
+                if rlat is not None and rlng is not None:
+                    return (rlat, rlng)
+    return (None, None)
+
+
 def extract_camera_meta(cam):
     raw = _raw(cam)
     cid = _first(raw, "id", "cameraId", "_id")
@@ -379,6 +422,12 @@ def extract_camera_meta(cam):
         lat = _coerce_latlng(_first(geo, "latitude", "lat", default=None))
     if lng is None and isinstance(geo, dict):
         lng = _coerce_latlng(_first(geo, "longitude", "lng", "lon", default=None))
+    if (lat is None or lng is None) and isinstance(raw, dict):
+        dlat, dlng = _deep_find_latlng(raw)
+        if lat is None:
+            lat = dlat
+        if lng is None:
+            lng = dlng
     return {
         "id": str(cid) if cid is not None else str(name or "unknown"),
         "name": name or (f"Camera {cid}" if cid is not None else "Camera"),
