@@ -55,33 +55,75 @@ def atomic_write_text(path: Path, text: str):
     tmp.replace(path)
 
 # ---- SPYPOINT tag -> TrailHub species bucket -------------------------------
-# SPYPOINT's tag vocabulary may differ from these; unknown tags pass through
-# unchanged and the UI will still display them (just with a neutral color).
-SPECIES_MAP = {
-    "buck": "Buck", "doe": "Doe", "deer": "Deer", "whitetail": "Deer",
-    "raccoon": "Raccoon", "racoon": "Raccoon",
-    "squirrel": "Squirrel", "fox": "Fox", "coyote": "Coyote",
-    "turkey": "Turkey", "opossum": "Opossum", "possum": "Opossum",
-    "human": "Person", "people": "Person", "person": "Person",
+# SPYPOINT labels recognitions with verbose ids like "WHITE_TAILEDDEER" or
+# "WILD_TURKEY", so we match on keywords rather than exact strings. Order matters:
+# more specific buckets come first. A real-but-unmapped tag passes through (shown
+# Title-cased with a neutral color); only a missing/generic tag becomes "Animal".
+_SPECIES_KEYWORDS = (
+    ("fawn", "Deer"),
+    ("whitetail", "Deer"), ("whitetailed", "Deer"), ("taileddeer", "Deer"),
+    ("muledeer", "Deer"), ("white tail", "Deer"), ("mule deer", "Deer"),
+    ("deer", "Deer"),
+    ("turkey", "Turkey"), ("wildturkey", "Turkey"),
+    ("raccoon", "Raccoon"), ("racoon", "Raccoon"),
+    ("squirrel", "Squirrel"),
+    ("coyote", "Coyote"),
+    ("opossum", "Opossum"), ("possum", "Opossum"),
+    ("fox", "Fox"), ("redfox", "Fox"), ("grayfox", "Fox"), ("greyfox", "Fox"),
+    ("bear", "Bear"), ("blackbear", "Bear"),
+    ("hog", "Hog"), ("boar", "Hog"), ("wildhog", "Hog"), ("wildboar", "Hog"),
+    ("feralhog", "Hog"), ("wild pig", "Hog"), ("wild boar", "Hog"),
+    ("rabbit", "Rabbit"), ("hare", "Rabbit"),
+    ("bobcat", "Bobcat"),
+    ("elk", "Elk"), ("moose", "Moose"),
+    ("bird", "Bird"),
+    ("human", "Person"), ("person", "Person"), ("people", "Person"), ("pedestrian", "Person"),
+    ("vehicle", "Vehicle"), ("truck", "Vehicle"),
+)
+
+# Tag values that mean "we don't actually know what this is" -- treated as no tag.
+_GENERIC_TAGS = {
+    "", "animal", "other", "other animal", "unidentified", "unknown",
+    "false trigger", "false", "none", "n/a", "misc", "miscellaneous",
 }
 
 
 def normalize_species(tags):
-    """Pick the most useful species label from a photo's tag list."""
+    """Pick the most useful species label from a photo's tag list.
+
+    SPYPOINT's recognition ids are verbose and uppercase (e.g. "WHITE_TAILEDDEER"),
+    so match on keywords. A real-but-unmapped tag is shown as-is; only a missing or
+    generic tag falls back to the neutral "Animal".
+    """
     if not tags:
         return "Animal"
     if not isinstance(tags, (list, tuple)):
         tags = [tags]
-    cleaned = [str(t).strip().lower() for t in tags if t]
-    # Prefer a buck/doe call over a generic "deer" if both are present.
-    for pref in ("buck", "doe"):
-        if pref in cleaned:
-            return SPECIES_MAP[pref]
-    for t in cleaned:
-        if t in SPECIES_MAP:
-            return SPECIES_MAP[t]
-    # Unknown tag: Title-case it and show it as-is.
-    return cleaned[0].title() if cleaned else "Animal"
+    cleaned = []
+    for t in tags:
+        if not t:
+            continue
+        s = " ".join(str(t).strip().lower().replace("_", " ").replace("-", " ").split())
+        if s and s not in _GENERIC_TAGS:
+            cleaned.append(s)
+    if not cleaned:
+        return "Animal"
+    # Whole-word set across all tags, so "groundhog" doesn't match the "hog" bucket.
+    words = set()
+    for s in cleaned:
+        words.update(s.split())
+    # Prefer a buck/doe call over a generic "deer" if present anywhere.
+    if "buck" in words:
+        return "Buck"
+    if "doe" in words:
+        return "Doe"
+    for s in cleaned:
+        sw = set(s.split())
+        for kw, label in _SPECIES_KEYWORDS:
+            if (kw in s) if " " in kw else (kw in sw):
+                return label
+    # A real label we don't have a bucket for: show it as-is.
+    return cleaned[0].title()
 
 
 def load_credentials():
@@ -116,14 +158,37 @@ def load_credentials():
 # with fallbacks. Run `python pull.py --inspect` once to see the real shape, and
 # adjust these helpers if needed -- everything else stays the same.
 
+def _to_plain(obj, depth=0):
+    """Recursively turn pyspypoint's _AttrDict objects (and the tuples it uses for
+    lists) back into plain dicts/lists, so the extractor can walk the real JSON
+    shape -- including nested fields like GPS and recognition tags."""
+    if depth > 8:
+        return None
+    if isinstance(obj, dict):
+        return {k: _to_plain(v, depth + 1) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_to_plain(v, depth + 1) for v in obj]
+    inner = getattr(obj, "__dict__", None)
+    if isinstance(inner, dict) and inner and not isinstance(obj, type):
+        return {k: _to_plain(v, depth + 1) for k, v in inner.items() if not str(k).startswith("_")}
+    return obj  # primitives: str/int/float/bool/None
+
+
 def _raw(photo):
-    """Return the underlying dict for a photo object, however it's stored."""
-    for attr in ("_json", "json", "data", "raw", "_data", "__dict__"):
+    """Return the photo/camera's underlying JSON as a plain nested dict.
+
+    pyspypoint wraps each record in an _AttrDict (keys become attributes, lists
+    become tuples), so we flatten it back to plain structures here.
+    """
+    if isinstance(photo, dict):
+        return _to_plain(photo)
+    for attr in ("_json", "json", "data", "raw", "_data"):
         v = getattr(photo, attr, None)
         if isinstance(v, dict) and v:
-            return v
-    if isinstance(photo, dict):
-        return photo
+            return _to_plain(v)
+    inner = getattr(photo, "__dict__", None)
+    if isinstance(inner, dict) and inner:
+        return _to_plain(inner)
     return {}
 
 
@@ -134,13 +199,66 @@ def _first(d, *keys, default=None):
     return default
 
 
+# Keys under which SPYPOINT (or a similar API) may carry species/recognition tags.
+# SPYPOINT's own field is "tag" (singular); the others are defensive fallbacks.
+_SPECIES_TAG_KEYS = {
+    "tag", "tags", "speciestags", "species_tags", "labels", "label",
+    "species", "recognition", "recognitions", "aitags", "ai_tags", "detections",
+}
+
+
+def _tag_to_str(t):
+    """Coerce one tag entry (a string, or a dict like {'nameId': 'BUCK'}) to text."""
+    if isinstance(t, str):
+        return t.strip() or None
+    if isinstance(t, dict):
+        for k in ("nameId", "name", "label", "tag", "species", "value", "en", "title"):
+            v = t.get(k)
+            if isinstance(v, str) and v.strip():
+                return v.strip()
+    return None
+
+
+def _collect_species_tags(raw, depth=0):
+    """Gather species/recognition tag strings from a (plain) photo dict.
+
+    Checks known tag-bearing keys first; only if none are found does it descend
+    into nested structures, so unrelated nested values aren't mistaken for tags.
+    """
+    out = []
+    if depth > 5 or raw is None:
+        return out
+    if isinstance(raw, dict):
+        for key, val in raw.items():
+            if str(key).lower() in _SPECIES_TAG_KEYS:
+                for item in (val if isinstance(val, (list, tuple)) else [val]):
+                    s = _tag_to_str(item)
+                    if s:
+                        out.append(s)
+        if not out:
+            for val in raw.values():
+                if isinstance(val, (dict, list, tuple)):
+                    out.extend(_collect_species_tags(val, depth + 1))
+                    if out:
+                        break
+    elif isinstance(raw, (list, tuple)):
+        for val in raw:
+            if isinstance(val, (dict, list, tuple)):
+                out.extend(_collect_species_tags(val, depth + 1))
+                if out:
+                    break
+    return out
+
+
 def extract_meta(photo, cam_name_by_id):
     raw = _raw(photo)
     # timestamp
     ts = _first(raw, "date", "originDate", "createdAt", "timestamp")
     when = parse_date(ts)
-    # species tags
-    tags = _first(raw, "tags", "speciesTags", "labels", default=[])
+    # species tags: SPYPOINT stores recognitions under "tag" (singular); other
+    # schemas use tags/labels/etc. Search known keys (incl. nested) and accept
+    # either plain strings or {nameId/name/label} objects.
+    tags = _collect_species_tags(raw)
     species = normalize_species(tags)
     # camera
     cam_id = _first(raw, "camera", "cameraId", "camera_id")
@@ -513,9 +631,14 @@ def run_pull(limit, inspect):
         if not photos:
             print("No photos to inspect.")
             return
+        raw0 = _raw(photos[0])
+        keys = sorted(raw0.keys()) if isinstance(raw0, dict) else []
+        detected = _collect_species_tags(raw0)
         print("\n--- RAW SHAPE OF FIRST PHOTO (use this to tune extract_meta) ---")
-        print("attributes:", [a for a in dir(photos[0]) if not a.startswith("__")])
-        print("raw dict:", json.dumps(_raw(photos[0]), indent=2, default=str)[:4000])
+        print("top-level keys:", keys)
+        print("detected species tags:", detected)
+        print("normalized species:", normalize_species(detected))
+        print("raw JSON:", json.dumps(raw0, indent=2, default=str)[:6000])
         return
 
     # build a camera-id -> friendly-name lookup (best effort)
