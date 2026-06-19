@@ -6,7 +6,7 @@ import { SPECIES_ORDER, speciesColor, effectiveSpecies, reviewReason, fmtDateTim
 import { eff } from "../analytics.js";
 
 export function Review(app) {
-  const { captures, reviewQ, ov, assignSpecies, keep, archive } = app;
+  const { captures, reviewQ, ov, assignSpecies, keep, archive, camName } = app;
   const [index, setIndex] = useState(0);
 
   const len = reviewQ.length;
@@ -36,7 +36,7 @@ export function Review(app) {
         : html`<div className="shot__noimg" style=${{ height: "46vh" }}>No image available</div>`}
       <div className="reviewcard__bar">
         ${reason && html`<span className="reason"><${Icon} name="scan" size=${14} />${reason}</span>`}
-        <span className="shot__cam"><${Icon} name="camera" size=${14} /><span>${current.camera}</span></span>
+        <span className="shot__cam"><${Icon} name="camera" size=${14} /><span>${camName(current.camera)}</span></span>
         <div className="spacer" />
         <span className="muted" style=${{ fontSize: 12.5, display: "inline-flex", gap: 6, alignItems: "center" }}>
           <${Icon} name=${current.isNight ? "moon" : "sun"} size=${14} />${fmtDateTime(current.date)}

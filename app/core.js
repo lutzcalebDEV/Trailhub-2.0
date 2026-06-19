@@ -163,6 +163,7 @@ const TAGS_API =
   typeof window !== "undefined" && window.TRAILHUB_TAGS_API
     ? String(window.TRAILHUB_TAGS_API).replace(/\/$/, "")
     : "";
+const CAMERAS_API = TAGS_API ? TAGS_API + "/cameras" : "";
 export const hasSharedTags = !!TAGS_API;
 
 export function normalizeTagMap(raw) {
@@ -201,6 +202,47 @@ export async function remoteSaveTags(id, tags) {
   return { ok: true };
 }
 
+/* ------------------- Shared camera names (optional) --------------------- */
+// Friendly camera names overlay the raw "Camera <id>" labels everywhere they show.
+// Like tags: device-local until the Worker is configured, then global for everyone.
+export function normalizeNameMap(raw) {
+  const out = {};
+  if (raw && typeof raw === "object") {
+    for (const [id, v] of Object.entries(raw)) {
+      const s = (typeof v === "string" ? v : (v && v.name) || "").trim();
+      if (s) out[String(id)] = s.slice(0, 60);
+    }
+  }
+  return out;
+}
+
+export async function remoteLoadCameraNames() {
+  const urls = [];
+  if (CAMERAS_API) urls.push(CAMERAS_API + (CAMERAS_API.includes("?") ? "&" : "?") + "t=" + Date.now());
+  urls.push("camera-names.json?t=" + Date.now());
+  for (const u of urls) {
+    try {
+      const r = await fetch(u, { cache: "no-store" });
+      if (r.ok) return normalizeNameMap(await r.json());
+    } catch (e) { /* try next */ }
+  }
+  return null;
+}
+
+export async function remoteSaveCameraName(id, name) {
+  if (!CAMERAS_API) return { ok: false, reason: "no-endpoint" };
+  const r = await fetch(CAMERAS_API, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id: String(id), name: String(name || "") }),
+  });
+  if (!r.ok) throw new Error("Camera name save failed (" + r.status + ")");
+  return { ok: true };
+}
+
+// Resolve a raw camera label to its friendly name (falls back to the raw label).
+export const displayCamera = (raw, names) => (names && names[String(raw)]) || raw || "Camera";
+
 /* ----------------------------- Persistence ------------------------------ */
 export const LS = {
   theme: "trailhub-theme",
@@ -211,6 +253,7 @@ export const LS = {
   gridSize: "trailhub-grid-size",
   gridLayout: "trailhub-grid-layout",
   camCoords: "trailhub-camera-coords",
+  camNames: "trailhub-camera-names",
 };
 
 function readJSON(key, fallback) {
@@ -233,6 +276,7 @@ export function loadOverrides() {
 }
 export const loadArchived = () => new Set(readJSON(LS.archived, []) || []);
 export const loadReviewed = () => new Set(readJSON(LS.reviewed, []) || []);
+export const loadCameraNames = () => normalizeNameMap(readJSON(LS.camNames, null));
 
 /* ------------------------------- Hooks ---------------------------------- */
 // Plain persisted primitive (string / boolean / number).

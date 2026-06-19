@@ -1,11 +1,13 @@
 // Vale Trails — Insights: movement patterns, timing, species mix and calendar.
-import { html } from "../react.js";
+import { html, Fragment } from "../react.js";
 import { FilterBar } from "../shell.js";
-import { Stat, Panel, Histogram, Donut, Legend, Bars, SplitBar, CalHeat, Empty } from "../ui.js";
+import { Stat, Panel, Histogram, HourStrip, Donut, Legend, Bars, SplitBar, CalHeat, Empty } from "../ui.js";
+import { Icon } from "../icons.js";
 import { labelHour } from "../core.js";
 import {
-  speciesCounts, hourHistogram, dayNightSplit, daylightPct, peakHour,
-  weekdayCounts, speciesByDayNight, tempBuckets, moonCounts, cameraCounts, isoDayCounts,
+  filterCaptures, speciesCounts, hourHistogram, dayNightSplit, daylightPct, peakHour,
+  weekdayCounts, speciesByDayNight, speciesActivity, peakWindow,
+  tempBuckets, moonCounts, cameraCounts, isoDayCounts,
 } from "../analytics.js";
 
 function buildDonut(counts) {
@@ -17,10 +19,10 @@ function buildDonut(counts) {
 }
 
 export function Insights(app) {
-  const { filtered, filters, setFilter, spList, data, ov } = app;
+  const { captures, filtered, filters, setFilter, spList, data, ov, camName } = app;
 
   const filterBar = html`<${FilterBar} filters=${filters} set=${setFilter}
-    cameras=${data.cameras} speciesList=${spList} count=${filtered.length} />`;
+    cameras=${data.cameras} speciesList=${spList} count=${filtered.length} camName=${camName} />`;
 
   if (!filtered.length) {
     return html`<div className="col" style=${{ gap: 4 }}>
@@ -41,11 +43,21 @@ export function Insights(app) {
   const cams = cameraCounts(filtered);
   const donut = buildDonut(counts);
 
+  // Per-species activity timing — the heart of "when is a species most active".
+  // When one species is selected we still compare it against the others (ignoring
+  // only the species filter) so its timing reads in context, with that row lit up.
+  const sel = filters.species !== "All" ? filters.species : null;
+  const activityBase = sel ? filterCaptures(captures, { ...filters, species: "All" }, ov) : filtered;
+  const activity = speciesActivity(activityBase, ov, 6);
+  const selPeak = sel ? peakWindow(hourHistogram(filtered)) : null;
+  const windowLabel = (p) => (p ? `${labelHour(p.start)}–${labelHour(p.end)}` : "—");
+  const dielLabel = (dp) => (dp >= 65 ? "mostly daytime" : dp <= 35 ? "mostly nocturnal" : "active day & night");
+
   // Choose the most informative secondary panel based on available data.
   let secondary;
   if (temps) {
     secondary = html`<${Panel} title="By temperature" icon="thermo">
-      <${Bars} data=${temps.buckets.map((b) => ({ label: `${b.lo}–${b.hi}°`, value: b.value }))} />
+      <${Bars} data=${temps.buckets.map((b) => ({ label: `${b.lo}–${b.hi}°F`, value: b.value }))} />
     </${Panel}>`;
   } else if (moons) {
     secondary = html`<${Panel} title="By moon phase" icon="moon">
@@ -53,7 +65,7 @@ export function Insights(app) {
     </${Panel}>`;
   } else {
     secondary = html`<${Panel} title="By camera" icon="map">
-      <${Bars} data=${cams.slice(0, 7).map((c) => ({ label: c.camera, value: c.value }))} />
+      <${Bars} data=${cams.slice(0, 7).map((c) => ({ label: camName(c.camera), value: c.value }))} />
     </${Panel}>`;
   }
 
@@ -71,6 +83,34 @@ export function Insights(app) {
       <${Stat} label="Species" value=${counts.length} icon="paw"
         sub=${counts[0] ? `Top: ${counts[0].species}` : ""} />
     </div>
+
+    ${sel && selPeak && html`<div className="besttime">
+      <div className="besttime__ico"><${Icon} name="target" size=${22} /></div>
+      <div>
+        <div className="besttime__k">Best time to catch ${sel}</div>
+        <div className="besttime__v">${windowLabel(selPeak)}</div>
+        <div className="besttime__sub">${selPeak.pct}% of ${sel.toLowerCase()} sightings fall in this window · ${dielLabel(daylightPct(filtered))}</div>
+      </div>
+    </div>`}
+
+    <${Panel} title="Active times by species" icon="clock"
+      actions=${html`<span className="faint" style=${{ fontSize: 12 }}>Peak = busiest 3-hour window</span>`}>
+      ${activity.length
+        ? html`<${Fragment}>
+            <div className="actclock">
+              ${activity.map((r) => html`<div key=${r.species} className=${"actrow" + (r.species === sel ? " is-sel" : "")}>
+                <div className="actrow__head">
+                  <span className="actrow__name"><span className="sdot" style=${{ background: r.color }} />${r.species}</span>
+                  ${r.peak && html`<span className="actrow__peak">Peak ${windowLabel(r.peak)} · ${dielLabel(r.dayPct)}</span>`}
+                  <span className="actrow__total tnum">${r.total}</span>
+                </div>
+                <${HourStrip} hours=${r.hours} color=${r.color} peak=${r.peak} />
+              </div>`)}
+            </div>
+            <div className="actclock__axis"><span>12a</span><span>6a</span><span>12p</span><span>6p</span><span>11p</span></div>
+          </${Fragment}>`
+        : html`<p className="faint">Tag a few captures in Review to see when each species moves.</p>`}
+    </${Panel}>
 
     <${Panel} title="Activity by hour" icon="clock">
       <${Histogram} hours=${hourHistogram(filtered)} />

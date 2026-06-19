@@ -1,0 +1,15 @@
+# Cloudflare Worker config for the TrailHub tag + camera-name sync API.
+# Deploy:  npx wrangler deploy
+# First time, set the GitHub credentials as Worker secrets (run once):
+#   npx wrangler secret put GITHUB_TOKEN     # fine-grained PAT, this repo, Contents: R/W
+#   npx wrangler secret put GITHUB_OWNER     # e.g. lutzcalebDEV
+#   npx wrangler secret put GITHUB_REPO      # e.g. Trailhub-2.0
+# (Optional) npx wrangler secret put GITHUB_BRANCH   # defaults to "main"
+#
+# After deploy, copy the printed https://trailhub-tags.<you>.workers.dev URL into
+# config.js  ->  window.TRAILHUB_TAGS_API = "https://trailhub-tags.<you>.workers.dev";
+
+name = "trailhub-tags"
+main = "tag-worker.js"
+compatibility_date = "2024-11-01"
+workers_dev = true

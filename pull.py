@@ -427,6 +427,63 @@ def _maybe_downscale(path: Path):
         pass  # never let image processing break a pull
 
 
+def ocr_temp_f(path: Path):
+    """Read the Fahrenheit temperature SPYPOINT burns into the photo's info bar.
+
+    Trail cameras stamp a strip like "06/17/2026 01:56 PM 89F 31C ... SPYPOINT"
+    along the bottom edge. The API doesn't return temperature for this account, so
+    we OCR that strip. Returns an int (degF) or None. No-ops gracefully when Pillow
+    or pytesseract (or the tesseract binary) aren't installed.
+    """
+    try:
+        from PIL import Image
+        import pytesseract
+    except ImportError:
+        return None
+    import re
+    try:
+        with Image.open(path) as im:
+            if im.mode != "RGB":
+                im = im.convert("RGB")
+            w, h = im.size
+            # The overlay sits in a thin strip along the bottom edge; upscaling and
+            # greyscaling the crop makes the small font far easier for tesseract.
+            strip = im.crop((0, int(h * 0.90), w, h)).convert("L")
+            strip = strip.resize((strip.width * 2, strip.height * 2))
+            text = pytesseract.image_to_string(strip, config="--psm 7")
+    except Exception:
+        return None
+    if not text:
+        return None
+    flat = text.replace("\n", " ")
+    # Prefer an explicit Fahrenheit reading; fall back to Celsius -> Fahrenheit.
+    m = re.search(r"(-?\d{1,3})\s*[\u00b0\u02da\u2070o*]?\s*F\b", flat)
+    if m:
+        val = _temp_in_range(m.group(1))
+        if val is not None:
+            return val
+    m = re.search(r"(-?\d{1,3})\s*[\u00b0\u02da\u2070o*]?\s*C\b", flat)
+    if m:
+        try:
+            return _bound_temp(round(int(m.group(1)) * 9 / 5 + 32))
+        except ValueError:
+            return None
+    return None
+
+
+def _bound_temp(val):
+    """Reject OCR garbage: real outdoor readings live within a sane window."""
+    return val if (val is not None and -60 <= val <= 140) else None
+
+
+def _temp_in_range(raw):
+    try:
+        return _bound_temp(int(raw))
+    except (TypeError, ValueError):
+        return None
+
+
+
 def download_with_retry(url, dest: Path, retries=DOWNLOAD_RETRIES):
     """Download to a .part file then rename; retry with backoff. Returns True on success."""
     import time
@@ -805,6 +862,11 @@ def run_pull(limit, inspect):
 
         meta = extract_meta(p, cam_name_by_id)
         meta["id"] = sid
+        # Keep a temperature we already resolved (API or a prior OCR pass) so we
+        # don't lose it or re-OCR the same photo on every run.
+        prev = store.get(sid) or {}
+        if meta.get("temp") is None and _is_num(prev.get("temp")):
+            meta["temp"] = int(prev["temp"])
 
         if r2 is not None:
             # Host on R2. Reuse an already-uploaded URL from the store so we don't
@@ -835,6 +897,12 @@ def run_pull(limit, inspect):
                 except Exception as e:
                     print(f"  [skip] {sid}: download failed after retries ({e})")
                     continue
+        # The API omits temperature for this account -> recover it from the
+        # overlay stamped onto the freshly downloaded image (no-op without OCR).
+        if meta.get("temp") is None and dest.exists():
+            t = ocr_temp_f(dest)
+            if t is not None:
+                meta["temp"] = t
         store[sid] = meta
 
     store = prune_store(store)
@@ -854,17 +922,50 @@ def run_rebuild():
     print(f"Rebuilt data.js from store ({len(store)} captures).")
 
 
+def run_ocr_temps():
+    """Backfill Fahrenheit temperatures by OCR-ing the overlay on photos we already
+    have on disk. Safe to re-run -- it only fills captures still missing a temp."""
+    try:
+        import pytesseract  # noqa: F401
+        from PIL import Image  # noqa: F401
+    except ImportError:
+        sys.exit("OCR needs Pillow + pytesseract plus the tesseract binary "
+                 "(e.g. `winget install tesseract`). See README.")
+    store = load_store()
+    if not store:
+        sys.exit("No store.json yet. Run `python pull.py` first.")
+    done = scanned = 0
+    for sid, meta in store.items():
+        if _is_num(meta.get("temp")):
+            continue
+        photo = next((m for m in PHOTOS_DIR.glob(f"{sid}.*") if m.suffix.lower() != ".part"), None)
+        if not photo or not photo.exists():
+            continue
+        scanned += 1
+        t = ocr_temp_f(photo)
+        if t is not None:
+            meta["temp"] = t
+            done += 1
+            print(f"  [temp] {sid[:10]} -> {t}\u00b0F")
+    save_store(store)
+    write_data_js(list(store.values()), cameras=load_cameras(), demo=False, tags_map=load_tags())
+    print(f"\nOCR temps: set {done} of {scanned} scanned ({len(store)} total). data.js rebuilt.")
+
+
 def main():
     ap = argparse.ArgumentParser(description="Pull SPYPOINT photos and build TrailHub data.")
     ap.add_argument("--limit", type=int, default=100, help="max photos per camera (default 100)")
     ap.add_argument("--inspect", action="store_true", help="print raw photo shape and exit")
     ap.add_argument("--demo", action="store_true", help="write sample data, no login needed")
     ap.add_argument("--rebuild", action="store_true", help="regenerate data.js from the local store, no network")
+    ap.add_argument("--ocr-temps", action="store_true", help="OCR temperatures from existing photos, then rebuild data.js")
     args = ap.parse_args()
     if args.demo:
         run_demo()
     elif args.rebuild:
         run_rebuild()
+    elif args.ocr_temps:
+        run_ocr_temps()
     else:
         run_pull(args.limit, args.inspect)
 

@@ -1,5 +1,5 @@
 // Vale Trails — Map: camera locations with activity-scaled markers (Leaflet).
-import { html, useEffect, useRef, useMemo } from "../react.js";
+import { html, useEffect, useRef, useMemo, useState } from "../react.js";
 import { FilterBar } from "../shell.js";
 import { Icon } from "../icons.js";
 import { Empty, Btn, Chip } from "../ui.js";
@@ -11,10 +11,16 @@ const TILES = {
 };
 
 export function MapView(app) {
-  const { data, filtered, filters, setFilter, setView, spList, theme } = app;
+  const { data, filtered, filters, setFilter, setView, spList, theme, camName, renameCamera } = app;
   const elRef = useRef(null);
   const mapRef = useRef(null);
   const layerRef = useRef(null);
+  const [editing, setEditing] = useState(null);
+  const [draft, setDraft] = useState("");
+
+  const beginEdit = (cam) => { setEditing(cam.name); setDraft(camName(cam.name)); };
+  const cancelEdit = () => setEditing(null);
+  const commitEdit = (cam) => { renameCamera(cam.name, draft); setEditing(null); };
 
   const cams = useMemo(
     () => data.cameras.filter((c) => c.latitude != null && c.longitude != null),
@@ -58,14 +64,14 @@ export function MapView(app) {
       const markup = `<div class="vt-marker" style="width:${size}px;height:${size}px;${active ? "outline:3px solid var(--accent);outline-offset:2px;" : ""}">${count}</div>`;
       const icon = L.divIcon({ className: "", html: markup, iconSize: [size, size], iconAnchor: [size / 2, size / 2] });
       const mk = L.marker([cam.latitude, cam.longitude], { icon }).addTo(group);
-      mk.bindPopup(`<b>${cam.name}</b><br>${count} capture${count === 1 ? "" : "s"}`);
+      mk.bindPopup(`<b>${camName(cam.name)}</b><br>${count} capture${count === 1 ? "" : "s"}`);
       mk.on("click", () => setFilter({ camera: filters.camera === cam.name ? "All" : cam.name }));
     });
-  }, [cams, countByCam, filters.camera]);
+  }, [cams, countByCam, filters.camera, camName]);
 
   if (!cams.length) {
     return html`<div className="col" style=${{ gap: 4 }}>
-      <${FilterBar} filters=${filters} set=${setFilter} cameras=${data.cameras} speciesList=${spList} count=${filtered.length} />
+      <${FilterBar} filters=${filters} set=${setFilter} cameras=${data.cameras} speciesList=${spList} count=${filtered.length} camName=${camName} />
       <${Empty} icon="map" title="No camera locations yet"
         message="When your cameras report GPS coordinates they'll appear here on the map." />
     </div>`;
@@ -75,10 +81,10 @@ export function MapView(app) {
   const rows = [...cams].sort((a, b) => (countByCam.get(b.name) || 0) - (countByCam.get(a.name) || 0));
 
   return html`<div className="col" style=${{ gap: 4 }}>
-    <${FilterBar} filters=${filters} set=${setFilter} cameras=${data.cameras} speciesList=${spList} count=${filtered.length} />
+    <${FilterBar} filters=${filters} set=${setFilter} cameras=${data.cameras} speciesList=${spList} count=${filtered.length} camName=${camName} />
 
     ${selected && html`<div className="row wrap" style=${{ marginBottom: 14, gap: 10 }}>
-      <${Chip} active dotColor="var(--accent)" onClear=${() => setFilter({ camera: "All" })}>${selected.name}</${Chip}>
+      <${Chip} active dotColor="var(--accent)" onClear=${() => setFilter({ camera: "All" })}>${camName(selected.name)}</${Chip}>
       <div className="spacer" />
       <${Btn} sm variant="primary" iconRight="arrowRight" onClick=${() => setView("gallery")}>
         View ${(countByCam.get(selected.name) || 0)} in Gallery
@@ -87,16 +93,33 @@ export function MapView(app) {
 
     <div className="mapwrap">
       <div className="camlist">
-        ${rows.map((cam) => html`<button key=${cam.id}
-          className=${cx("camrow", filters.camera === cam.name && "is-active")}
-          onClick=${() => setFilter({ camera: filters.camera === cam.name ? "All" : cam.name })}>
-          <span className="camrow__pin"><${Icon} name="pin" size=${18} /></span>
-          <div style=${{ minWidth: 0 }}>
-            <div className="camrow__name">${cam.name}</div>
-            <div className="camrow__meta">${cam.latitude.toFixed(4)}, ${cam.longitude.toFixed(4)}</div>
-          </div>
-          <span className="camrow__count tnum">${countByCam.get(cam.name) || 0}</span>
-        </button>`)}
+        ${rows.map((cam) => editing === cam.name
+          ? html`<div key=${cam.id} className="camrow is-editing">
+              <span className="camrow__pin"><${Icon} name="pencil" size=${16} /></span>
+              <input className="camrow__input" autoFocus value=${draft}
+                onInput=${(e) => setDraft(e.target.value)}
+                onKeyDown=${(e) => {
+                  if (e.key === "Enter") commitEdit(cam);
+                  else if (e.key === "Escape") cancelEdit();
+                }}
+                placeholder=${cam.name} />
+              <button className="camrow__act" title="Save" onClick=${() => commitEdit(cam)}><${Icon} name="check" size=${16} /></button>
+              <button className="camrow__act" title="Cancel" onClick=${cancelEdit}><${Icon} name="x" size=${16} /></button>
+            </div>`
+          : html`<div key=${cam.id} className=${cx("camrow", filters.camera === cam.name && "is-active")}>
+              <button className="camrow__hit"
+                onClick=${() => setFilter({ camera: filters.camera === cam.name ? "All" : cam.name })}>
+                <span className="camrow__pin"><${Icon} name="pin" size=${18} /></span>
+                <div className="camrow__body">
+                  <div className="camrow__name">${camName(cam.name)}</div>
+                  <div className="camrow__meta">${cam.latitude.toFixed(4)}, ${cam.longitude.toFixed(4)}</div>
+                </div>
+                <span className="camrow__count tnum">${countByCam.get(cam.name) || 0}</span>
+              </button>
+              <button className="camrow__edit" title="Rename camera" onClick=${() => beginEdit(cam)}>
+                <${Icon} name="pencil" size=${15} />
+              </button>
+            </div>`)}
       </div>
       <div className="map" ref=${elRef} />
     </div>

@@ -8,7 +8,7 @@ import {
 } from "../analytics.js";
 
 export function Overview(app) {
-  const { captures, ov, counts, reviewQ, openLightbox, setView } = app;
+  const { captures, ov, counts, reviewQ, openLightbox, setView, camName } = app;
 
   if (!captures.length) {
     return html`<${Empty} icon="camera" title="No captures yet"
@@ -64,7 +64,7 @@ export function Overview(app) {
           : html`<p className="faint">No species tallied yet.</p>`}
       </${Panel}>
       <${Panel} title="Busiest cameras" icon="map">
-        <${Bars} data=${topCams.map((c) => ({ label: c.camera, value: c.value }))} />
+        <${Bars} data=${topCams.map((c) => ({ label: camName(c.camera), value: c.value }))} />
       </${Panel}>
     </div>
 
@@ -72,7 +72,7 @@ export function Overview(app) {
       actions=${html`<${Btn} sm variant="ghost" iconRight="arrowRight" onClick=${() => setView("gallery")}>View all</${Btn}>`}>
       <div className="shots size-S">
         ${recent.map((c, i) => html`<${Shot} key=${c.id} capture=${c}
-          species=${effectiveSpecies(c, ov)} onClick=${() => openLightbox(recent, i)} />`)}
+          species=${effectiveSpecies(c, ov)} cameraLabel=${camName(c.camera)} onClick=${() => openLightbox(recent, i)} />`)}
       </div>
     </${Panel}>
   </div>`;

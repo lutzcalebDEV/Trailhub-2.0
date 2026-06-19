@@ -162,6 +162,23 @@ export function Histogram({ hours }) {
   </div>`;
 }
 
+// Compact 24-hour activity strip (one bar per hour), highlighting a peak window.
+// Each strip is normalized to its own max so a species' shape is always readable.
+export function HourStrip({ hours, color = "var(--accent)", peak }) {
+  const max = Math.max(1, ...hours);
+  const inPeak = (h) => {
+    if (!peak) return false;
+    const { start, end } = peak;
+    return start <= end ? h >= start && h < end : h >= start || h < end;
+  };
+  return html`<div className="hourstrip" role="img" aria-label="Activity by hour">
+    ${hours.map((v, h) => html`<span key=${h} className=${cx("hourstrip__c", inPeak(h) && "is-peak")}
+      title=${`${labelHour(h)} · ${v} capture${v === 1 ? "" : "s"}`}>
+      <i style=${{ height: Math.max((v / max) * 100, v > 0 ? 14 : 0) + "%", background: color }} />
+    </span>`)}
+  </div>`;
+}
+
 export function Sparkbars({ data }) {
   const max = Math.max(1, ...data.map((d) => d.value));
   return html`<div className="spark">
@@ -241,14 +258,19 @@ export function CalHeat({ counts, weeks = 26 }) {
 }
 
 /* ------------------------------ Photo tile ------------------------------ */
-export function Shot({ capture, species, onClick }) {
+export function Shot({ capture, species, onClick, cameraLabel, selectable, selected }) {
   const c = capture;
-  return html`<button className="shot" onClick=${onClick} title=${`${species} · ${c.camera}`}>
+  const cam = cameraLabel || c.camera;
+  return html`<button className=${cx("shot", selectable && "is-selectable", selected && "is-selected")}
+      onClick=${onClick} title=${`${species} · ${cam}`}>
     <div className="shot__thumb">
       ${c.image
         ? html`<img src=${c.image} alt=${species} loading="lazy" />`
         : html`<div className="shot__noimg">No image</div>`}
       <div className="shot__grad" />
+      ${selectable && html`<span className=${cx("shot__check", selected && "is-on")}>
+        ${selected && html`<${Icon} name="check" size=${14} />`}
+      </span>`}
       <div className="shot__tl">
         <span className="sbadge"><span className="sbadge__dot" style=${{ background: speciesColor(species) }} />${species}</span>
       </div>
@@ -256,18 +278,18 @@ export function Shot({ capture, species, onClick }) {
         <span className=${cx("tod", c.isNight ? "night" : "day")}><${Icon} name=${c.isNight ? "moon" : "sun"} size=${13} /></span>
       </div>
       ${c.temp != null && html`<div className="shot__bl">
-        <span className="metabar"><${Icon} name="thermo" size=${12} />${c.temp}°</span>
+        <span className="metabar"><${Icon} name="thermo" size=${12} />${c.temp}°F</span>
       </div>`}
     </div>
     <div className="shot__meta">
-      <span className="shot__cam"><${Icon} name="camera" size=${13} /><span>${c.camera}</span></span>
+      <span className="shot__cam"><${Icon} name="camera" size=${13} /><span>${cam}</span></span>
       <span className="shot__time">${timeAgo(c.date)}</span>
     </div>
   </button>`;
 }
 
 /* ------------------------------- Lightbox ------------------------------- */
-export function Lightbox({ capture, species, onClose, onPrev, onNext, hasPrev, hasNext }) {
+export function Lightbox({ capture, species, cameraLabel, onClose, onPrev, onNext, hasPrev, hasNext }) {
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === "Escape") onClose();
@@ -292,10 +314,10 @@ export function Lightbox({ capture, species, onClose, onPrev, onNext, hasPrev, h
         <div className="lb__info">
           <h3><${SpeciesDot} species=${species} size=${12} />${species}</h3>
           <div className="row">
-            <span><${Icon} name="camera" size=${15} />${c.camera}</span>
+            <span><${Icon} name="camera" size=${15} />${cameraLabel || c.camera}</span>
             <span><${Icon} name="clock" size=${15} />${fmtDateTime(c.date)}</span>
             <span><${Icon} name=${c.isNight ? "moon" : "sun"} size=${15} />${c.isNight ? "Night" : "Day"}</span>
-            ${c.temp != null && html`<span><${Icon} name="thermo" size=${15} />${c.temp}°</span>`}
+            ${c.temp != null && html`<span><${Icon} name="thermo" size=${15} />${c.temp}°F</span>`}
             ${c.moon && html`<span><${Icon} name="moon" size=${15} />${c.moon}</span>`}
             ${c.confidence != null && html`<span><${Icon} name="target" size=${15} />${Math.round(c.confidence * 100)}%</span>`}
           </div>

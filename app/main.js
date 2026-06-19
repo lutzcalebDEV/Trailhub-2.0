@@ -3,6 +3,7 @@ import { html, useState, useEffect, useMemo, useRef, useCallback, Fragment, Reac
 import {
   LS, usePersistent, usePersistentSet, useData, loadOverrides,
   remoteLoadTags, remoteSaveTags, hasSharedTags, effectiveSpecies, timeAgo,
+  loadCameraNames, remoteLoadCameraNames, remoteSaveCameraName, displayCamera,
 } from "./core.js";
 import { filterCaptures, speciesList, reviewQueue } from "./analytics.js";
 import { Sidebar, Topbar, MobileTopbar, MobileNav, VIEWS, defaultFilters } from "./shell.js";
@@ -23,6 +24,8 @@ function App() {
 
   const [localOverrides, setLocalOverrides] = useState(loadOverrides);
   const [remoteTags, setRemoteTags] = useState({});
+  const [localCamNames, setLocalCamNames] = useState(loadCameraNames);
+  const [remoteCamNames, setRemoteCamNames] = useState({});
   const [archived, archive$] = usePersistentSet(LS.archived);
   const [reviewed, reviewed$] = usePersistentSet(LS.reviewed);
   const [gridSize, setGridSize] = usePersistent(LS.gridSize, "M");
@@ -37,14 +40,20 @@ function App() {
   useEffect(() => {
     let alive = true;
     remoteLoadTags().then((map) => { if (alive && map) setRemoteTags(map); }).catch(() => {});
+    remoteLoadCameraNames().then((map) => { if (alive && map) setRemoteCamNames(map); }).catch(() => {});
     return () => { alive = false; };
   }, []);
   useEffect(() => {
     try { localStorage.setItem(LS.overrides, JSON.stringify(localOverrides)); } catch (e) {}
   }, [localOverrides]);
+  useEffect(() => {
+    try { localStorage.setItem(LS.camNames, JSON.stringify(localCamNames)); } catch (e) {}
+  }, [localCamNames]);
 
   // Local edits win over the shared baseline.
   const ov = useMemo(() => ({ ...remoteTags, ...localOverrides }), [remoteTags, localOverrides]);
+  const camNames = useMemo(() => ({ ...remoteCamNames, ...localCamNames }), [remoteCamNames, localCamNames]);
+  const camName = useCallback((raw) => displayCamera(raw, camNames), [camNames]);
   const captures = data.captures;
   const spList = useMemo(() => speciesList(captures, ov), [captures, ov]);
   const filtered = useMemo(() => filterCaptures(captures, filters, ov), [captures, filters, ov]);
@@ -88,6 +97,45 @@ function App() {
   const archiveCap = useCallback((id) => { archive$.add(id); showToast("ok", "Archived"); }, [archive$, showToast]);
   const openLightbox = useCallback((list, index) => setLightbox({ list, index }), []);
 
+  // Tag many captures at once (Gallery selection). One local update, fan-out sync.
+  const bulkAssign = useCallback((ids, species) => {
+    const list = [...ids];
+    if (!list.length || !species) return;
+    setLocalOverrides((prev) => {
+      const next = { ...prev };
+      for (const id of list) next[String(id)] = [species];
+      return next;
+    });
+    reviewed$.setSet((s) => { const n = new Set(s); for (const id of list) n.add(String(id)); return n; });
+    if (hasSharedTags) {
+      Promise.allSettled(list.map((id) => remoteSaveTags(id, [species]))).then((rs) => {
+        const failed = rs.filter((r) => r.status === "rejected").length;
+        if (failed) showToast("err", `Tagged ${list.length} \u00b7 ${failed} didn\u2019t sync`);
+        else showToast("ok", `Tagged ${list.length} as ${species} for everyone`);
+      });
+    } else {
+      showToast("ok", `Tagged ${list.length} photo${list.length === 1 ? "" : "s"} as ${species}`);
+    }
+  }, [reviewed$, showToast]);
+
+  // Rename a camera for everyone (raw label is the stable key; "" resets it).
+  const renameCamera = useCallback((rawName, name) => {
+    const friendly = String(name || "").trim().slice(0, 60);
+    setLocalCamNames((prev) => {
+      const next = { ...prev };
+      if (friendly && friendly !== rawName) next[String(rawName)] = friendly;
+      else delete next[String(rawName)];
+      return next;
+    });
+    if (hasSharedTags) {
+      remoteSaveCameraName(rawName, friendly)
+        .then(() => showToast("ok", friendly ? `Renamed to \u201c${friendly}\u201d for everyone` : "Name reset for everyone"))
+        .catch(() => showToast("err", "Couldn\u2019t sync \u2014 saved on this device"));
+    } else {
+      showToast("ok", friendly ? `Renamed to \u201c${friendly}\u201d` : "Name reset");
+    }
+  }, [showToast]);
+
   /* ----------------------------- Render --------------------------------- */
   const meta = VIEWS.find((v) => v.id === view) || VIEWS[0];
   const View = VIEW_COMPONENTS[view] || Overview;
@@ -97,6 +145,7 @@ function App() {
     gridSize, setGridSize, gridLayout, setGridLayout,
     archived, reviewed, assignSpecies, keep, archive: archiveCap,
     openLightbox, reviewQ, counts, setView,
+    camName, camNames, bulkAssign, renameCamera,
   };
 
   const lbItem = lightbox ? lightbox.list[lightbox.index] : null;
@@ -119,6 +168,7 @@ function App() {
     ${lbItem && html`<${Lightbox}
       capture=${lbItem}
       species=${effectiveSpecies(lbItem, ov)}
+      cameraLabel=${camName(lbItem.camera)}
       hasPrev=${lightbox.index > 0}
       hasNext=${lightbox.index < lightbox.list.length - 1}
       onPrev=${() => setLightbox((s) => ({ ...s, index: Math.max(0, s.index - 1) }))}

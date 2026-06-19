@@ -138,7 +138,10 @@ Open any photo and use the **Tags** panel to classify what's in it:
 The site is static (GitHub Pages can serve files but not save them), so saving a
 tag for *everyone* needs one tiny helper that holds a GitHub token securely and
 writes `tags.json` for you. A free **Cloudflare Worker** does this; `tag-worker.js`
-is included and ready to deploy.
+is included and ready to deploy. The **same Worker** also powers **bulk tagging**
+(tag many photos at once from the Gallery's **Select** button) and **global camera
+renames** (the pencil on each camera in **Map**) — they all sync through it, so you
+only set this up once.
 
 1. **Make a GitHub token.** GitHub → **Settings → Developer settings →
    Fine-grained tokens → Generate new token.** Limit it to **only this repo**, and
@@ -159,7 +162,13 @@ is included and ready to deploy.
    window.TRAILHUB_TAGS_API = "https://trailhub-tags.<you>.workers.dev";
    ```
    Commit `config.js`. Now anyone who tags a photo updates `tags.json` for
-   everyone, and the next `pull.py` run bakes those tags into `data.js`.
+   everyone, and the next `pull.py` run bakes those tags into `data.js`. Camera
+   renames are written to `camera-names.json` the same way.
+
+   Prefer the command line? With [wrangler](https://developers.cloudflare.com/workers/wrangler/)
+   installed you can skip the dashboard: set the three secrets once
+   (`npx wrangler secret put GITHUB_TOKEN`, `GITHUB_OWNER`, `GITHUB_REPO`) and run
+   `npx wrangler deploy` — `wrangler.toml` is already included.
 
 Notes:
 - This intentionally lets **any visitor** edit tags (no login), matching a shared
@@ -173,6 +182,7 @@ Notes:
 ```
 python pull.py --limit 200    # pull more photos per camera (default 100)
 python pull.py --rebuild      # rebuild data.js from the local store (no network)
+python pull.py --ocr-temps    # read °F off existing photos' overlays, then rebuild
 python pull.py --demo         # regenerate sample data (no login/network)
 python pull.py --inspect      # print the raw shape of one photo, then exit
 ```

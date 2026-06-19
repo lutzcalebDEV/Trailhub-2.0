@@ -1,5 +1,5 @@
 // Vale Trails — app chrome: sidebar, topbar, mobile nav and the shared filter bar.
-import { html, useState, Fragment } from "./react.js";
+import { html, useState, Fragment, createPortal } from "./react.js";
 import { Icon, BrandMark } from "./icons.js";
 import { IconBtn, SearchInput, Select, Segmented, Switch, Chip } from "./ui.js";
 import { speciesColor } from "./core.js";
@@ -95,8 +95,9 @@ export function MobileNav({ view, setView, counts }) {
 const EMPTY_FILTERS = { q: "", species: "All", camera: "All", tod: "all", bucksOnly: false };
 export const defaultFilters = () => ({ ...EMPTY_FILTERS });
 
-export function FilterBar({ filters, set, cameras, speciesList, count }) {
+export function FilterBar({ filters, set, cameras, speciesList, count, camName }) {
   const [open, setOpen] = useState(false);
+  const cn = camName || ((x) => x);
   const activeCount =
     (filters.species !== "All" ? 1 : 0) +
     (filters.camera !== "All" ? 1 : 0) +
@@ -109,7 +110,7 @@ export function FilterBar({ filters, set, cameras, speciesList, count }) {
     <${Select} value=${filters.species} onChange=${(v) => set({ species: v })}
       options=${[{ value: "All", label: "All species" }, ...speciesList.map((s) => ({ value: s, label: s }))]} />
     <${Select} value=${filters.camera} onChange=${(v) => set({ camera: v })}
-      options=${[{ value: "All", label: "All cameras" }, ...cameras.map((c) => ({ value: c.name, label: c.name }))]} />
+      options=${[{ value: "All", label: "All cameras" }, ...cameras.map((c) => ({ value: c.name, label: cn(c.name) }))]} />
     <${Segmented} value=${filters.tod} onChange=${(v) => set({ tod: v })}
       options=${[
         { value: "all", label: "All" },
@@ -122,7 +123,7 @@ export function FilterBar({ filters, set, cameras, speciesList, count }) {
   const chips = [];
   if (filters.q) chips.push({ k: "q", label: `"${filters.q}"`, clear: () => set({ q: "" }) });
   if (filters.species !== "All") chips.push({ k: "sp", label: filters.species, dot: speciesColor(filters.species), clear: () => set({ species: "All" }) });
-  if (filters.camera !== "All") chips.push({ k: "cam", label: filters.camera, clear: () => set({ camera: "All" }) });
+  if (filters.camera !== "All") chips.push({ k: "cam", label: cn(filters.camera), clear: () => set({ camera: "All" }) });
   if (filters.tod !== "all") chips.push({ k: "tod", label: filters.tod === "day" ? "Daytime" : "Night", clear: () => set({ tod: "all" }) });
   if (filters.bucksOnly) chips.push({ k: "buck", label: "Bucks only", clear: () => set({ bucksOnly: false }) });
 
@@ -141,7 +142,7 @@ export function FilterBar({ filters, set, cameras, speciesList, count }) {
       ${chips.length > 1 && html`<button className="btn btn--ghost btn--sm" onClick=${() => set(EMPTY_FILTERS)}>Clear all</button>`}
     </div>`}
 
-    ${open && html`<div className="scrim" onClick=${() => setOpen(false)}>
+    ${open && createPortal(html`<div className="scrim" onClick=${() => setOpen(false)}>
       <div className="drawer" onClick=${(e) => e.stopPropagation()}>
         <div className="drawer__grip" />
         <div className="filterbar__inline">${controls}</div>
@@ -149,6 +150,6 @@ export function FilterBar({ filters, set, cameras, speciesList, count }) {
           Show ${count.toLocaleString()} result${count === 1 ? "" : "s"}
         </button>
       </div>
-    </div>`}
+    </div>`, document.body)}
   </div>`;
 }

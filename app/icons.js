@@ -42,6 +42,8 @@ const P = {
   inbox: html`<g><path d="M3 13h4.5l1.6 2.6h5.8L16.5 13H21"/><path d="M5.5 5h13l2.5 8v5.5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V13Z"/></g>`,
   bolt: html`<path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"/>`,
   pin: html`<g><path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11Z"/><circle cx="12" cy="10" r="2.4"/></g>`,
+  pencil: html`<g><path d="M4 20h4L18.5 9.5a2 2 0 0 0 0-2.8l-1.2-1.2a2 2 0 0 0-2.8 0L4 16v4Z"/><path d="M13.5 6.5l4 4"/></g>`,
+  tag: html`<g><path d="M3 12V4.5A1.5 1.5 0 0 1 4.5 3H12l8.5 8.5a1.5 1.5 0 0 1 0 2.1l-6.9 6.9a1.5 1.5 0 0 1-2.1 0L3 12Z"/><circle cx="7.5" cy="7.5" r="1.2" fill="currentColor"/></g>`,
 };
 
 export function Icon({ name, size = 18, className = "", strokeWidth = 1.9 }) {

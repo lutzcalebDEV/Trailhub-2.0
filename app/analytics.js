@@ -114,6 +114,39 @@ export function speciesByDayNight(captures, ov, top = 6) {
   return [...m.values()].sort((a, b) => b.total - a.total).slice(0, top);
 }
 
+/* --------------------------- Activity timing ---------------------------- */
+// Strongest contiguous activity window (default 3h, wraps past midnight) in a
+// 24-hour histogram. Returns the window plus the share of captures inside it.
+export function peakWindow(hours, span = 3) {
+  const total = hours.reduce((s, n) => s + n, 0);
+  if (!total) return null;
+  let best = { start: 0, sum: -1 };
+  for (let s = 0; s < 24; s++) {
+    let sum = 0;
+    for (let k = 0; k < span; k++) sum += hours[(s + k) % 24];
+    if (sum > best.sum) best = { start: s, sum };
+  }
+  return { start: best.start, end: (best.start + span) % 24, count: best.sum, pct: Math.round((best.sum / total) * 100) };
+}
+
+// Per-species hourly activity, peak window and day/night mix (top N by volume).
+// This is the core of "when is each species most active".
+export function speciesActivity(captures, ov, top = 6) {
+  const m = new Map();
+  for (const c of captures) {
+    const s = effectiveSpecies(c, ov);
+    let row = m.get(s);
+    if (!row) { row = { species: s, color: speciesColor(s), hours: new Array(24).fill(0), day: 0, night: 0, total: 0 }; m.set(s, row); }
+    row.hours[c.date.getHours()]++;
+    c.isNight ? row.night++ : row.day++;
+    row.total++;
+  }
+  return [...m.values()]
+    .sort((a, b) => b.total - a.total)
+    .slice(0, top)
+    .map((r) => ({ ...r, peak: peakWindow(r.hours), dayPct: Math.round((r.day / r.total) * 100) }));
+}
+
 export function tempBuckets(captures) {
   const temps = captures.map((c) => c.temp).filter((t) => t != null);
   if (!temps.length) return null;
