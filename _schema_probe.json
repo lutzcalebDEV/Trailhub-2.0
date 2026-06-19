@@ -2,6 +2,27 @@
   {
     "fields": {
       "camera": "6a309e41bdc62e4448c0a370",
+      "date": "2026-06-19T13:25:13.366Z",
+      "id": "6a354339f9f765a3b0c02546",
+      "large": "<omitted>",
+      "medium": "<omitted>",
+      "originDate": "2026-06-19T08:37:44.000Z",
+      "originName": "PICT0056.JPG",
+      "originSize": 43271,
+      "preview": [],
+      "small": "<omitted>",
+      "tag": [
+        "day"
+      ]
+    },
+    "detected": [
+      "day"
+    ],
+    "normalized": "Animal"
+  },
+  {
+    "fields": {
+      "camera": "6a309e41bdc62e4448c0a370",
       "date": "2026-06-18T01:25:08.058Z",
       "id": "6a3348f457305e3df107c37e",
       "large": "<omitted>",
@@ -72,27 +93,6 @@
       "originDate": "2026-06-17T16:47:52.000Z",
       "originName": "PICT0052.JPG",
       "originSize": 45817,
-      "preview": [],
-      "small": "<omitted>",
-      "tag": [
-        "day"
-      ]
-    },
-    "detected": [
-      "day"
-    ],
-    "normalized": "Animal"
-  },
-  {
-    "fields": {
-      "camera": "6a309e41bdc62e4448c0a370",
-      "date": "2026-06-18T01:25:08.058Z",
-      "id": "6a3348f457305e3df107c386",
-      "large": "<omitted>",
-      "medium": "<omitted>",
-      "originDate": "2026-06-17T16:41:45.000Z",
-      "originName": "PICT0051.JPG",
-      "originSize": 46314,
       "preview": [],
       "small": "<omitted>",
       "tag": [
