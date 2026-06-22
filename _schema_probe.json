@@ -2,6 +2,29 @@
   {
     "fields": {
       "camera": "6a30af992e5969f7ed9fdc5c",
+      "date": "2026-06-22T18:33:04.912Z",
+      "id": "6a397fe0ebdd863a4cc0f070",
+      "large": "<omitted>",
+      "medium": "<omitted>",
+      "originDate": "2026-06-22T14:32:46.000Z",
+      "originName": "PICT0028.JPG",
+      "originSize": 58879,
+      "preview": [],
+      "small": "<omitted>",
+      "tag": [
+        "buck",
+        "day"
+      ]
+    },
+    "detected": [
+      "buck",
+      "day"
+    ],
+    "normalized": "Buck"
+  },
+  {
+    "fields": {
+      "camera": "6a30af992e5969f7ed9fdc5c",
       "date": "2026-06-22T17:42:15.549Z",
       "id": "6a3973f70f65a4899d85cdfd",
       "large": "<omitted>",
@@ -72,27 +95,6 @@
       "originDate": "2026-06-22T12:52:36.000Z",
       "originName": "PICT0066.JPG",
       "originSize": 67264,
-      "preview": [],
-      "small": "<omitted>",
-      "tag": [
-        "day"
-      ]
-    },
-    "detected": [
-      "day"
-    ],
-    "normalized": "Animal"
-  },
-  {
-    "fields": {
-      "camera": "6a309e41bdc62e4448c0a370",
-      "date": "2026-06-22T14:34:34.188Z",
-      "id": "6a3947fa0f7afb7c646e9903",
-      "large": "<omitted>",
-      "medium": "<omitted>",
-      "originDate": "2026-06-22T10:34:15.000Z",
-      "originName": "PICT0065.JPG",
-      "originSize": 71934,
       "preview": [],
       "small": "<omitted>",
       "tag": [

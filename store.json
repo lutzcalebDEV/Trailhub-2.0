@@ -1032,5 +1032,16 @@
   "moon": null,
   "id": "sp_6a393d331cb4cfc50ca71b1c",
   "image": "photos/sp_6a393d331cb4cfc50ca71b1c.jpg"
+ },
+ "sp_6a397fe0ebdd863a4cc0f070": {
+  "species": "Buck",
+  "camera": "Camera 6a30af992e5969f7ed9fdc5c",
+  "date": "2026-06-22T18:33:04.912000+00:00",
+  "isNight": false,
+  "temp": null,
+  "confidence": null,
+  "moon": null,
+  "id": "sp_6a397fe0ebdd863a4cc0f070",
+  "image": "photos/sp_6a397fe0ebdd863a4cc0f070.jpg"
  }
 }
