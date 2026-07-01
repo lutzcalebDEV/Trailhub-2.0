@@ -2,6 +2,27 @@
   {
     "fields": {
       "camera": "6a30af992e5969f7ed9fdc5c",
+      "date": "2026-07-01T00:48:32.693Z",
+      "id": "6a4463e08282da081684c4a1",
+      "large": "<omitted>",
+      "medium": "<omitted>",
+      "originDate": "2026-06-30T20:48:14.000Z",
+      "originName": "PICT0063.JPG",
+      "originSize": 34775,
+      "preview": [],
+      "small": "<omitted>",
+      "tag": [
+        "night"
+      ]
+    },
+    "detected": [
+      "night"
+    ],
+    "normalized": "Animal"
+  },
+  {
+    "fields": {
+      "camera": "6a30af992e5969f7ed9fdc5c",
       "date": "2026-06-30T23:31:15.272Z",
       "id": "6a4451c3edd3bfe6b7cbfb7e",
       "large": "<omitted>",
@@ -80,27 +101,6 @@
     },
     "detected": [
       "day"
-    ],
-    "normalized": "Animal"
-  },
-  {
-    "fields": {
-      "camera": "6a30af992e5969f7ed9fdc5c",
-      "date": "2026-06-30T06:54:08.582Z",
-      "id": "6a4368104dab841ef05a5301",
-      "large": "<omitted>",
-      "medium": "<omitted>",
-      "originDate": "2026-06-30T02:53:50.000Z",
-      "originName": "PICT0058.JPG",
-      "originSize": 15968,
-      "preview": [],
-      "small": "<omitted>",
-      "tag": [
-        "night"
-      ]
-    },
-    "detected": [
-      "night"
     ],
     "normalized": "Animal"
   }
