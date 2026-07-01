@@ -2,6 +2,48 @@
   {
     "fields": {
       "camera": "6a30af992e5969f7ed9fdc5c",
+      "date": "2026-07-01T23:46:42.416Z",
+      "id": "6a45a6e2dc49dadadcb1b5d9",
+      "large": "<omitted>",
+      "medium": "<omitted>",
+      "originDate": "2026-07-01T19:46:23.000Z",
+      "originName": "PICT0067.JPG",
+      "originSize": 55999,
+      "preview": [],
+      "small": "<omitted>",
+      "tag": [
+        "day"
+      ]
+    },
+    "detected": [
+      "day"
+    ],
+    "normalized": "Animal"
+  },
+  {
+    "fields": {
+      "camera": "6a30af992e5969f7ed9fdc5c",
+      "date": "2026-07-01T22:59:48.841Z",
+      "id": "6a459be48c63fda0fb57ea92",
+      "large": "<omitted>",
+      "medium": "<omitted>",
+      "originDate": "2026-07-01T18:59:29.000Z",
+      "originName": "PICT0066.JPG",
+      "originSize": 63143,
+      "preview": [],
+      "small": "<omitted>",
+      "tag": [
+        "day"
+      ]
+    },
+    "detected": [
+      "day"
+    ],
+    "normalized": "Animal"
+  },
+  {
+    "fields": {
+      "camera": "6a30af992e5969f7ed9fdc5c",
       "date": "2026-07-01T17:57:57.339Z",
       "id": "6a4555251195fa03bc3b932f",
       "large": "<omitted>",
@@ -59,48 +101,6 @@
     },
     "detected": [
       "day"
-    ],
-    "normalized": "Animal"
-  },
-  {
-    "fields": {
-      "camera": "6a30af992e5969f7ed9fdc5c",
-      "date": "2026-07-01T12:20:34.993Z",
-      "id": "6a450612506e08983bec623e",
-      "large": "<omitted>",
-      "medium": "<omitted>",
-      "originDate": "2026-07-01T08:20:16.000Z",
-      "originName": "PICT0064.JPG",
-      "originSize": 63058,
-      "preview": [],
-      "small": "<omitted>",
-      "tag": [
-        "day"
-      ]
-    },
-    "detected": [
-      "day"
-    ],
-    "normalized": "Animal"
-  },
-  {
-    "fields": {
-      "camera": "6a30af992e5969f7ed9fdc5c",
-      "date": "2026-07-01T00:48:32.693Z",
-      "id": "6a4463e08282da081684c4a1",
-      "large": "<omitted>",
-      "medium": "<omitted>",
-      "originDate": "2026-06-30T20:48:14.000Z",
-      "originName": "PICT0063.JPG",
-      "originSize": 34775,
-      "preview": [],
-      "small": "<omitted>",
-      "tag": [
-        "night"
-      ]
-    },
-    "detected": [
-      "night"
     ],
     "normalized": "Animal"
   }
