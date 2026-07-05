@@ -1626,5 +1626,16 @@
   "moon": null,
   "id": "sp_6a4a0e3fafca0892d49bd117",
   "image": "photos/sp_6a4a0e3fafca0892d49bd117.jpg"
+ },
+ "sp_6a4a3a6a3485fcc111f3cdea": {
+  "species": "Animal",
+  "camera": "Camera 6a30af992e5969f7ed9fdc5c",
+  "date": "2026-07-05T11:05:14.656000+00:00",
+  "isNight": false,
+  "temp": null,
+  "confidence": null,
+  "moon": null,
+  "id": "sp_6a4a3a6a3485fcc111f3cdea",
+  "image": "photos/sp_6a4a3a6a3485fcc111f3cdea.jpg"
  }
 }
