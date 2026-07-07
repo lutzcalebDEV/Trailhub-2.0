@@ -1,5 +1,5 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-07-07T11:13:42",
+  "generatedAt": "2026-07-07T13:28:37",
   "demo": false,
   "cameras": [
     {
