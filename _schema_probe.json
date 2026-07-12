@@ -1,6 +1,48 @@
 [
   {
     "fields": {
+      "camera": "6a309e41bdc62e4448c0a370",
+      "date": "2026-07-12T00:35:56.423Z",
+      "id": "6a52e16cbb411a2c15d24561",
+      "large": "<omitted>",
+      "medium": "<omitted>",
+      "originDate": "2026-07-11T20:35:17.000Z",
+      "originName": "PICT0079.JPG",
+      "originSize": 60844,
+      "preview": [],
+      "small": "<omitted>",
+      "tag": [
+        "day"
+      ]
+    },
+    "detected": [
+      "day"
+    ],
+    "normalized": "Animal"
+  },
+  {
+    "fields": {
+      "camera": "6a309e41bdc62e4448c0a370",
+      "date": "2026-07-12T00:35:56.423Z",
+      "id": "6a52e16cbb411a2c15d24563",
+      "large": "<omitted>",
+      "medium": "<omitted>",
+      "originDate": "2026-07-11T20:35:16.000Z",
+      "originName": "PICT0078.JPG",
+      "originSize": 55736,
+      "preview": [],
+      "small": "<omitted>",
+      "tag": [
+        "day"
+      ]
+    },
+    "detected": [
+      "day"
+    ],
+    "normalized": "Animal"
+  },
+  {
+    "fields": {
       "camera": "6a30af992e5969f7ed9fdc5c",
       "date": "2026-07-11T01:41:12.807Z",
       "id": "6a519f38048edc309b8d9e97",
@@ -51,48 +93,6 @@
       "originDate": "2026-07-10T14:21:06.000Z",
       "originName": "PICT0076.JPG",
       "originSize": 65248,
-      "preview": [],
-      "small": "<omitted>",
-      "tag": [
-        "day"
-      ]
-    },
-    "detected": [
-      "day"
-    ],
-    "normalized": "Animal"
-  },
-  {
-    "fields": {
-      "camera": "6a30af992e5969f7ed9fdc5c",
-      "date": "2026-07-10T18:20:52.843Z",
-      "id": "6a513804ff2f47aa5a6442e0",
-      "large": "<omitted>",
-      "medium": "<omitted>",
-      "originDate": "2026-07-10T14:20:35.000Z",
-      "originName": "PICT0090.JPG",
-      "originSize": 58448,
-      "preview": [],
-      "small": "<omitted>",
-      "tag": [
-        "day"
-      ]
-    },
-    "detected": [
-      "day"
-    ],
-    "normalized": "Animal"
-  },
-  {
-    "fields": {
-      "camera": "6a30af992e5969f7ed9fdc5c",
-      "date": "2026-07-10T17:52:32.311Z",
-      "id": "6a513160b143ef66f82559d7",
-      "large": "<omitted>",
-      "medium": "<omitted>",
-      "originDate": "2026-07-10T13:51:54.000Z",
-      "originName": "PICT0089.JPG",
-      "originSize": 59638,
       "preview": [],
       "small": "<omitted>",
       "tag": [
