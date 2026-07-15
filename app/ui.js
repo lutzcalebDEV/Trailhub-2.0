@@ -1,7 +1,7 @@
 // Vale Trails — reusable UI primitives, chart widgets, photo tile and lightbox.
 // Pure presentation: all data shaping happens in the views. Components map 1:1
 // to the classes defined in styles.css.
-import { html, useEffect } from "./react.js";
+import { html, useEffect, useState } from "./react.js";
 import { Icon } from "./icons.js";
 import {
   speciesColor, fmtDate, fmtDateTime, timeAgo, labelHour, isoDay,
@@ -275,6 +275,7 @@ export function Shot({ capture, species, onClick, cameraLabel, selectable, selec
         <span className="sbadge"><span className="sbadge__dot" style=${{ background: speciesColor(species) }} />${species}</span>
       </div>
       <div className="shot__tr">
+        ${c.favorite && html`<span className="tod fav" title="Favorite"><${Icon} name="star" size=${13} /></span>`}
         <span className=${cx("tod", c.isNight ? "night" : "day")}><${Icon} name=${c.isNight ? "moon" : "sun"} size=${13} /></span>
       </div>
       ${c.temp != null && html`<div className="shot__bl">
@@ -289,7 +290,64 @@ export function Shot({ capture, species, onClick, cameraLabel, selectable, selec
 }
 
 /* ------------------------------- Lightbox ------------------------------- */
-export function Lightbox({ capture, species, cameraLabel, onClose, onPrev, onNext, hasPrev, hasNext }) {
+// Editable per-photo metadata: favorite flag, a free-text note, and manual
+// corrections to temp / moon. Remounts per photo (keyed by id) so the draft
+// resets cleanly. Notes/temp save on blur; the star toggles immediately.
+export function LightboxEdit({ capture, meta, onMeta, onToggleFavorite }) {
+  const c = capture;
+  const m = meta || {};
+  const [note, setNote] = useState(m.note || "");
+  const [temp, setTemp] = useState(c.temp == null ? "" : String(c.temp));
+  const [moon, setMoon] = useState(c.moon || "");
+  const isFav = !!m.favorite;
+
+  const commitNote = () => {
+    const v = note.trim();
+    if (v === (m.note || "")) return;
+    onMeta({ note: v || null }, { okMsg: v ? "Note saved" : "Note removed" });
+  };
+  const commitTemp = () => {
+    const raw = temp.trim();
+    const n = raw === "" ? null : Number(raw);
+    if (raw !== "" && !Number.isFinite(n)) { setTemp(c.temp == null ? "" : String(c.temp)); return; }
+    if ((n == null && c.temp == null) || n === c.temp) return;
+    onMeta({ temp: n }, { okMsg: n == null ? "Temp cleared" : `Temp set to ${n}\u00b0F` });
+  };
+  const commitMoon = () => {
+    const v = moon.trim();
+    if (v === (c.moon || "")) return;
+    onMeta({ moon: v || null }, { okMsg: v ? "Moon updated" : "Moon cleared" });
+  };
+
+  return html`<div className="lb__edit">
+    <div className="lb__edit-head">
+      <span className="lb__edit-title"><${Icon} name="note" size=${14} />Details</span>
+      <button className=${cx("favbtn", isFav && "is-on")} onClick=${onToggleFavorite}
+        title=${isFav ? "Remove from favorites" : "Add to favorites"} aria-pressed=${isFav}>
+        <${Icon} name="star" size=${15} />
+        <span>${isFav ? "Favorited" : "Favorite"}</span>
+      </button>
+    </div>
+    <textarea className="lb__note" placeholder="Add a note about this photo\u2026" rows=${2}
+      value=${note} onInput=${(e) => setNote(e.target.value)} onBlur=${commitNote} maxLength=${500} />
+    <div className="lb__corrections">
+      <label className="lb__field">
+        <span><${Icon} name="thermo" size=${13} />Temp \u00b0F</span>
+        <input type="number" inputMode="numeric" value=${temp}
+          onInput=${(e) => setTemp(e.target.value)} onBlur=${commitTemp}
+          onKeyDown=${(e) => e.key === "Enter" && e.target.blur()} placeholder="\u2014" />
+      </label>
+      <label className="lb__field">
+        <span><${Icon} name="moon" size=${13} />Moon</span>
+        <input type="text" value=${moon}
+          onInput=${(e) => setMoon(e.target.value)} onBlur=${commitMoon}
+          onKeyDown=${(e) => e.key === "Enter" && e.target.blur()} placeholder="\u2014" maxLength=${40} />
+      </label>
+    </div>
+  </div>`;
+}
+
+export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggleFavorite, onClose, onPrev, onNext, hasPrev, hasNext }) {
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === "Escape") onClose();
@@ -312,7 +370,10 @@ export function Lightbox({ capture, species, cameraLabel, onClose, onPrev, onNex
       ${hasNext && html`<button className="lb__nav next" onClick=${onNext} aria-label="Next"><${Icon} name="chevronRight" size=${22} /></button>`}
       <div className="lb__panel">
         <div className="lb__info">
-          <h3><${SpeciesDot} species=${species} size=${12} />${species}</h3>
+          <h3>
+            <${SpeciesDot} species=${species} size=${12} />${species}
+            ${meta && meta.favorite && html`<${Icon} name="star" size=${15} className="lb__fav" />`}
+          </h3>
           <div className="row">
             <span><${Icon} name="camera" size=${15} />${cameraLabel || c.camera}</span>
             <span><${Icon} name="clock" size=${15} />${fmtDateTime(c.date)}</span>
@@ -322,6 +383,8 @@ export function Lightbox({ capture, species, cameraLabel, onClose, onPrev, onNex
             ${c.confidence != null && html`<span><${Icon} name="target" size=${15} />${Math.round(c.confidence * 100)}%</span>`}
           </div>
         </div>
+        ${onMeta && html`<${LightboxEdit} key=${c.id} capture=${c} meta=${meta}
+          onMeta=${onMeta} onToggleFavorite=${onToggleFavorite} />`}
         <div className="lb__actions">
           ${c.image && html`<a className="btn btn--sm" href=${c.image} download target="_blank" rel="noopener">
             <${Icon} name="download" size=${15} /><span>Download</span>

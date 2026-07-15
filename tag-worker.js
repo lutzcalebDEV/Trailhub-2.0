@@ -24,13 +24,19 @@
 //   POST /            with { "id": "sp_...", "tags": ["Deer","Turkey"] }  (save one photo)
 //   GET  /cameras     -> { "<cameraKey>": "North Field", ... }    (all camera names)
 //   POST /cameras     with { "id": "Camera 6a30...", "name": "North Field" }  (rename one)
+//   GET  /meta        -> { "<photoId>": { "note": "...", "favorite": true }, ... }
+//   POST /meta        with { "id": "sp_...", "meta": { "note": "buck", "favorite": true } }
+//                     (merges the given keys into that photo; send a key as null to
+//                      remove it, or an empty meta object to clear the whole entry.)
 //   (POST an empty tags array or empty name to clear an entry.)
 // ---------------------------------------------------------------------------
 
 // Each resource maps a request path to a JSON file committed in the repo. pull.py
-// bakes tags.json into data.js; the site reads both files live for instant updates.
+// bakes tags.json + metadata.json into data.js; the site reads all three files
+// live for instant updates.
 const TAGS_FILE = "tags.json";
 const CAMERA_FILE = "camera-names.json";
+const META_FILE = "metadata.json";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -78,6 +84,51 @@ function cleanName(value) {
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, 60);
+}
+
+// Per-photo metadata sanitizing. This endpoint is intentionally auth-less (a shared
+// family dashboard), so we bound what a single entry can hold to keep the committed
+// metadata.json small and safe to render. Structural fields owned by other pipelines
+// (tags, camera names) are reserved so metadata can't clobber them.
+const META_RESERVED = new Set(["id", "image", "date", "camera", "tags", "species"]);
+const META_MAX_KEYS = 24;
+const META_MAX_STR = 500;
+
+function cleanMetaValue(value, depth = 0) {
+  if (value == null) return null;
+  if (typeof value === "string") {
+    const s = value.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]+/g, " ").slice(0, META_MAX_STR);
+    return s.length ? s : null;
+  }
+  if (typeof value === "number") return Number.isFinite(value) ? value : null;
+  if (typeof value === "boolean") return value;
+  if (depth === 0 && Array.isArray(value)) {
+    const arr = value.slice(0, 32).map((v) => cleanMetaValue(v, depth + 1)).filter((v) => v != null);
+    return arr.length ? arr : null;
+  }
+  return null; // drop nested objects / functions / unsupported types
+}
+
+// Apply a metadata patch to an entry: set cleaned keys, remove keys sent as null,
+// and reject reserved keys. Returns the resulting entry (may be empty).
+function applyMetaPatch(entry, patch) {
+  const out = { ...(entry && typeof entry === "object" ? entry : {}) };
+  let touched = 0;
+  for (const [rawKey, rawVal] of Object.entries(patch || {})) {
+    if (touched >= META_MAX_KEYS) break;
+    const key = String(rawKey).slice(0, 40).trim();
+    if (!key || META_RESERVED.has(key)) continue;
+    touched++;
+    const val = cleanMetaValue(rawVal);
+    if (val == null) delete out[key];
+    else out[key] = val;
+  }
+  // Cap total stored keys as a final guard against unbounded growth.
+  const keys = Object.keys(out);
+  if (keys.length > META_MAX_KEYS) {
+    for (const k of keys.slice(META_MAX_KEYS)) delete out[k];
+  }
+  return out;
 }
 
 function ghHeaders(env) {
@@ -144,13 +195,16 @@ export default {
       return json({ error: "Worker is missing GITHUB_TOKEN/OWNER/REPO variables." }, 500);
     }
 
-    // Route by path: /cameras -> camera names, everything else -> photo tags.
+    // Route by path: /cameras -> camera names, /meta -> per-photo metadata,
+    // everything else -> photo tags.
     const path = new URL(request.url).pathname.replace(/\/+$/, "").toLowerCase();
     const isCameras = path === "/cameras" || path === "/camera-names";
+    const isMeta = path === "/meta" || path === "/metadata";
 
     try {
       if (request.method === "GET") {
-        const { data } = await readFile(env, isCameras ? CAMERA_FILE : TAGS_FILE);
+        const file = isCameras ? CAMERA_FILE : isMeta ? META_FILE : TAGS_FILE;
+        const { data } = await readFile(env, file);
         return json(data);
       }
 
@@ -165,6 +219,18 @@ export default {
             (data) => { if (name) data[id] = name; else delete data[id]; },
             `Rename camera ${id}`);
           return result.ok ? json({ ok: true, names: result.data }) : json({ error: result.error }, result.status);
+        }
+
+        if (isMeta) {
+          const patch = payload.meta && typeof payload.meta === "object" ? payload.meta : {};
+          const result = await saveEntry(env, META_FILE,
+            (data) => {
+              const entry = applyMetaPatch(data[id], patch);
+              if (Object.keys(entry).length) data[id] = entry;
+              else delete data[id];
+            },
+            `Update metadata for ${id}`);
+          return result.ok ? json({ ok: true, meta: result.data }) : json({ error: result.error }, result.status);
         }
 
         const newTags = cleanTags(payload.tags);

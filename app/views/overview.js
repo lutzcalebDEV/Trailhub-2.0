@@ -23,7 +23,8 @@ export function Overview(app) {
   const busiestDay = daily.reduce((a, b) => (b.value > a.value ? b : a), daily[0]);
   const topSpecies = speciesCounts(captures, ov).slice(0, 6);
   const topCams = cameraCounts(captures).slice(0, 5);
-  const recent = captures.slice(0, 10);
+  const recent = captures.slice(0, 12);
+  const favorites = captures.filter((c) => c.favorite).slice(0, 12);
 
   return html`<div className="col" style=${{ gap: 18 }}>
     <div className="grid grid--stats">
@@ -38,6 +39,22 @@ export function Overview(app) {
       <${Stat} label="Needs review" value=${reviewQ.length} icon="scan" tone=${reviewQ.length ? "warn" : ""}
         sub=${reviewQ.length ? "Tap Review to confirm" : "All caught up"} />
     </div>
+
+    ${favorites.length ? html`<${Panel} title="Favorites" icon="star"
+      actions=${html`<${Btn} sm variant="ghost" iconRight="arrowRight" onClick=${() => setView("gallery")}>See all</${Btn}>`}>
+      <div className="shots size-S">
+        ${favorites.map((c, i) => html`<${Shot} key=${c.id} capture=${c}
+          species=${effectiveSpecies(c, ov)} cameraLabel=${camName(c.camera)} onClick=${() => openLightbox(favorites, i)} />`)}
+      </div>
+    </${Panel}>` : null}
+
+    <${Panel} title="Latest captures" icon="images"
+      actions=${html`<${Btn} sm variant="ghost" iconRight="arrowRight" onClick=${() => setView("gallery")}>View all</${Btn}>`}>
+      <div className="shots size-S">
+        ${recent.map((c, i) => html`<${Shot} key=${c.id} capture=${c}
+          species=${effectiveSpecies(c, ov)} cameraLabel=${camName(c.camera)} onClick=${() => openLightbox(recent, i)} />`)}
+      </div>
+    </${Panel}>
 
     <div className="grid grid--2">
       <${Panel} title="14-day activity" icon="chart"
@@ -67,13 +84,5 @@ export function Overview(app) {
         <${Bars} data=${topCams.map((c) => ({ label: camName(c.camera), value: c.value }))} />
       </${Panel}>
     </div>
-
-    <${Panel} title="Latest captures" icon="images"
-      actions=${html`<${Btn} sm variant="ghost" iconRight="arrowRight" onClick=${() => setView("gallery")}>View all</${Btn}>`}>
-      <div className="shots size-S">
-        ${recent.map((c, i) => html`<${Shot} key=${c.id} capture=${c}
-          species=${effectiveSpecies(c, ov)} cameraLabel=${camName(c.camera)} onClick=${() => openLightbox(recent, i)} />`)}
-      </div>
-    </${Panel}>
   </div>`;
 }

@@ -4,9 +4,10 @@ import {
   LS, usePersistent, usePersistentSet, useData, loadOverrides,
   remoteLoadTags, remoteSaveTags, hasSharedTags, effectiveSpecies, timeAgo,
   loadCameraNames, remoteLoadCameraNames, remoteSaveCameraName, displayCamera,
+  loadMetadata, remoteLoadMetadata, remoteSaveMetadata, applyMeta, metaOf,
 } from "./core.js";
 import { filterCaptures, speciesList, reviewQueue } from "./analytics.js";
-import { Sidebar, Topbar, MobileTopbar, MobileNav, VIEWS, defaultFilters } from "./shell.js";
+import { Sidebar, Topbar, MobileTopbar, MobileNav, VIEWS, loadFilters } from "./shell.js";
 import { Lightbox, Toast } from "./ui.js";
 import { Overview } from "./views/overview.js";
 import { Gallery } from "./views/gallery.js";
@@ -19,13 +20,22 @@ const VIEW_COMPONENTS = { overview: Overview, gallery: Gallery, insights: Insigh
 function App() {
   const { data, refresh, refreshing } = useData();
   const [theme, setTheme] = usePersistent(LS.theme, "dark");
-  const [view, setView] = useState("overview");
-  const [filters, setFilters] = useState(defaultFilters);
+  // Active tab + filters are remembered across refreshes so the page comes back
+  // exactly where you left it (validated against the known views / filter keys).
+  const [view, setView] = useState(() => {
+    try {
+      const v = localStorage.getItem(LS.view);
+      return v && VIEWS.some((x) => x.id === v) ? v : "overview";
+    } catch (e) { return "overview"; }
+  });
+  const [filters, setFilters] = useState(loadFilters);
 
   const [localOverrides, setLocalOverrides] = useState(loadOverrides);
   const [remoteTags, setRemoteTags] = useState({});
   const [localCamNames, setLocalCamNames] = useState(loadCameraNames);
   const [remoteCamNames, setRemoteCamNames] = useState({});
+  const [localMeta, setLocalMeta] = useState(loadMetadata);
+  const [remoteMeta, setRemoteMeta] = useState({});
   const [archived, archive$] = usePersistentSet(LS.archived);
   const [reviewed, reviewed$] = usePersistentSet(LS.reviewed);
   const [gridSize, setGridSize] = usePersistent(LS.gridSize, "M");
@@ -41,6 +51,7 @@ function App() {
     let alive = true;
     remoteLoadTags().then((map) => { if (alive && map) setRemoteTags(map); }).catch(() => {});
     remoteLoadCameraNames().then((map) => { if (alive && map) setRemoteCamNames(map); }).catch(() => {});
+    remoteLoadMetadata().then((map) => { if (alive && map) setRemoteMeta(map); }).catch(() => {});
     return () => { alive = false; };
   }, []);
   useEffect(() => {
@@ -49,12 +60,33 @@ function App() {
   useEffect(() => {
     try { localStorage.setItem(LS.camNames, JSON.stringify(localCamNames)); } catch (e) {}
   }, [localCamNames]);
+  useEffect(() => {
+    try { localStorage.setItem(LS.meta, JSON.stringify(localMeta)); } catch (e) {}
+  }, [localMeta]);
+  useEffect(() => {
+    try { localStorage.setItem(LS.view, view); } catch (e) {}
+  }, [view]);
+  useEffect(() => {
+    try { localStorage.setItem(LS.filters, JSON.stringify(filters)); } catch (e) {}
+  }, [filters]);
 
   // Local edits win over the shared baseline.
   const ov = useMemo(() => ({ ...remoteTags, ...localOverrides }), [remoteTags, localOverrides]);
   const camNames = useMemo(() => ({ ...remoteCamNames, ...localCamNames }), [remoteCamNames, localCamNames]);
   const camName = useCallback((raw) => displayCamera(raw, camNames), [camNames]);
-  const captures = data.captures;
+  // Per-photo metadata: shared baseline overlaid by this device's edits (per key).
+  const metaMap = useMemo(() => {
+    const out = { ...remoteMeta };
+    for (const [id, entry] of Object.entries(localMeta)) {
+      out[id] = { ...(out[id] || {}), ...entry };
+    }
+    return out;
+  }, [remoteMeta, localMeta]);
+  // Apply the metadata overlay so every view sees notes / favorites / corrections.
+  const captures = useMemo(
+    () => data.captures.map((c) => applyMeta(c, metaMap)),
+    [data.captures, metaMap]
+  );
   const spList = useMemo(() => speciesList(captures, ov), [captures, ov]);
   const filtered = useMemo(() => filterCaptures(captures, filters, ov), [captures, filters, ov]);
   const reviewQ = useMemo(() => reviewQueue(captures, ov, archived, reviewed), [captures, ov, archived, reviewed]);
@@ -136,6 +168,37 @@ function App() {
     }
   }, [showToast]);
 
+  // Update per-photo metadata (note, favorite, temp/moon corrections, ...). `patch`
+  // is merged into the photo's entry; a key set to null removes it. Local-first,
+  // fanned out to everyone when the shared Worker is configured.
+  const updateMeta = useCallback((id, patch, opts = {}) => {
+    if (!id || !patch || typeof patch !== "object") return;
+    setLocalMeta((prev) => {
+      const entry = { ...(prev[String(id)] || {}) };
+      for (const [k, v] of Object.entries(patch)) {
+        if (v == null || v === "") delete entry[k];
+        else entry[k] = v;
+      }
+      const next = { ...prev };
+      if (Object.keys(entry).length) next[String(id)] = entry;
+      else delete next[String(id)];
+      return next;
+    });
+    if (hasSharedTags) {
+      remoteSaveMetadata(id, patch)
+        .then(() => { if (!opts.silent) showToast("ok", opts.okMsg || "Saved for everyone"); })
+        .catch(() => showToast("err", "Couldn\u2019t sync \u2014 saved on this device"));
+    } else if (!opts.silent) {
+      showToast("ok", opts.okMsg || "Saved");
+    }
+  }, [showToast]);
+
+  // Convenience: flip the favorite flag on a photo.
+  const toggleFavorite = useCallback((id) => {
+    const on = !metaOf({ id }, metaMap).favorite;
+    updateMeta(id, { favorite: on ? true : null }, { okMsg: on ? "Added to favorites" : "Removed from favorites" });
+  }, [updateMeta, metaMap]);
+
   /* ----------------------------- Render --------------------------------- */
   const meta = VIEWS.find((v) => v.id === view) || VIEWS[0];
   const View = VIEW_COMPONENTS[view] || Overview;
@@ -146,6 +209,7 @@ function App() {
     archived, reviewed, assignSpecies, keep, archive: archiveCap,
     openLightbox, reviewQ, counts, setView,
     camName, camNames, bulkAssign, renameCamera,
+    metaMap, updateMeta, toggleFavorite,
   };
 
   const lbItem = lightbox ? lightbox.list[lightbox.index] : null;
@@ -169,6 +233,9 @@ function App() {
       capture=${lbItem}
       species=${effectiveSpecies(lbItem, ov)}
       cameraLabel=${camName(lbItem.camera)}
+      meta=${metaOf(lbItem, metaMap)}
+      onMeta=${(patch, opts) => updateMeta(lbItem.id, patch, opts)}
+      onToggleFavorite=${() => toggleFavorite(lbItem.id)}
       hasPrev=${lightbox.index > 0}
       hasNext=${lightbox.index < lightbox.list.length - 1}
       onPrev=${() => setLightbox((s) => ({ ...s, index: Math.max(0, s.index - 1) }))}

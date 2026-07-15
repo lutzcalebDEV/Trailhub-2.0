@@ -41,6 +41,7 @@ DATA_FILE = HERE / "data.js"
 STORE_FILE = HERE / "store.json"   # durable source of truth (NOT uploaded)
 CAMERA_FILE = HERE / "cameras.json"  # durable camera metadata for map rendering
 TAGS_FILE = HERE / "tags.json"     # user-applied tags/classifications (shared, baked into data.js)
+META_FILE = HERE / "metadata.json"  # per-photo metadata (notes, favorites, corrections; shared, baked into data.js)
 
 MAX_PUBLISHED = 1500   # cap captures written to data.js so the site stays light
 MAX_KEEP = 3000        # cap stored photos+images so the repo doesn't grow forever
@@ -581,6 +582,50 @@ def load_tags():
     return out
 
 
+# Fields owned by other pipelines (tags, camera names) or by the capture's own
+# structure -- metadata must never override these when baked into data.js.
+_META_RESERVED = {"id", "image", "date", "camera", "tags", "species"}
+
+
+def load_metadata():
+    """Load per-photo metadata keyed by photo id: {id: {"note": "...", "favorite": true}}.
+
+    Edited from the site and saved to metadata.json (POST /meta on the Worker). We
+    overlay these onto captures in data.js so notes, favorites and manual temp/moon
+    corrections show for every visitor. Values are bounded to keep data.js small.
+    """
+    if not META_FILE.exists():
+        return {}
+    try:
+        data = json.loads(META_FILE.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        print("  [warn] metadata.json unreadable; skipping per-photo metadata.")
+        return {}
+    out = {}
+    if isinstance(data, dict):
+        for key, val in data.items():
+            if not isinstance(val, dict):
+                continue
+            entry = {}
+            for k, v in val.items():
+                name = str(k).strip()[:40]
+                if not name or name in _META_RESERVED:
+                    continue
+                if isinstance(v, str):
+                    s = v[:500]
+                    if s:
+                        entry[name] = s
+                elif isinstance(v, bool):
+                    entry[name] = v
+                elif isinstance(v, (int, float)):
+                    entry[name] = v
+                elif isinstance(v, list):
+                    entry[name] = [x for x in v[:32] if not isinstance(x, (dict, list))]
+            if entry:
+                out[str(key)] = entry
+    return out
+
+
 def prune_store(store):
     """Keep only the newest MAX_KEEP captures; delete image files for the rest."""
     items = sorted(store.values(), key=lambda c: c.get("date", ""), reverse=True)
@@ -596,14 +641,19 @@ def prune_store(store):
     return {c["id"]: c for c in items[:MAX_KEEP]}
 
 
-def write_data_js(captures, cameras=None, demo=False, tags_map=None):
+def write_data_js(captures, cameras=None, demo=False, tags_map=None, meta_map=None):
     """Render the published data.js from a list of captures (atomic write).
 
     tags_map (optional) overlays user-applied tags by photo id; the first tag
     becomes the primary species. Captures without user tags default to a single
     tag matching their detected species.
+
+    meta_map (optional) overlays per-photo metadata (notes, favorites, manual
+    temp/moon corrections, ...) by photo id. Reserved structural fields are never
+    overwritten so tags/camera/image pipelines stay authoritative.
     """
     tags_map = tags_map or {}
+    meta_map = meta_map or {}
     captures = sorted(captures, key=lambda c: c.get("date", ""), reverse=True)[:MAX_PUBLISHED]
     out_caps = []
     for c in captures:
@@ -614,6 +664,11 @@ def write_data_js(captures, cameras=None, demo=False, tags_map=None):
             c["species"] = user_tags[0]
         elif not c.get("tags"):
             c["tags"] = [c.get("species", "Animal")]
+        meta = meta_map.get(str(c.get("id")))
+        if meta:
+            for k, v in meta.items():
+                if k not in _META_RESERVED:
+                    c[k] = v
         out_caps.append(c)
     payload = {
         "generatedAt": dt.datetime.now().isoformat(timespec="seconds"),
@@ -908,7 +963,7 @@ def run_pull(limit, inspect):
     store = prune_store(store)
     save_store(store)
     save_cameras(camera_meta)
-    write_data_js(list(store.values()), cameras=camera_meta, demo=False, tags_map=load_tags())
+    write_data_js(list(store.values()), cameras=camera_meta, demo=False, tags_map=load_tags(), meta_map=load_metadata())
     print(f"\nStore: {before} -> {len(store)} captures (+{new_count} new this run).")
     print("Done. Open index.html, or upload index.html + data.js + photos/ to Cloudflare.")
 
@@ -918,7 +973,7 @@ def run_rebuild():
     store = load_store()
     if not store:
         sys.exit("No store.json yet. Run `python pull.py` first (or `--demo` to preview).")
-    write_data_js(list(store.values()), cameras=load_cameras(), demo=False, tags_map=load_tags())
+    write_data_js(list(store.values()), cameras=load_cameras(), demo=False, tags_map=load_tags(), meta_map=load_metadata())
     print(f"Rebuilt data.js from store ({len(store)} captures).")
 
 
@@ -948,7 +1003,7 @@ def run_ocr_temps():
             done += 1
             print(f"  [temp] {sid[:10]} -> {t}\u00b0F")
     save_store(store)
-    write_data_js(list(store.values()), cameras=load_cameras(), demo=False, tags_map=load_tags())
+    write_data_js(list(store.values()), cameras=load_cameras(), demo=False, tags_map=load_tags(), meta_map=load_metadata())
     print(f"\nOCR temps: set {done} of {scanned} scanned ({len(store)} total). data.js rebuilt.")
 
 

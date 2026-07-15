@@ -2,7 +2,7 @@
 import { html, useState, Fragment, createPortal } from "./react.js";
 import { Icon, BrandMark } from "./icons.js";
 import { IconBtn, SearchInput, Select, Segmented, Switch, Chip } from "./ui.js";
-import { speciesColor } from "./core.js";
+import { speciesColor, LS } from "./core.js";
 
 const cx = (...xs) => xs.filter(Boolean).join(" ");
 
@@ -94,6 +94,23 @@ export function MobileNav({ view, setView, counts }) {
 /* ------------------------------ Filter bar ------------------------------ */
 const EMPTY_FILTERS = { q: "", species: "All", camera: "All", tod: "all", bucksOnly: false };
 export const defaultFilters = () => ({ ...EMPTY_FILTERS });
+
+// Restore filters saved from a previous session, keeping only known keys so a
+// stale or malformed value can never break the filter bar. Falls back to the
+// defaults for anything missing.
+export function loadFilters() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(LS.filters) || "null");
+    if (!saved || typeof saved !== "object") return defaultFilters();
+    const out = defaultFilters();
+    for (const k of Object.keys(out)) {
+      if (saved[k] !== undefined && typeof saved[k] === typeof out[k]) out[k] = saved[k];
+    }
+    return out;
+  } catch (e) {
+    return defaultFilters();
+  }
+}
 
 export function FilterBar({ filters, set, cameras, speciesList, count, camName }) {
   const [open, setOpen] = useState(false);

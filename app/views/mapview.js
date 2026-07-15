@@ -69,6 +69,21 @@ export function MapView(app) {
     });
   }, [cams, countByCam, filters.camera, camName]);
 
+  // Keep Leaflet sized to its container when the viewport changes — rotating a
+  // phone (portrait<->landscape) or resizing the window otherwise leaves gray,
+  // misaligned tiles until the next pan. invalidateSize() re-measures the map.
+  useEffect(() => {
+    const sync = () => { const m = mapRef.current; if (m) m.invalidateSize(); };
+    const onResize = () => requestAnimationFrame(sync);
+    const onOrient = () => { requestAnimationFrame(sync); setTimeout(sync, 350); };
+    window.addEventListener("resize", onResize);
+    window.addEventListener("orientationchange", onOrient);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("orientationchange", onOrient);
+    };
+  }, []);
+
   if (!cams.length) {
     return html`<div className="col" style=${{ gap: 4 }}>
       <${FilterBar} filters=${filters} set=${setFilter} cameras=${data.cameras} speciesList=${spList} count=${filtered.length} camName=${camName} />

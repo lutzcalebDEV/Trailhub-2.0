@@ -243,6 +243,84 @@ export async function remoteSaveCameraName(id, name) {
 // Resolve a raw camera label to its friendly name (falls back to the raw label).
 export const displayCamera = (raw, names) => (names && names[String(raw)]) || raw || "Camera";
 
+/* ---------------------- Per-photo metadata (optional) ------------------- */
+// A generic key/value bag per photo id: notes, a favorite flag, and manual
+// corrections to fields like temp/moon. Stored in metadata.json and synced by the
+// same Worker (POST /meta). Like tags: device-local until the Worker is set up,
+// then shared for everyone. Structural fields below are reserved so metadata can
+// never clobber the tags / camera / image pipelines.
+const META_API = TAGS_API ? TAGS_API + "/meta" : "";
+const META_RESERVED = new Set(["id", "image", "date", "camera", "tags", "species"]);
+
+// Sanitize an incoming metadata entry into a plain, bounded object.
+function cleanMetaEntry(raw) {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const out = {};
+  for (const [k, v] of Object.entries(raw)) {
+    const key = String(k).slice(0, 40).trim();
+    if (!key || META_RESERVED.has(key)) continue;
+    if (v == null) continue;
+    if (typeof v === "string") { const s = v.slice(0, 500); if (s) out[key] = s; }
+    else if (typeof v === "number") { if (Number.isFinite(v)) out[key] = v; }
+    else if (typeof v === "boolean") out[key] = v;
+    else if (Array.isArray(v)) out[key] = v.slice(0, 32).filter((x) => x != null && typeof x !== "object");
+  }
+  return out;
+}
+
+export function normalizeMetaMap(raw) {
+  const out = {};
+  if (raw && typeof raw === "object") {
+    for (const [id, v] of Object.entries(raw)) {
+      const entry = cleanMetaEntry(v);
+      if (entry && Object.keys(entry).length) out[String(id)] = entry;
+    }
+  }
+  return out;
+}
+
+export async function remoteLoadMetadata() {
+  const urls = [];
+  if (META_API) urls.push(META_API + (META_API.includes("?") ? "&" : "?") + "t=" + Date.now());
+  urls.push("metadata.json?t=" + Date.now());
+  for (const u of urls) {
+    try {
+      const r = await fetch(u, { cache: "no-store" });
+      if (r.ok) return normalizeMetaMap(await r.json());
+    } catch (e) { /* try next */ }
+  }
+  return null;
+}
+
+// Save a metadata patch for one photo. Keys set to null are removed server-side;
+// an empty patch object clears the whole entry.
+export async function remoteSaveMetadata(id, patch) {
+  if (!META_API) return { ok: false, reason: "no-endpoint" };
+  const r = await fetch(META_API, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id: String(id), meta: patch || {} }),
+  });
+  if (!r.ok) throw new Error("Metadata save failed (" + r.status + ")");
+  return { ok: true };
+}
+
+// The metadata overlay for one capture (or an empty object).
+export const metaOf = (c, metaMap) => (metaMap && metaMap[String(c.id)]) || {};
+
+// A capture with its metadata overlay applied for display (corrections to temp/
+// moon/etc. win; reserved structural fields are never overwritten).
+export function applyMeta(c, metaMap) {
+  const m = metaOf(c, metaMap);
+  if (!m || !Object.keys(m).length) return c;
+  const merged = { ...c };
+  for (const [k, v] of Object.entries(m)) {
+    if (META_RESERVED.has(k)) continue;
+    merged[k] = v;
+  }
+  return merged;
+}
+
 /* ----------------------------- Persistence ------------------------------ */
 export const LS = {
   theme: "trailhub-theme",
@@ -254,6 +332,9 @@ export const LS = {
   gridLayout: "trailhub-grid-layout",
   camCoords: "trailhub-camera-coords",
   camNames: "trailhub-camera-names",
+  meta: "trailhub-metadata",
+  view: "trailhub-view",
+  filters: "trailhub-filters",
 };
 
 function readJSON(key, fallback) {
@@ -277,6 +358,7 @@ export function loadOverrides() {
 export const loadArchived = () => new Set(readJSON(LS.archived, []) || []);
 export const loadReviewed = () => new Set(readJSON(LS.reviewed, []) || []);
 export const loadCameraNames = () => normalizeNameMap(readJSON(LS.camNames, null));
+export const loadMetadata = () => normalizeMetaMap(readJSON(LS.meta, null));
 
 /* ------------------------------- Hooks ---------------------------------- */
 // Plain persisted primitive (string / boolean / number).
