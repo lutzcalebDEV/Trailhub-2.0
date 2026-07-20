@@ -2,6 +2,48 @@
   {
     "fields": {
       "camera": "6a30af992e5969f7ed9fdc5c",
+      "date": "2026-07-20T18:21:19.388Z",
+      "id": "6a5e671ff7956ef2adbb4fe4",
+      "large": "<omitted>",
+      "medium": "<omitted>",
+      "originDate": "2026-07-20T14:02:13.000Z",
+      "originName": "PICT0106.JPG",
+      "originSize": 68973,
+      "preview": [],
+      "small": "<omitted>",
+      "tag": [
+        "day"
+      ]
+    },
+    "detected": [
+      "day"
+    ],
+    "normalized": "Animal"
+  },
+  {
+    "fields": {
+      "camera": "6a30af992e5969f7ed9fdc5c",
+      "date": "2026-07-20T18:21:19.388Z",
+      "id": "6a5e671ff7956ef2adbb4fe8",
+      "large": "<omitted>",
+      "medium": "<omitted>",
+      "originDate": "2026-07-20T14:02:12.000Z",
+      "originName": "PICT0105.JPG",
+      "originSize": 61338,
+      "preview": [],
+      "small": "<omitted>",
+      "tag": [
+        "day"
+      ]
+    },
+    "detected": [
+      "day"
+    ],
+    "normalized": "Animal"
+  },
+  {
+    "fields": {
+      "camera": "6a30af992e5969f7ed9fdc5c",
       "date": "2026-07-20T10:21:19.373Z",
       "id": "6a5df69f4c4bb50df5ea9b65",
       "large": "<omitted>",
@@ -51,48 +93,6 @@
       "originDate": "2026-07-20T04:26:28.000Z",
       "originName": "PICT0102.JPG",
       "originSize": 32534,
-      "preview": [],
-      "small": "<omitted>",
-      "tag": [
-        "night"
-      ]
-    },
-    "detected": [
-      "night"
-    ],
-    "normalized": "Animal"
-  },
-  {
-    "fields": {
-      "camera": "6a30af992e5969f7ed9fdc5c",
-      "date": "2026-07-20T10:21:19.373Z",
-      "id": "6a5df69f4c4bb50df5ea9b6b",
-      "large": "<omitted>",
-      "medium": "<omitted>",
-      "originDate": "2026-07-20T04:26:27.000Z",
-      "originName": "PICT0101.JPG",
-      "originSize": 19758,
-      "preview": [],
-      "small": "<omitted>",
-      "tag": [
-        "night"
-      ]
-    },
-    "detected": [
-      "night"
-    ],
-    "normalized": "Animal"
-  },
-  {
-    "fields": {
-      "camera": "6a30af992e5969f7ed9fdc5c",
-      "date": "2026-07-20T10:21:19.373Z",
-      "id": "6a5df69f4c4bb50df5ea9b6d",
-      "large": "<omitted>",
-      "medium": "<omitted>",
-      "originDate": "2026-07-20T04:24:49.000Z",
-      "originName": "PICT0100.JPG",
-      "originSize": 32686,
       "preview": [],
       "small": "<omitted>",
       "tag": [
