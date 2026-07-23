@@ -2,6 +2,48 @@
   {
     "fields": {
       "camera": "6a30af992e5969f7ed9fdc5c",
+      "date": "2026-07-23T10:21:21.282Z",
+      "id": "6a61eb212ce0fd88434f0bdd",
+      "large": "<omitted>",
+      "medium": "<omitted>",
+      "originDate": "2026-07-23T04:22:25.000Z",
+      "originName": "PICT0112.JPG",
+      "originSize": 34176,
+      "preview": [],
+      "small": "<omitted>",
+      "tag": [
+        "night"
+      ]
+    },
+    "detected": [
+      "night"
+    ],
+    "normalized": "Animal"
+  },
+  {
+    "fields": {
+      "camera": "6a30af992e5969f7ed9fdc5c",
+      "date": "2026-07-23T10:21:21.282Z",
+      "id": "6a61eb212ce0fd88434f0bdf",
+      "large": "<omitted>",
+      "medium": "<omitted>",
+      "originDate": "2026-07-23T04:22:24.000Z",
+      "originName": "PICT0111.JPG",
+      "originSize": 20750,
+      "preview": [],
+      "small": "<omitted>",
+      "tag": [
+        "night"
+      ]
+    },
+    "detected": [
+      "night"
+    ],
+    "normalized": "Animal"
+  },
+  {
+    "fields": {
+      "camera": "6a30af992e5969f7ed9fdc5c",
       "date": "2026-07-23T02:21:36.858Z",
       "id": "6a617ab0db1b4a63a7b28374",
       "large": "<omitted>",
@@ -59,48 +101,6 @@
     },
     "detected": [
       "day"
-    ],
-    "normalized": "Animal"
-  },
-  {
-    "fields": {
-      "camera": "6a309e41bdc62e4448c0a370",
-      "date": "2026-07-23T01:29:01.713Z",
-      "id": "6a616e5dd43dd1fa680fd807",
-      "large": "<omitted>",
-      "medium": "<omitted>",
-      "originDate": "2026-07-22T15:39:49.000Z",
-      "originName": "PICT0088.JPG",
-      "originSize": 59875,
-      "preview": [],
-      "small": "<omitted>",
-      "tag": [
-        "day"
-      ]
-    },
-    "detected": [
-      "day"
-    ],
-    "normalized": "Animal"
-  },
-  {
-    "fields": {
-      "camera": "6a30af992e5969f7ed9fdc5c",
-      "date": "2026-07-22T02:21:39.245Z",
-      "id": "6a602933c80719c875dca532",
-      "large": "<omitted>",
-      "medium": "<omitted>",
-      "originDate": "2026-07-21T21:46:23.000Z",
-      "originName": "PICT0108.JPG",
-      "originSize": 27361,
-      "preview": [],
-      "small": "<omitted>",
-      "tag": [
-        "night"
-      ]
-    },
-    "detected": [
-      "night"
     ],
     "normalized": "Animal"
   }
