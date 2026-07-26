@@ -2319,5 +2319,71 @@
   "moon": null,
   "id": "sp_6a65a7ca55bd005bb55ac2a1",
   "image": "photos/sp_6a65a7ca55bd005bb55ac2a1.jpg"
+ },
+ "sp_6a65df9e20be8f7fe4d7bb21": {
+  "species": "Animal",
+  "camera": "Camera 6a30af992e5969f7ed9fdc5c",
+  "date": "2026-07-26T10:21:18.854000+00:00",
+  "isNight": false,
+  "temp": null,
+  "confidence": null,
+  "moon": null,
+  "id": "sp_6a65df9e20be8f7fe4d7bb21",
+  "image": "photos/sp_6a65df9e20be8f7fe4d7bb21.jpg"
+ },
+ "sp_6a65df9e20be8f7fe4d7bb23": {
+  "species": "Animal",
+  "camera": "Camera 6a30af992e5969f7ed9fdc5c",
+  "date": "2026-07-26T10:21:18.854000+00:00",
+  "isNight": false,
+  "temp": null,
+  "confidence": null,
+  "moon": null,
+  "id": "sp_6a65df9e20be8f7fe4d7bb23",
+  "image": "photos/sp_6a65df9e20be8f7fe4d7bb23.jpg"
+ },
+ "sp_6a65df9e20be8f7fe4d7bb25": {
+  "species": "Animal",
+  "camera": "Camera 6a30af992e5969f7ed9fdc5c",
+  "date": "2026-07-26T10:21:18.854000+00:00",
+  "isNight": false,
+  "temp": null,
+  "confidence": null,
+  "moon": null,
+  "id": "sp_6a65df9e20be8f7fe4d7bb25",
+  "image": "photos/sp_6a65df9e20be8f7fe4d7bb25.jpg"
+ },
+ "sp_6a65df9e20be8f7fe4d7bb27": {
+  "species": "Animal",
+  "camera": "Camera 6a30af992e5969f7ed9fdc5c",
+  "date": "2026-07-26T10:21:18.854000+00:00",
+  "isNight": false,
+  "temp": 10,
+  "confidence": null,
+  "moon": null,
+  "id": "sp_6a65df9e20be8f7fe4d7bb27",
+  "image": "photos/sp_6a65df9e20be8f7fe4d7bb27.jpg"
+ },
+ "sp_6a65df9e20be8f7fe4d7bb29": {
+  "species": "Animal",
+  "camera": "Camera 6a30af992e5969f7ed9fdc5c",
+  "date": "2026-07-26T10:21:18.854000+00:00",
+  "isNight": false,
+  "temp": null,
+  "confidence": null,
+  "moon": null,
+  "id": "sp_6a65df9e20be8f7fe4d7bb29",
+  "image": "photos/sp_6a65df9e20be8f7fe4d7bb29.jpg"
+ },
+ "sp_6a65df9e20be8f7fe4d7bb2b": {
+  "species": "Animal",
+  "camera": "Camera 6a30af992e5969f7ed9fdc5c",
+  "date": "2026-07-26T10:21:18.854000+00:00",
+  "isNight": false,
+  "temp": null,
+  "confidence": null,
+  "moon": null,
+  "id": "sp_6a65df9e20be8f7fe4d7bb2b",
+  "image": "photos/sp_6a65df9e20be8f7fe4d7bb2b.jpg"
  }
 }
