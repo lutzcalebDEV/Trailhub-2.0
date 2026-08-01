@@ -1,5 +1,5 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-08-01T04:55:26",
+  "generatedAt": "2026-08-01T07:30:31",
   "demo": false,
   "cameras": [
     {
@@ -11,11 +11,123 @@ window.TRAILHUB_DATA = {
     {
       "id": "6a30af992e5969f7ed9fdc5c",
       "name": "Camera 6a30af992e5969f7ed9fdc5c",
-      "latitude": 35.537783,
-      "longitude": -81.396048
+      "latitude": 35.53707361,
+      "longitude": -81.39663006
     }
   ],
   "captures": [
+    {
+      "species": "Animal",
+      "camera": "Camera 6a30af992e5969f7ed9fdc5c",
+      "date": "2026-08-01T06:24:54.779000+00:00",
+      "isNight": false,
+      "temp": 56,
+      "confidence": null,
+      "moon": null,
+      "id": "sp_6a6d9136ca9c2d3b7e478890",
+      "image": "photos/sp_6a6d9136ca9c2d3b7e478890.jpg",
+      "tags": [
+        "Animal"
+      ]
+    },
+    {
+      "species": "Animal",
+      "camera": "Camera 6a30af992e5969f7ed9fdc5c",
+      "date": "2026-08-01T06:24:54.779000+00:00",
+      "isNight": false,
+      "temp": null,
+      "confidence": null,
+      "moon": null,
+      "id": "sp_6a6d9136ca9c2d3b7e478892",
+      "image": "photos/sp_6a6d9136ca9c2d3b7e478892.jpg",
+      "tags": [
+        "Animal"
+      ]
+    },
+    {
+      "species": "Animal",
+      "camera": "Camera 6a30af992e5969f7ed9fdc5c",
+      "date": "2026-08-01T06:24:54.779000+00:00",
+      "isNight": false,
+      "temp": null,
+      "confidence": null,
+      "moon": null,
+      "id": "sp_6a6d9136ca9c2d3b7e478894",
+      "image": "photos/sp_6a6d9136ca9c2d3b7e478894.jpg",
+      "tags": [
+        "Animal"
+      ]
+    },
+    {
+      "species": "Animal",
+      "camera": "Camera 6a30af992e5969f7ed9fdc5c",
+      "date": "2026-08-01T06:24:54.779000+00:00",
+      "isNight": false,
+      "temp": 67,
+      "confidence": null,
+      "moon": null,
+      "id": "sp_6a6d9136ca9c2d3b7e478896",
+      "image": "photos/sp_6a6d9136ca9c2d3b7e478896.jpg",
+      "tags": [
+        "Animal"
+      ]
+    },
+    {
+      "species": "Animal",
+      "camera": "Camera 6a30af992e5969f7ed9fdc5c",
+      "date": "2026-08-01T06:24:54.779000+00:00",
+      "isNight": false,
+      "temp": null,
+      "confidence": null,
+      "moon": null,
+      "id": "sp_6a6d9136ca9c2d3b7e478898",
+      "image": "photos/sp_6a6d9136ca9c2d3b7e478898.jpg",
+      "tags": [
+        "Animal"
+      ]
+    },
+    {
+      "species": "Animal",
+      "camera": "Camera 6a30af992e5969f7ed9fdc5c",
+      "date": "2026-08-01T06:24:54.779000+00:00",
+      "isNight": false,
+      "temp": null,
+      "confidence": null,
+      "moon": null,
+      "id": "sp_6a6d9136ca9c2d3b7e47889a",
+      "image": "photos/sp_6a6d9136ca9c2d3b7e47889a.jpg",
+      "tags": [
+        "Animal"
+      ]
+    },
+    {
+      "species": "Animal",
+      "camera": "Camera 6a30af992e5969f7ed9fdc5c",
+      "date": "2026-08-01T06:24:54.779000+00:00",
+      "isNight": false,
+      "temp": null,
+      "confidence": null,
+      "moon": null,
+      "id": "sp_6a6d9136ca9c2d3b7e47889c",
+      "image": "photos/sp_6a6d9136ca9c2d3b7e47889c.jpg",
+      "tags": [
+        "Animal"
+      ]
+    },
+    {
+      "species": "Animal",
+      "camera": "Camera 6a30af992e5969f7ed9fdc5c",
+      "date": "2026-08-01T06:24:54.779000+00:00",
+      "isNight": false,
+      "temp": null,
+      "confidence": null,
+      "moon": null,
+      "id": "sp_6a6d9136ca9c2d3b7e47889e",
+      "image": "photos/sp_6a6d9136ca9c2d3b7e47889e.jpg",
+      "tags": [
+        "Animal"
+      ]
+    },
     {
       "species": "Animal",
       "camera": "Camera 6a30af992e5969f7ed9fdc5c",
