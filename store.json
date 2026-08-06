@@ -3001,5 +3001,27 @@
   "moon": null,
   "id": "sp_6a729e34f633144ed131f408",
   "image": "photos/sp_6a729e34f633144ed131f408.jpg"
+ },
+ "sp_6a73ef9fdc156a25047b121f": {
+  "species": "Animal",
+  "camera": "Camera 6a30af992e5969f7ed9fdc5c",
+  "date": "2026-08-06T02:21:19.715000+00:00",
+  "isNight": true,
+  "temp": null,
+  "confidence": null,
+  "moon": null,
+  "id": "sp_6a73ef9fdc156a25047b121f",
+  "image": "photos/sp_6a73ef9fdc156a25047b121f.jpg"
+ },
+ "sp_6a73ef9fdc156a25047b1221": {
+  "species": "Animal",
+  "camera": "Camera 6a30af992e5969f7ed9fdc5c",
+  "date": "2026-08-06T02:21:19.715000+00:00",
+  "isNight": true,
+  "temp": null,
+  "confidence": null,
+  "moon": null,
+  "id": "sp_6a73ef9fdc156a25047b1221",
+  "image": "photos/sp_6a73ef9fdc156a25047b1221.jpg"
  }
 }
