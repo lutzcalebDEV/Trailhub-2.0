@@ -1,18 +1,18 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-08-31T01:15:40",
+  "generatedAt": "2026-08-31T07:05:29",
   "demo": false,
   "cameras": [
     {
       "id": "6a309e41bdc62e4448c0a370",
       "name": "Camera 6a309e41bdc62e4448c0a370",
-      "latitude": 35.536597,
-      "longitude": -81.397138
+      "latitude": 35.5368331,
+      "longitude": -81.39888123
     },
     {
       "id": "6a30af992e5969f7ed9fdc5c",
       "name": "Camera 6a30af992e5969f7ed9fdc5c",
-      "latitude": 35.537506,
-      "longitude": -81.395975
+      "latitude": 35.53751949,
+      "longitude": -81.39701901
     }
   ],
   "captures": [
