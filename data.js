@@ -1,12 +1,12 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-09-16T05:20:47",
+  "generatedAt": "2026-09-16T10:13:59",
   "demo": false,
   "cameras": [
     {
       "id": "6a309e41bdc62e4448c0a370",
       "name": "Camera 6a309e41bdc62e4448c0a370",
-      "latitude": 35.5374569,
-      "longitude": -81.39560121
+      "latitude": 35.537457,
+      "longitude": -81.395601
     },
     {
       "id": "6a30af992e5969f7ed9fdc5c",
