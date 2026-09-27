@@ -2,6 +2,48 @@
   {
     "fields": {
       "camera": "6a30af992e5969f7ed9fdc5c",
+      "date": "2026-09-27T10:21:27.335Z",
+      "id": "6ab8ee2701f21f04e6bbe87f",
+      "large": "<omitted>",
+      "medium": "<omitted>",
+      "originDate": "2026-09-27T04:39:43.000Z",
+      "originName": "PICT0336.JPG",
+      "originSize": 43241,
+      "preview": [],
+      "small": "<omitted>",
+      "tag": [
+        "night"
+      ]
+    },
+    "detected": [
+      "night"
+    ],
+    "normalized": "Animal"
+  },
+  {
+    "fields": {
+      "camera": "6a30af992e5969f7ed9fdc5c",
+      "date": "2026-09-27T10:21:27.335Z",
+      "id": "6ab8ee2701f21f04e6bbe881",
+      "large": "<omitted>",
+      "medium": "<omitted>",
+      "originDate": "2026-09-27T04:39:42.000Z",
+      "originName": "PICT0335.JPG",
+      "originSize": 28696,
+      "preview": [],
+      "small": "<omitted>",
+      "tag": [
+        "night"
+      ]
+    },
+    "detected": [
+      "night"
+    ],
+    "normalized": "Animal"
+  },
+  {
+    "fields": {
+      "camera": "6a30af992e5969f7ed9fdc5c",
       "date": "2026-09-27T06:26:07.202Z",
       "id": "6ab8b6ffa6f3f8c150b4c6ae",
       "large": "<omitted>",
@@ -51,48 +93,6 @@
       "originDate": "2026-09-26T20:51:53.000Z",
       "originName": "PICT0332.JPG",
       "originSize": 43386,
-      "preview": [],
-      "small": "<omitted>",
-      "tag": [
-        "night"
-      ]
-    },
-    "detected": [
-      "night"
-    ],
-    "normalized": "Animal"
-  },
-  {
-    "fields": {
-      "camera": "6a30af992e5969f7ed9fdc5c",
-      "date": "2026-09-27T02:21:25.920Z",
-      "id": "6ab87da5398ad32e05377ab1",
-      "large": "<omitted>",
-      "medium": "<omitted>",
-      "originDate": "2026-09-26T20:51:52.000Z",
-      "originName": "PICT0331.JPG",
-      "originSize": 28877,
-      "preview": [],
-      "small": "<omitted>",
-      "tag": [
-        "night"
-      ]
-    },
-    "detected": [
-      "night"
-    ],
-    "normalized": "Animal"
-  },
-  {
-    "fields": {
-      "camera": "6a309e41bdc62e4448c0a370",
-      "date": "2026-09-27T01:25:15.776Z",
-      "id": "6ab8707b0e05e3ddda796e3d",
-      "large": "<omitted>",
-      "medium": "<omitted>",
-      "originDate": "2026-09-26T19:50:18.000Z",
-      "originName": "PICT0227.JPG",
-      "originSize": 37852,
       "preview": [],
       "small": "<omitted>",
       "tag": [
