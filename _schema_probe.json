@@ -1,6 +1,48 @@
 [
   {
     "fields": {
+      "camera": "6a309e41bdc62e4448c0a370",
+      "date": "2026-09-29T01:25:57.435Z",
+      "id": "6abb13a5ba22605ea91e7221",
+      "large": "<omitted>",
+      "medium": "<omitted>",
+      "originDate": "2026-09-28T19:36:29.000Z",
+      "originName": "PICT0243.JPG",
+      "originSize": 39999,
+      "preview": [],
+      "small": "<omitted>",
+      "tag": [
+        "night"
+      ]
+    },
+    "detected": [
+      "night"
+    ],
+    "normalized": "Animal"
+  },
+  {
+    "fields": {
+      "camera": "6a309e41bdc62e4448c0a370",
+      "date": "2026-09-29T01:25:57.435Z",
+      "id": "6abb13a5ba22605ea91e7223",
+      "large": "<omitted>",
+      "medium": "<omitted>",
+      "originDate": "2026-09-28T19:36:28.000Z",
+      "originName": "PICT0242.JPG",
+      "originSize": 29368,
+      "preview": [],
+      "small": "<omitted>",
+      "tag": [
+        "night"
+      ]
+    },
+    "detected": [
+      "night"
+    ],
+    "normalized": "Animal"
+  },
+  {
+    "fields": {
       "camera": "6a30af992e5969f7ed9fdc5c",
       "date": "2026-09-28T14:21:25.554Z",
       "id": "6aba77e5f39181eb15c99424",
@@ -59,48 +101,6 @@
     },
     "detected": [
       "night"
-    ],
-    "normalized": "Animal"
-  },
-  {
-    "fields": {
-      "camera": "6a309e41bdc62e4448c0a370",
-      "date": "2026-09-28T07:24:25.902Z",
-      "id": "6aba1629050e15d81cdd2eaa",
-      "large": "<omitted>",
-      "medium": "<omitted>",
-      "originDate": "2026-09-28T00:20:19.000Z",
-      "originName": "PICT0240.JPG",
-      "originSize": 23361,
-      "preview": [],
-      "small": "<omitted>",
-      "tag": [
-        "night"
-      ]
-    },
-    "detected": [
-      "night"
-    ],
-    "normalized": "Animal"
-  },
-  {
-    "fields": {
-      "camera": "6a30af992e5969f7ed9fdc5c",
-      "date": "2026-09-28T02:21:24.860Z",
-      "id": "6ab9cf24d42780b371afb764",
-      "large": "<omitted>",
-      "medium": "<omitted>",
-      "originDate": "2026-09-27T18:50:23.000Z",
-      "originName": "PICT0344.JPG",
-      "originSize": 68156,
-      "preview": [],
-      "small": "<omitted>",
-      "tag": [
-        "day"
-      ]
-    },
-    "detected": [
-      "day"
     ],
     "normalized": "Animal"
   }
