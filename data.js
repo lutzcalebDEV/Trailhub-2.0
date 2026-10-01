@@ -1,21 +1,77 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-10-01T06:37:18",
+  "generatedAt": "2026-10-01T13:57:00",
   "demo": false,
   "cameras": [
     {
       "id": "6a309e41bdc62e4448c0a370",
       "name": "Camera 6a309e41bdc62e4448c0a370",
-      "latitude": 35.5380715,
-      "longitude": -81.39608453
+      "latitude": 35.538072,
+      "longitude": -81.396085
     },
     {
       "id": "6a30af992e5969f7ed9fdc5c",
       "name": "Camera 6a30af992e5969f7ed9fdc5c",
-      "latitude": 35.53770612,
-      "longitude": -81.39614111
+      "latitude": 35.537706,
+      "longitude": -81.396141
     }
   ],
   "captures": [
+    {
+      "species": "Animal",
+      "camera": "Camera 6a309e41bdc62e4448c0a370",
+      "date": "2026-10-01T13:24:25.368000+00:00",
+      "isNight": false,
+      "temp": null,
+      "confidence": null,
+      "moon": null,
+      "id": "sp_6abe5f09ca37e57e8e1d80f9",
+      "image": "photos/sp_6abe5f09ca37e57e8e1d80f9.jpg",
+      "tags": [
+        "Animal"
+      ]
+    },
+    {
+      "species": "Animal",
+      "camera": "Camera 6a309e41bdc62e4448c0a370",
+      "date": "2026-10-01T13:24:25.368000+00:00",
+      "isNight": false,
+      "temp": null,
+      "confidence": null,
+      "moon": null,
+      "id": "sp_6abe5f09ca37e57e8e1d80fb",
+      "image": "photos/sp_6abe5f09ca37e57e8e1d80fb.jpg",
+      "tags": [
+        "Animal"
+      ]
+    },
+    {
+      "species": "Animal",
+      "camera": "Camera 6a309e41bdc62e4448c0a370",
+      "date": "2026-10-01T13:24:25.368000+00:00",
+      "isNight": false,
+      "temp": null,
+      "confidence": null,
+      "moon": null,
+      "id": "sp_6abe5f09ca37e57e8e1d80fd",
+      "image": "photos/sp_6abe5f09ca37e57e8e1d80fd.jpg",
+      "tags": [
+        "Animal"
+      ]
+    },
+    {
+      "species": "Animal",
+      "camera": "Camera 6a309e41bdc62e4448c0a370",
+      "date": "2026-10-01T13:24:25.368000+00:00",
+      "isNight": false,
+      "temp": null,
+      "confidence": null,
+      "moon": null,
+      "id": "sp_6abe5f09ca37e57e8e1d80ff",
+      "image": "photos/sp_6abe5f09ca37e57e8e1d80ff.jpg",
+      "tags": [
+        "Animal"
+      ]
+    },
     {
       "species": "Animal",
       "camera": "Camera 6a309e41bdc62e4448c0a370",
