@@ -1,6 +1,90 @@
 [
   {
     "fields": {
+      "camera": "6a30af992e5969f7ed9fdc5c",
+      "date": "2026-10-04T22:21:23.840Z",
+      "id": "6ac2d1639c7e6d842fa39ed0",
+      "large": "<omitted>",
+      "medium": "<omitted>",
+      "originDate": "2026-10-04T17:43:59.000Z",
+      "originName": "PICT0372.JPG",
+      "originSize": 72767,
+      "preview": [],
+      "small": "<omitted>",
+      "tag": [
+        "day"
+      ]
+    },
+    "detected": [
+      "day"
+    ],
+    "normalized": "Animal"
+  },
+  {
+    "fields": {
+      "camera": "6a30af992e5969f7ed9fdc5c",
+      "date": "2026-10-04T22:21:23.840Z",
+      "id": "6ac2d1639c7e6d842fa39ed2",
+      "large": "<omitted>",
+      "medium": "<omitted>",
+      "originDate": "2026-10-04T17:43:58.000Z",
+      "originName": "PICT0371.JPG",
+      "originSize": 68021,
+      "preview": [],
+      "small": "<omitted>",
+      "tag": [
+        "day"
+      ]
+    },
+    "detected": [
+      "day"
+    ],
+    "normalized": "Animal"
+  },
+  {
+    "fields": {
+      "camera": "6a30af992e5969f7ed9fdc5c",
+      "date": "2026-10-04T22:21:23.840Z",
+      "id": "6ac2d1639c7e6d842fa39ed4",
+      "large": "<omitted>",
+      "medium": "<omitted>",
+      "originDate": "2026-10-04T14:49:50.000Z",
+      "originName": "PICT0370.JPG",
+      "originSize": 80277,
+      "preview": [],
+      "small": "<omitted>",
+      "tag": [
+        "day"
+      ]
+    },
+    "detected": [
+      "day"
+    ],
+    "normalized": "Animal"
+  },
+  {
+    "fields": {
+      "camera": "6a30af992e5969f7ed9fdc5c",
+      "date": "2026-10-04T22:21:23.840Z",
+      "id": "6ac2d1639c7e6d842fa39ed6",
+      "large": "<omitted>",
+      "medium": "<omitted>",
+      "originDate": "2026-10-04T14:49:49.000Z",
+      "originName": "PICT0369.JPG",
+      "originSize": 70945,
+      "preview": [],
+      "small": "<omitted>",
+      "tag": [
+        "day"
+      ]
+    },
+    "detected": [
+      "day"
+    ],
+    "normalized": "Animal"
+  },
+  {
+    "fields": {
       "camera": "6a309e41bdc62e4448c0a370",
       "date": "2026-10-04T19:24:26.853Z",
       "id": "6ac2a7eac70df2dcc6c76d5a",
@@ -9,90 +93,6 @@
       "originDate": "2026-10-04T14:49:45.000Z",
       "originName": "PICT0261.JPG",
       "originSize": 68778,
-      "preview": [],
-      "small": "<omitted>",
-      "tag": [
-        "day"
-      ]
-    },
-    "detected": [
-      "day"
-    ],
-    "normalized": "Animal"
-  },
-  {
-    "fields": {
-      "camera": "6a309e41bdc62e4448c0a370",
-      "date": "2026-10-04T19:24:26.853Z",
-      "id": "6ac2a7eac70df2dcc6c76d5c",
-      "large": "<omitted>",
-      "medium": "<omitted>",
-      "originDate": "2026-10-04T14:49:44.000Z",
-      "originName": "PICT0260.JPG",
-      "originSize": 67423,
-      "preview": [],
-      "small": "<omitted>",
-      "tag": [
-        "day"
-      ]
-    },
-    "detected": [
-      "day"
-    ],
-    "normalized": "Animal"
-  },
-  {
-    "fields": {
-      "camera": "6a30af992e5969f7ed9fdc5c",
-      "date": "2026-10-04T18:21:45.439Z",
-      "id": "6ac299396d09bee2bfd93504",
-      "large": "<omitted>",
-      "medium": "<omitted>",
-      "originDate": "2026-10-04T13:25:42.000Z",
-      "originName": "PICT0368.JPG",
-      "originSize": 79433,
-      "preview": [],
-      "small": "<omitted>",
-      "tag": [
-        "day"
-      ]
-    },
-    "detected": [
-      "day"
-    ],
-    "normalized": "Animal"
-  },
-  {
-    "fields": {
-      "camera": "6a30af992e5969f7ed9fdc5c",
-      "date": "2026-10-04T18:21:45.439Z",
-      "id": "6ac299396d09bee2bfd93506",
-      "large": "<omitted>",
-      "medium": "<omitted>",
-      "originDate": "2026-10-04T13:25:41.000Z",
-      "originName": "PICT0367.JPG",
-      "originSize": 70957,
-      "preview": [],
-      "small": "<omitted>",
-      "tag": [
-        "day"
-      ]
-    },
-    "detected": [
-      "day"
-    ],
-    "normalized": "Animal"
-  },
-  {
-    "fields": {
-      "camera": "6a30af992e5969f7ed9fdc5c",
-      "date": "2026-10-04T18:21:45.439Z",
-      "id": "6ac299396d09bee2bfd93508",
-      "large": "<omitted>",
-      "medium": "<omitted>",
-      "originDate": "2026-10-04T13:23:45.000Z",
-      "originName": "PICT0366.JPG",
-      "originSize": 79167,
       "preview": [],
       "small": "<omitted>",
       "tag": [
