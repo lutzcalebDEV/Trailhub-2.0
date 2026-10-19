@@ -6719,5 +6719,27 @@
   "moon": null,
   "id": "sp_6ad5686b3a8410e7d77bb834",
   "image": "photos/sp_6ad5686b3a8410e7d77bb834.jpg"
+ },
+ "sp_6ad5e9064d09120c985e30af": {
+  "species": "Buck",
+  "camera": "Camera 6a309e41bdc62e4448c0a370",
+  "date": "2026-10-19T09:55:18.486000+00:00",
+  "isNight": false,
+  "temp": 39,
+  "confidence": null,
+  "moon": null,
+  "id": "sp_6ad5e9064d09120c985e30af",
+  "image": "photos/sp_6ad5e9064d09120c985e30af.jpg"
+ },
+ "sp_6ad5e9064d09120c985e30b1": {
+  "species": "Buck",
+  "camera": "Camera 6a309e41bdc62e4448c0a370",
+  "date": "2026-10-19T09:55:18.486000+00:00",
+  "isNight": false,
+  "temp": null,
+  "confidence": null,
+  "moon": null,
+  "id": "sp_6ad5e9064d09120c985e30b1",
+  "image": "photos/sp_6ad5e9064d09120c985e30b1.jpg"
  }
 }
