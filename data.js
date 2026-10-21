@@ -1,21 +1,77 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-10-21T06:03:48",
+  "generatedAt": "2026-10-21T11:53:40",
   "demo": false,
   "cameras": [
     {
       "id": "6a309e41bdc62e4448c0a370",
       "name": "Camera 6a309e41bdc62e4448c0a370",
-      "latitude": 35.54125059,
-      "longitude": -81.39341166
+      "latitude": 35.541251,
+      "longitude": -81.393412
     },
     {
       "id": "6a30af992e5969f7ed9fdc5c",
       "name": "Camera 6a30af992e5969f7ed9fdc5c",
-      "latitude": 35.53788767,
-      "longitude": -81.39611834
+      "latitude": 35.53746692,
+      "longitude": -81.39555861
     }
   ],
   "captures": [
+    {
+      "species": "Animal",
+      "camera": "Camera 6a309e41bdc62e4448c0a370",
+      "date": "2026-10-21T10:54:26.975000+00:00",
+      "isNight": false,
+      "temp": 9,
+      "confidence": null,
+      "moon": null,
+      "id": "sp_6ad899e240fac95bdf27a828",
+      "image": "photos/sp_6ad899e240fac95bdf27a828.jpg",
+      "tags": [
+        "Animal"
+      ]
+    },
+    {
+      "species": "Buck",
+      "camera": "Camera 6a309e41bdc62e4448c0a370",
+      "date": "2026-10-21T10:54:26.975000+00:00",
+      "isNight": false,
+      "temp": null,
+      "confidence": null,
+      "moon": null,
+      "id": "sp_6ad899e240fac95bdf27a82a",
+      "image": "photos/sp_6ad899e240fac95bdf27a82a.jpg",
+      "tags": [
+        "Buck"
+      ]
+    },
+    {
+      "species": "Buck",
+      "camera": "Camera 6a309e41bdc62e4448c0a370",
+      "date": "2026-10-21T07:44:14.263000+00:00",
+      "isNight": false,
+      "temp": null,
+      "confidence": null,
+      "moon": null,
+      "id": "sp_6ad86d4ef9896598f1bc9711",
+      "image": "photos/sp_6ad86d4ef9896598f1bc9711.jpg",
+      "tags": [
+        "Buck"
+      ]
+    },
+    {
+      "species": "Buck",
+      "camera": "Camera 6a309e41bdc62e4448c0a370",
+      "date": "2026-10-21T07:44:14.263000+00:00",
+      "isNight": false,
+      "temp": null,
+      "confidence": null,
+      "moon": null,
+      "id": "sp_6ad86d4ef9896598f1bc9713",
+      "image": "photos/sp_6ad86d4ef9896598f1bc9713.jpg",
+      "tags": [
+        "Buck"
+      ]
+    },
     {
       "species": "Animal",
       "camera": "Camera 6a309e41bdc62e4448c0a370",
