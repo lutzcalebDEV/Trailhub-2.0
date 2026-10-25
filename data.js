@@ -1,12 +1,12 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-10-25T00:08:14",
+  "generatedAt": "2026-10-25T04:45:45",
   "demo": false,
   "cameras": [
     {
       "id": "6a309e41bdc62e4448c0a370",
       "name": "Camera 6a309e41bdc62e4448c0a370",
-      "latitude": 35.541745,
-      "longitude": -81.39229
+      "latitude": 35.54160304,
+      "longitude": -81.39328018
     },
     {
       "id": "6a30af992e5969f7ed9fdc5c",
@@ -26,6 +26,20 @@ window.TRAILHUB_DATA = {
       "moon": null,
       "id": "sp_6add474335056eeada3652e8",
       "image": "photos/sp_6add474335056eeada3652e8.jpg",
+      "tags": [
+        "Animal"
+      ]
+    },
+    {
+      "species": "Animal",
+      "camera": "Camera 6a309e41bdc62e4448c0a370",
+      "date": "2026-10-25T00:03:15.527000+00:00",
+      "isNight": true,
+      "temp": null,
+      "confidence": null,
+      "moon": null,
+      "id": "sp_6add474335056eeada3652ea",
+      "image": "photos/sp_6add474335056eeada3652ea.jpg",
       "tags": [
         "Animal"
       ]
