@@ -1,5 +1,5 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-10-27T06:42:07",
+  "generatedAt": "2026-10-27T12:43:09",
   "demo": false,
   "cameras": [
     {
@@ -16,6 +16,34 @@ window.TRAILHUB_DATA = {
     }
   ],
   "captures": [
+    {
+      "species": "Animal",
+      "camera": "Camera 6a309e41bdc62e4448c0a370",
+      "date": "2026-10-27T11:21:27.525000+00:00",
+      "isNight": false,
+      "temp": null,
+      "confidence": null,
+      "moon": null,
+      "id": "sp_6ae08937aa4e1328117b882e",
+      "image": "photos/sp_6ae08937aa4e1328117b882e.jpg",
+      "tags": [
+        "Animal"
+      ]
+    },
+    {
+      "species": "Animal",
+      "camera": "Camera 6a309e41bdc62e4448c0a370",
+      "date": "2026-10-27T11:21:27.525000+00:00",
+      "isNight": false,
+      "temp": 42,
+      "confidence": null,
+      "moon": null,
+      "id": "sp_6ae08937aa4e1328117b8830",
+      "image": "photos/sp_6ae08937aa4e1328117b8830.jpg",
+      "tags": [
+        "Animal"
+      ]
+    },
     {
       "species": "Buck",
       "camera": "Camera 6a309e41bdc62e4448c0a370",
