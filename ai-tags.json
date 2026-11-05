@@ -1,4 +1,69 @@
 {
+ "sp_6a7f5ca52e4bc55ec6544d39": {
+  "confidence": 0.99,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a7f5ca52e4bc55ec6544d3b": {
+  "confidence": 0.98,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a7f5ca52e4bc55ec6544d3d": {
+  "confidence": 1.0,
+  "label": "Person",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a7f5ca52e4bc55ec6544d3f": {
+  "confidence": 0.99,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a7f5ca52e4bc55ec6544d41": {
+  "confidence": 0.99,
+  "label": "Person",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a7f5ca52e4bc55ec6544d43": {
+  "confidence": 0.99,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a7f5ca52e4bc55ec6544d45": {
+  "confidence": 0.99,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a7f6b77dd6e962a14f278de": {
+  "confidence": 1.0,
+  "label": "Person",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a7f6b77dd6e962a14f278e0": {
+  "confidence": 0.99,
+  "label": "Person",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a7f6b77dd6e962a14f278e2": {
+  "confidence": 0.99,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a7f6b77dd6e962a14f278e4": {
+  "confidence": 0.99,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a8657932e97943f27911423": {
+  "confidence": 0.95,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a8657942e97943f27911425": {
+  "confidence": 0.95,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
  "sp_6a89f7669f5ace47e97766ed": {
   "confidence": 0.98,
   "label": "Person",
@@ -36,6 +101,16 @@
  },
  "sp_6a89f7669f5ace47e97766fb": {
   "confidence": 0.99,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a89f7669f5ace47e97766fd": {
+  "confidence": 1.0,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a89f7669f5ace47e97766ff": {
+  "confidence": 1.0,
   "label": "Vehicle",
   "model": "gemini-3.5-flash-lite"
  },
