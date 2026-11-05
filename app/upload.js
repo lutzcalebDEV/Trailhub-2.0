@@ -10,7 +10,9 @@ const OTHER_CAMERA = "Other camera";
 
 // Re-encoding shrinks the file and also drops EXIF data, including any GPS position.
 async function prepare(file) {
-  const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
+  const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" }).catch(() => {
+    throw new Error("This file couldn't be read");
+  });
   const scale = Math.min(1, MAX_EDGE / Math.max(bitmap.width, bitmap.height));
   const canvas = document.createElement("canvas");
   canvas.width = Math.round(bitmap.width * scale);
@@ -74,7 +76,7 @@ function Picker({ auth, cameras, camName, onUploaded }) {
         sent++;
       } catch (e) {
         if (e instanceof StorageFull) { setFull(true); break; }
-        bad.push(files[i].name);
+        bad.push(`${files[i].name}: ${e.message}`);
       }
     }
     setProgress(null);
@@ -113,7 +115,7 @@ function Picker({ auth, cameras, camName, onUploaded }) {
       Photo storage has reached its limit, so uploads are paused.
     </p>`}
     ${failed.length > 0 && html`<p className="form-error" role="alert">
-      Couldn't upload: ${failed.join(", ")}
+      Couldn't upload ${failed.join("; ")}
     </p>`}
     <${Btn} variant="primary" disabled=${!files.length || progress != null} onClick=${send}>
       ${progress != null

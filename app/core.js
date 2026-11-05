@@ -261,7 +261,10 @@ export async function uploadPhoto(blob, { date, camera, species, comment, author
     body: blob,
   });
   if (r.status === 507) throw new StorageFull();
-  if (!r.ok) throw new Error("Upload failed (" + r.status + ")");
+  if (!r.ok) {
+    const body = await r.json().catch(() => ({}));
+    throw new Error(body.error || "The upload failed (" + r.status + ")");
+  }
 }
 
 /* ------------------------------ Comments -------------------------------- */
