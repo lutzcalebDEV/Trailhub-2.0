@@ -5,4 +5,4 @@
 // Set it to your tag endpoint URL to sync tags for all visitors.
 // See the README section "Shared tags (so everyone sees them)" for the
 // one-time setup that gives you this URL.
-window.TRAILHUB_TAGS_API = "";
+window.TRAILHUB_TAGS_API = "https://trailhub-tags.lutz-caleb.workers.dev";
