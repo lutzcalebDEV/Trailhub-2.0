@@ -22,6 +22,7 @@
 // API
 //   GET  /            -> { "<photoId>": ["Deer","Turkey"], ... }   (all photo tags)
 //   POST /            with { "id": "sp_...", "tags": ["Deer","Turkey"] }  (save one photo)
+//   POST /            with { "items": { "sp_...": ["Deer"], ... } }  (save many in one commit)
 //   GET  /cameras     -> { "<cameraKey>": "North Field", ... }    (all camera names)
 //   POST /cameras     with { "id": "Camera 6a30...", "name": "North Field" }  (rename one)
 //   GET  /meta        -> { "<photoId>": { "note": "...", "favorite": true }, ... }
@@ -37,6 +38,7 @@
 const TAGS_FILE = "tags.json";
 const CAMERA_FILE = "camera-names.json";
 const META_FILE = "metadata.json";
+const BATCH_MAX = 2000; // above the site's 1,500-photo cap
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -224,6 +226,23 @@ export default {
 
       if (request.method === "POST") {
         const payload = await request.json().catch(() => null);
+
+        // Bulk tagging is one commit: separate saves would all race for the same file.
+        if (!isCameras && !isMeta && payload && payload.items && typeof payload.items === "object") {
+          const entries = Object.entries(payload.items);
+          if (!entries.length) return json({ error: "No items." }, 400);
+          if (entries.length > BATCH_MAX) return json({ error: "Too many items." }, 413);
+          const result = await saveEntry(env, TAGS_FILE,
+            (data) => {
+              for (const [id, tags] of entries) {
+                const clean = cleanTags(tags);
+                if (clean.length) data[id] = clean; else delete data[id];
+              }
+            },
+            `Update tags for ${entries.length} photos`);
+          return result.ok ? json({ ok: true, tags: result.data }) : json({ error: result.error }, result.status);
+        }
+
         if (!payload || !payload.id) return json({ error: "Missing id." }, 400);
         const id = String(payload.id);
 

@@ -213,6 +213,18 @@ export async function remoteSaveTags(id, tags) {
   return { ok: true };
 }
 
+// Save many photos in one request (and one commit). `items` is {id: [tags]}.
+export async function remoteSaveTagsBatch(items) {
+  if (!TAGS_API) return { ok: false, reason: "no-endpoint" };
+  const r = await fetch(TAGS_API, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ items }),
+  });
+  if (!r.ok) throw new Error("Tag save failed (" + r.status + ")");
+  return { ok: true };
+}
+
 /* ------------------- Shared camera names (optional) --------------------- */
 // Friendly camera names overlay the raw "Camera <id>" labels everywhere they show.
 // Like tags: device-local until the Worker is configured, then global for everyone.

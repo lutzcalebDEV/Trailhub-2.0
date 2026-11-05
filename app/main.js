@@ -2,7 +2,7 @@
 import { html, useState, useEffect, useMemo, useRef, useCallback, Fragment, ReactDOM } from "./react.js";
 import {
   LS, usePersistent, usePersistentSet, useData, loadOverrides,
-  remoteLoadTags, remoteSaveTags, hasSharedTags, effectiveSpecies, timeAgo,
+  remoteLoadTags, remoteSaveTags, remoteSaveTagsBatch, hasSharedTags, effectiveSpecies, timeAgo,
   loadCameraNames, remoteLoadCameraNames, remoteSaveCameraName, displayCamera,
   loadMetadata, remoteLoadMetadata, remoteSaveMetadata, applyMeta, metaOf, cameraLabels,
 } from "./core.js";
@@ -47,15 +47,69 @@ function App() {
   const [toast, setToast] = useState(null);
   const toastTimer = useRef(0);
 
-  // Apply + load shared baseline tags once.
+  // Once a tag or name is saved for everyone, the shared copy is the truth. Dropping
+  // the local copy means this device follows later edits made anywhere else.
+  const settleTags = useCallback((map) => {
+    setRemoteTags((r) => ({ ...r, ...map }));
+    setLocalOverrides((prev) => {
+      const next = { ...prev };
+      for (const id of Object.keys(map)) delete next[id];
+      return next;
+    });
+    try { localStorage.removeItem(LS.legacyOverrides); } catch (e) {}
+  }, []);
+  const settleCameraNames = useCallback((map) => {
+    setRemoteCamNames((r) => {
+      const next = { ...r };
+      for (const [id, name] of Object.entries(map)) {
+        if (name) next[id] = name;
+        else delete next[id];
+      }
+      return next;
+    });
+    setLocalCamNames((prev) => {
+      const next = { ...prev };
+      for (const id of Object.keys(map)) delete next[id];
+      return next;
+    });
+  }, []);
+
+  // Upload edits only this device has: anything made before sharing was switched on,
+  // or a save that failed. Runs once per page load, so failures retry on the next.
+  const uploadedLocal = useRef(false);
+  const uploadLocalEdits = useCallback(async (sharedTags, sharedNames) => {
+    if (!hasSharedTags || uploadedLocal.current) return;
+    uploadedLocal.current = true;
+    const tags = loadOverrides();
+    const newTags = {};
+    for (const [id, t] of Object.entries(tags)) {
+      if (JSON.stringify(sharedTags[id]) !== JSON.stringify(t)) newTags[id] = t;
+    }
+    const names = loadCameraNames();
+    try {
+      if (Object.keys(newTags).length) await remoteSaveTagsBatch(newTags);
+      settleTags(tags);
+      for (const [id, name] of Object.entries(names)) {
+        if (sharedNames[id] !== name) await remoteSaveCameraName(id, name);
+      }
+      settleCameraNames(names);
+    } catch (e) { /* stays on this device until the next load */ }
+  }, [settleTags, settleCameraNames]);
+
+  // Reload shared data with every refresh, so edits from other devices show up
+  // on the same schedule as new photos.
   useEffect(() => { document.documentElement.setAttribute("data-theme", theme); }, [theme]);
   useEffect(() => {
     let alive = true;
-    remoteLoadTags().then((map) => { if (alive && map) setRemoteTags(map); }).catch(() => {});
-    remoteLoadCameraNames().then((map) => { if (alive && map) setRemoteCamNames(map); }).catch(() => {});
+    Promise.all([remoteLoadTags(), remoteLoadCameraNames()]).then(([tags, names]) => {
+      if (!alive) return;
+      if (tags) setRemoteTags(tags);
+      if (names) setRemoteCamNames(names);
+      if (tags && names) uploadLocalEdits(tags, names);
+    }).catch(() => {});
     remoteLoadMetadata().then((map) => { if (alive && map) setRemoteMeta(map); }).catch(() => {});
     return () => { alive = false; };
-  }, []);
+  }, [data, uploadLocalEdits]);
   useEffect(() => {
     try { localStorage.setItem(LS.overrides, JSON.stringify(localOverrides)); } catch (e) {}
   }, [localOverrides]);
@@ -137,12 +191,12 @@ function App() {
     reviewed$.add(id);
     if (hasSharedTags) {
       remoteSaveTags(id, [species])
-        .then(() => showToast("ok", `Saved “${species}” for everyone`))
+        .then(() => { settleTags({ [String(id)]: [species] }); showToast("ok", `Saved “${species}” for everyone`); })
         .catch(() => showToast("err", "Couldn’t sync — saved on this device"));
     } else {
       showToast("ok", `Tagged ${species}`);
     }
-  }, [setOverrideTags, reviewed$, showToast]);
+  }, [setOverrideTags, settleTags, reviewed$, showToast]);
 
   const keep = useCallback((id) => { reviewed$.add(id); showToast("ok", "Marked reviewed"); }, [reviewed$, showToast]);
   const archiveCap = useCallback((id) => { archive$.add(id); showToast("ok", "Archived"); }, [archive$, showToast]);
@@ -159,15 +213,14 @@ function App() {
     });
     reviewed$.setSet((s) => { const n = new Set(s); for (const id of list) n.add(String(id)); return n; });
     if (hasSharedTags) {
-      Promise.allSettled(list.map((id) => remoteSaveTags(id, [species]))).then((rs) => {
-        const failed = rs.filter((r) => r.status === "rejected").length;
-        if (failed) showToast("err", `Tagged ${list.length} \u00b7 ${failed} didn\u2019t sync`);
-        else showToast("ok", `Tagged ${list.length} as ${species} for everyone`);
-      });
+      const items = Object.fromEntries(list.map((id) => [String(id), [species]]));
+      remoteSaveTagsBatch(items)
+        .then(() => { settleTags(items); showToast("ok", `Tagged ${list.length} as ${species} for everyone`); })
+        .catch(() => showToast("err", "Couldn\u2019t sync \u2014 saved on this device"));
     } else {
       showToast("ok", `Tagged ${list.length} photo${list.length === 1 ? "" : "s"} as ${species}`);
     }
-  }, [reviewed$, showToast]);
+  }, [reviewed$, settleTags, showToast]);
 
   // Rename a camera for everyone (raw label is the stable key; "" resets it).
   const renameCamera = useCallback((rawName, name) => {
@@ -180,12 +233,15 @@ function App() {
     });
     if (hasSharedTags) {
       remoteSaveCameraName(rawName, friendly)
-        .then(() => showToast("ok", friendly ? `Renamed to \u201c${friendly}\u201d for everyone` : "Name reset for everyone"))
+        .then(() => {
+          settleCameraNames({ [String(rawName)]: friendly });
+          showToast("ok", friendly ? `Renamed to \u201c${friendly}\u201d for everyone` : "Name reset for everyone");
+        })
         .catch(() => showToast("err", "Couldn\u2019t sync \u2014 saved on this device"));
     } else {
       showToast("ok", friendly ? `Renamed to \u201c${friendly}\u201d` : "Name reset");
     }
-  }, [showToast]);
+  }, [settleCameraNames, showToast]);
 
   // Update per-photo metadata (note, favorite, temp/moon corrections, ...). `patch`
   // is merged into the photo's entry; a key set to null removes it. Local-first,
@@ -255,6 +311,7 @@ function App() {
       meta=${metaOf(lbItem, metaMap)}
       onMeta=${(patch, opts) => updateMeta(lbItem.id, patch, opts)}
       onToggleFavorite=${() => toggleFavorite(lbItem.id)}
+      onTag=${(sp) => assignSpecies(lbItem.id, sp)}
       hasPrev=${lightbox.index > 0}
       hasNext=${lightbox.index < lightbox.list.length - 1}
       onPrev=${() => setLightbox((s) => ({ ...s, index: Math.max(0, s.index - 1) }))}

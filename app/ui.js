@@ -4,7 +4,7 @@
 import { html, useEffect, useState } from "./react.js";
 import { Icon } from "./icons.js";
 import {
-  speciesColor, fmtDate, fmtDateTime, timeAgo, labelHour, isoDay,
+  speciesColor, fmtDate, fmtDateTime, timeAgo, labelHour, isoDay, TAG_OPTIONS,
 } from "./core.js";
 
 const cx = (...xs) => xs.filter(Boolean).join(" ");
@@ -261,7 +261,7 @@ export function Shot({ capture, species, onClick, cameraLabel, selectable, selec
 // Editable per-photo metadata: favorite flag, a free-text note, and manual
 // corrections to temp / moon. Remounts per photo (keyed by id) so the draft
 // resets cleanly. Notes/temp save on blur; the star toggles immediately.
-export function LightboxEdit({ capture, meta, onMeta, onToggleFavorite }) {
+export function LightboxEdit({ capture, species, meta, onMeta, onToggleFavorite, onTag }) {
   const c = capture;
   const m = meta || {};
   const [note, setNote] = useState(m.note || "");
@@ -300,6 +300,12 @@ export function LightboxEdit({ capture, meta, onMeta, onToggleFavorite }) {
       value=${note} onInput=${(e) => setNote(e.target.value)} onBlur=${commitNote} maxLength=${500} />
     <div className="lb__corrections">
       <label className="lb__field">
+        <span><${Icon} name="paw" size=${13} />Animal</span>
+        <select value=${species} onChange=${(e) => onTag(e.target.value)}>
+          ${[...new Set([...TAG_OPTIONS, species])].map((s) => html`<option key=${s} value=${s}>${s}</option>`)}
+        </select>
+      </label>
+      <label className="lb__field">
         <span><${Icon} name="thermo" size=${13} />Temp \u00b0F</span>
         <input type="number" inputMode="numeric" value=${temp}
           onInput=${(e) => setTemp(e.target.value)} onBlur=${commitTemp}
@@ -315,7 +321,7 @@ export function LightboxEdit({ capture, meta, onMeta, onToggleFavorite }) {
   </div>`;
 }
 
-export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggleFavorite, onClose, onPrev, onNext, hasPrev, hasNext }) {
+export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggleFavorite, onTag, onClose, onPrev, onNext, hasPrev, hasNext }) {
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === "Escape") onClose();
@@ -351,8 +357,8 @@ export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggle
             ${c.confidence != null && html`<span><${Icon} name="target" size=${15} />${c.aiTagged ? "AI " : ""}${Math.round(c.confidence * 100)}%</span>`}
           </div>
         </div>
-        ${onMeta && html`<${LightboxEdit} key=${c.id} capture=${c} meta=${meta}
-          onMeta=${onMeta} onToggleFavorite=${onToggleFavorite} />`}
+        ${onMeta && html`<${LightboxEdit} key=${c.id} capture=${c} species=${species} meta=${meta}
+          onMeta=${onMeta} onToggleFavorite=${onToggleFavorite} onTag=${onTag} />`}
         <div className="lb__actions">
           ${c.image && html`<a className="btn btn--sm" href=${c.image} download target="_blank" rel="noopener">
             <${Icon} name="download" size=${15} /><span>Download</span>

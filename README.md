@@ -147,7 +147,8 @@ Open any photo and use the **Tags** panel to classify what's in it:
   and color); click the **×** to remove a tag.
 - Tags are remembered. By default they're saved **in your browser** only — great
   for solo use, but other people/machines won't see them. To share them with
-  everyone, set up the one-time sync below.
+  everyone, set up the one-time sync below. Anything tagged on a device before that
+  uploads automatically the next time the site opens there.
 
 ### Shared tags (so everyone sees them)
 
