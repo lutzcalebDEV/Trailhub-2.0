@@ -1,4 +1,79 @@
 {
+ "sp_6ad612d08115ba473f2ce45a": {
+  "confidence": 0.85,
+  "label": "Doe",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ad613614d09120c9861795d": {
+  "confidence": 0.85,
+  "label": "Doe",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ad613614d09120c9861795f": {
+  "confidence": 0.95,
+  "label": "Doe",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ad6138037ff3174c012f775": {
+  "confidence": 0.95,
+  "label": "Deer",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ad6138037ff3174c012f777": {
+  "confidence": 0.85,
+  "label": "Deer",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ad68506b1876f3482ca8006": {
+  "confidence": 0.99,
+  "label": "Person",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ad68506b1876f3482ca8008": {
+  "confidence": 0.99,
+  "label": "Person",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ad6afc03c31e56e9061aaab": {
+  "confidence": 0.95,
+  "label": "Doe",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ad6afc03c31e56e9061aaad": {
+  "confidence": 0.8,
+  "label": "Doe",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ad6afdf7c93b5dedcb69332": {
+  "confidence": 0.85,
+  "label": "Deer",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ad6afdf7c93b5dedcb69334": {
+  "confidence": 0.85,
+  "label": "Deer",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ad6ca029847ab37be4c7cdf": {
+  "confidence": 0.85,
+  "label": "Deer",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ad6ca029847ab37be4c7ce1": {
+  "confidence": 0.85,
+  "label": "Coyote",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ad6e681447ab6b8b97c4380": {
+  "confidence": 0.85,
+  "label": "Doe",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ad6e681447ab6b8b97c4382": {
+  "confidence": 0.8,
+  "label": "Doe",
+  "model": "gemini-3.5-flash-lite"
+ },
  "sp_6ad6e71302a5a5afa9235742": {
   "confidence": 0.85,
   "label": "Deer",
