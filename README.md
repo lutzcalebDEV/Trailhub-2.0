@@ -233,6 +233,11 @@ stripped of location data on the device before leaving it.
    bucket. Add these repository secrets: `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`,
    `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` (`trailhub-photos`) and `R2_PUBLIC_BASE_URL`.
 
+Writes stop at 7 GB, 70% of the 10 GB free tier, both for the camera pipeline and for
+uploads. If usage can't be checked, writes pause too. New camera photos then stay in
+this repo until there's room, and the run shows an **R2 uploads paused** warning.
+Only the upload login and the `R2_*` keys can write to the bucket.
+
 The next runs move existing photos to R2 and remove them from the repo. Older copies
 stay in git history until that history is rewritten.
 

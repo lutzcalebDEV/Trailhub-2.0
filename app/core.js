@@ -230,6 +230,7 @@ export async function remoteSaveTagsBatch(items) {
 
 /* ---------------------------- Photo uploads ----------------------------- */
 export const hasUploads = !!TAGS_API;
+export class StorageFull extends Error {}
 
 const basicAuth = ({ user, password }) => {
   const bytes = new TextEncoder().encode(`${user}:${password}`);
@@ -256,6 +257,7 @@ export async function uploadPhoto(blob, { date, camera, species }, auth) {
     headers: { Authorization: basicAuth(auth), "Content-Type": "image/jpeg" },
     body: blob,
   });
+  if (r.status === 507) throw new StorageFull();
   if (!r.ok) throw new Error("Upload failed (" + r.status + ")");
 }
 

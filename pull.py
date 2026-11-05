@@ -58,6 +58,7 @@ SITE_LATLNG = (35.54, -81.39)
 OCR_VERSION = 2          # bump to re-read every photo's info bar
 OVERLAY_PER_RUN = 150    # keeps a backlog from slowing any one run
 R2_MOVES_PER_RUN = 300   # keeps a backlog from slowing any one run
+R2_STOP_BYTES = 7 * 10**9  # stop at 70% of R2's 10 GB free tier, well before any charge
 MAX_UPLOAD_DELAY = dt.timedelta(days=14)
 
 
@@ -215,6 +216,7 @@ class R2Uploader:
         endpoint = cfg["endpoint"] or f"https://{cfg['account_id']}.r2.cloudflarestorage.com"
         self.bucket = cfg["bucket"]
         self.public_base_url = cfg["public_base_url"]
+        self.used = None  # bytes in the bucket, counted on first need
         self._client = boto3.client(
             "s3",
             endpoint_url=endpoint,
@@ -223,6 +225,25 @@ class R2Uploader:
             region_name="auto",
             config=BotoConfig(signature_version="s3v4", retries={"max_attempts": 3, "mode": "standard"}),
         )
+
+    def has_room(self, local_path: Path) -> bool:
+        """True if this file fits under the stop limit.
+
+        If usage can't be counted, this reports no room: staying under the free
+        tier matters more than any one upload.
+        """
+        if self.used is None:
+            try:
+                pages = self._client.get_paginator("list_objects_v2").paginate(Bucket=self.bucket)
+                self.used = sum(o["Size"] for page in pages for o in page.get("Contents", []))
+                print(f"R2 usage: {self.used / 10**9:.3f} GB of {R2_STOP_BYTES / 10**9:.0f} GB allowed.")
+            except Exception as e:
+                print(f"::warning title=R2 uploads paused::Couldn't check usage: {e}")
+                self.used = R2_STOP_BYTES
+        room = self.used + local_path.stat().st_size <= R2_STOP_BYTES
+        if not room:
+            print("::warning title=R2 uploads paused::Storage reached the 70% stop limit.")
+        return room
 
     def upload(self, local_path: Path, key: str) -> str:
         """Upload one file and return its public URL. Cached forever (stable ids)."""
@@ -238,6 +259,8 @@ class R2Uploader:
             str(local_path), self.bucket, key,
             ExtraArgs={"ContentType": ctype, "CacheControl": "public, max-age=31536000, immutable"},
         )
+        if self.used is not None:
+            self.used += local_path.stat().st_size
         return f"{self.public_base_url}/{key}"
 
 
@@ -254,6 +277,8 @@ def move_photos_to_r2(store, r2, limit=R2_MOVES_PER_RUN):
         path = HERE / c["image"]
         if not path.exists():
             continue
+        if not r2.has_room(path):
+            break
         try:
             url = r2.upload(path, path.name)
             if not moved:
@@ -1373,13 +1398,16 @@ def run_pull(limit, inspect):
                 try:
                     if not dest.exists():
                         download_with_retry(url, dest)
-                    meta["image"] = r2.upload(dest, fname)
+                    # Over the limit, the photo stays in the repo so it isn't lost.
+                    meta["image"] = r2.upload(dest, fname) if r2.has_room(dest) else f"photos/{fname}"
                     new_count += 1
                     print(f"  [new] {meta['species']:<10} {meta['camera']}")
                 except Exception as e:
                     report_skip(f"{sid}: upload failed ({e})")
                     skipped += 1
                     continue
+        elif str(prev.get("image", "")).startswith("http"):
+            meta["image"] = prev["image"]  # already hosted; never point back at the repo
         else:
             # Legacy: keep the image in the repo under photos/.
             already = sid in store and dest.exists()

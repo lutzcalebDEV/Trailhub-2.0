@@ -44,6 +44,7 @@ const META_FILE = "metadata.json";
 const BATCH_MAX = 2000; // above the site's 1,500-photo cap
 const UPLOADS_FILE = "uploads.json";
 const MAX_IMAGE_BYTES = 6 * 1024 * 1024;
+const R2_STOP_BYTES = 7e9; // stop at 70% of R2's 10 GB free tier, well before any charge
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -230,12 +231,27 @@ async function isAuthorized(request, env) {
   return userOk && passwordOk;
 }
 
+async function bucketBytes(env) {
+  let used = 0;
+  let cursor;
+  do {
+    const page = await env.PHOTOS.list({ cursor });
+    for (const object of page.objects) used += object.size;
+    cursor = page.truncated ? page.cursor : undefined;
+  } while (cursor);
+  return used;
+}
+
 async function handleUpload(request, env) {
   if (!env.PHOTOS || !env.R2_PUBLIC_BASE_URL) return json({ error: "Photo storage isn't set up." }, 503);
   const bytes = new Uint8Array(await request.arrayBuffer());
   if (bytes.length > MAX_IMAGE_BYTES) return json({ error: "Image too large." }, 413);
   if (bytes.length < 3 || bytes[0] !== 0xff || bytes[1] !== 0xd8 || bytes[2] !== 0xff) {
     return json({ error: "Only JPEG images are accepted." }, 415);
+  }
+  // A failed count throws to the caller, so an unknown usage blocks the upload.
+  if ((await bucketBytes(env)) + bytes.length > R2_STOP_BYTES) {
+    return json({ error: "Photo storage is full." }, 507);
   }
   const query = new URL(request.url).searchParams;
   const now = Date.now();

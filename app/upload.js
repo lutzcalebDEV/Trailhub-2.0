@@ -1,7 +1,7 @@
 // Vale Trails — sign in and add photos from a phone or an SD card.
 import { html, useState } from "./react.js";
 import { Btn, IconBtn, Select } from "./ui.js";
-import { hasUploads, uploadLogin, uploadPhoto, displayCamera, TAG_OPTIONS } from "./core.js";
+import { hasUploads, uploadLogin, uploadPhoto, displayCamera, TAG_OPTIONS, StorageFull } from "./core.js";
 
 const MAX_EDGE = 1600;
 const OTHER_CAMERA = "Other camera";
@@ -54,6 +54,7 @@ function Picker({ auth, cameras, camName, onUploaded }) {
   const [species, setSpecies] = useState("Animal");
   const [progress, setProgress] = useState(null);
   const [failed, setFailed] = useState([]);
+  const [full, setFull] = useState(false);
 
   const send = async () => {
     const bad = [];
@@ -65,6 +66,7 @@ function Picker({ auth, cameras, camName, onUploaded }) {
         await uploadPhoto(blob, { camera, species, date: new Date(files[i].lastModified).toISOString() }, auth);
         sent++;
       } catch (e) {
+        if (e instanceof StorageFull) { setFull(true); break; }
         bad.push(files[i].name);
       }
     }
@@ -89,6 +91,9 @@ function Picker({ auth, cameras, camName, onUploaded }) {
       <${Select} value=${species} onChange=${setSpecies} aria-label="Animal"
         options=${TAG_OPTIONS.map((s) => ({ value: s, label: s === "Animal" ? "Not sure" : s }))} />
     </div>
+    ${full && html`<p className="form-error" role="alert">
+      Photo storage has reached its limit, so uploads are paused.
+    </p>`}
     ${failed.length > 0 && html`<p className="form-error" role="alert">
       Couldn't upload: ${failed.join(", ")}
     </p>`}
