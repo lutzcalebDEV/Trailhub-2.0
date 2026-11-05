@@ -116,6 +116,7 @@ function normalizePayload(d) {
         confidence: c.confidence == null ? null : c.confidence,
         aiTagged: !!c.aiTagged,
         tempEstimated: !!c.tempEstimated,
+        media: c.media === "video" ? "video" : "photo",
         weather: c.weather || null,
         temp: c.temp == null ? null : c.temp,
         moon: c.moon || moonFromDate(date),
@@ -250,15 +251,43 @@ export async function uploadLogin(user, password) {
   }
 }
 
-export async function uploadPhoto(blob, { date, camera, species }, auth) {
-  const query = new URLSearchParams({ date, camera, species });
+export const MAX_VIDEO_BYTES = 80 * 1024 * 1024;
+
+export async function uploadPhoto(blob, { date, camera, species, comment, author }, auth) {
+  const query = new URLSearchParams({ date, camera, species, comment: comment || "", author: author || "" });
   const r = await fetch(`${TAGS_API}/upload?${query}`, {
     method: "POST",
-    headers: { Authorization: basicAuth(auth), "Content-Type": "image/jpeg" },
+    headers: { Authorization: basicAuth(auth), "Content-Type": blob.type || "application/octet-stream" },
     body: blob,
   });
   if (r.status === 507) throw new StorageFull();
   if (!r.ok) throw new Error("Upload failed (" + r.status + ")");
+}
+
+/* ------------------------------ Comments -------------------------------- */
+// Anyone can read comments. Posting needs the upload login.
+export async function remoteLoadComments() {
+  const urls = [];
+  if (TAGS_API) urls.push(TAGS_API + "/comments?t=" + Date.now());
+  urls.push("comments.json?t=" + Date.now());
+  for (const u of urls) {
+    try {
+      const r = await fetch(u, { cache: "no-store" });
+      if (r.ok) return await r.json();
+    } catch (e) { /* try next */ }
+  }
+  return null;
+}
+
+// `body` is { photo, text, author } or { photo, remove }. Returns that photo's comments.
+export async function saveComment(body, auth) {
+  const r = await fetch(TAGS_API + "/comments", {
+    method: "POST",
+    headers: { Authorization: basicAuth(auth), "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) throw new Error("Comment failed (" + r.status + ")");
+  return (await r.json()).comments;
 }
 
 /* ------------------- Shared camera names (optional) --------------------- */
@@ -410,6 +439,7 @@ export const LS = {
   camNames: "trailhub-camera-names",
   meta: "trailhub-metadata",
   view: "trailhub-view",
+  commentName: "trailhub-comment-name",
   filters: "trailhub-filters",
 };
 

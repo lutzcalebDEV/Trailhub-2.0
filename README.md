@@ -238,6 +238,10 @@ uploads. If usage can't be checked, writes pause too. New camera photos then sta
 this repo until there's room, and the run shows an **R2 uploads paused** warning.
 Only the upload login and the `R2_*` keys can write to the bucket.
 
+Videos (MP4, MOV or WebM, up to 80 MB) are stored as recorded, so they keep any
+location data the phone added. Some iPhone videos only play in Safari. Comments on
+photos and videos are public to read and need the upload login to post or remove.
+
 The next runs move existing photos to R2 and remove them from the repo. Older copies
 stay in git history until that history is rewritten.
 

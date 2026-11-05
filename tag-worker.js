@@ -31,8 +31,12 @@
 //                      remove it, or an empty meta object to clear the whole entry.)
 //   (POST an empty tags array or empty name to clear an entry.)
 //   POST /login       checks the upload username and password (Basic auth)
-//   POST /upload      stores one JPEG in R2 and lists it in uploads.json (Basic auth);
-//                     body is the image; query has date, camera, species
+//   POST /upload      stores one JPEG or video in R2 and lists it in uploads.json
+//                     (Basic auth); body is the file; query has date, camera, species,
+//                     and optionally comment and author
+//   GET  /comments    -> { "<photoId>": [{ id, text, author, at }], ... }
+//   POST /comments    with { "photo": "...", "text": "...", "author": "..." } (Basic auth)
+//                     or { "photo": "...", "remove": "<commentId>" }
 // ---------------------------------------------------------------------------
 
 // Each resource maps a request path to a JSON file committed in the repo. pull.py
@@ -43,7 +47,10 @@ const CAMERA_FILE = "camera-names.json";
 const META_FILE = "metadata.json";
 const BATCH_MAX = 2000; // above the site's 1,500-photo cap
 const UPLOADS_FILE = "uploads.json";
+const COMMENTS_FILE = "comments.json";
 const MAX_IMAGE_BYTES = 6 * 1024 * 1024;
+const MAX_VIDEO_BYTES = 80 * 1024 * 1024; // Workers hold the body in memory (128 MB)
+const MAX_COMMENTS = 200; // per photo
 const R2_STOP_BYTES = 7e9; // stop at 70% of R2's 10 GB free tier, well before any charge
 
 const CORS = {
@@ -242,12 +249,56 @@ async function bucketBytes(env) {
   return used;
 }
 
+// Decide the type from the file's own bytes, never from what the client claims.
+function sniffMedia(bytes) {
+  if (bytes.length < 12) return null;
+  if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
+    return { media: "photo", ext: "jpg", type: "image/jpeg" };
+  }
+  if (bytes[0] === 0x1a && bytes[1] === 0x45 && bytes[2] === 0xdf && bytes[3] === 0xa3) {
+    return { media: "video", ext: "webm", type: "video/webm" };
+  }
+  const text = (from, to) => String.fromCharCode(...bytes.subarray(from, to));
+  if (text(4, 8) === "ftyp") {
+    return text(8, 12) === "qt  "
+      ? { media: "video", ext: "mov", type: "video/quicktime" }
+      : { media: "video", ext: "mp4", type: "video/mp4" };
+  }
+  return null;
+}
+
+const cleanComment = (value, max) => String(value || "").replace(/\s+/g, " ").trim().slice(0, max);
+
+function addComment(data, photo, text, author) {
+  const list = Array.isArray(data[photo]) ? data[photo] : [];
+  list.push({ id: crypto.randomUUID(), text, author: author || "", at: new Date().toISOString() });
+  data[photo] = list.slice(-MAX_COMMENTS);
+}
+
+async function handleComment(request, env) {
+  const payload = await request.json().catch(() => null);
+  const photo = payload && String(payload.photo || "");
+  if (!/^[\w-]{1,80}$/.test(photo || "")) return json({ error: "Missing photo." }, 400);
+  const text = cleanComment(payload.text, 500);
+  if (!payload.remove && !text) return json({ error: "Empty comment." }, 400);
+  const result = await saveEntry(env, COMMENTS_FILE, (data) => {
+    if (payload.remove) {
+      const left = (data[photo] || []).filter((c) => c.id !== payload.remove);
+      if (left.length) data[photo] = left; else delete data[photo];
+    } else {
+      addComment(data, photo, text, cleanComment(payload.author, 40));
+    }
+  }, `Update comments on ${photo}`);
+  return result.ok ? json({ ok: true, comments: result.data[photo] || [] }) : json({ error: result.error }, result.status);
+}
+
 async function handleUpload(request, env) {
   if (!env.PHOTOS || !env.R2_PUBLIC_BASE_URL) return json({ error: "Photo storage isn't set up." }, 503);
   const bytes = new Uint8Array(await request.arrayBuffer());
-  if (bytes.length > MAX_IMAGE_BYTES) return json({ error: "Image too large." }, 413);
-  if (bytes.length < 3 || bytes[0] !== 0xff || bytes[1] !== 0xd8 || bytes[2] !== 0xff) {
-    return json({ error: "Only JPEG images are accepted." }, 415);
+  const kind = sniffMedia(bytes);
+  if (!kind) return json({ error: "Only JPEG photos and MP4, MOV or WebM videos are accepted." }, 415);
+  if (bytes.length > (kind.media === "video" ? MAX_VIDEO_BYTES : MAX_IMAGE_BYTES)) {
+    return json({ error: "File too large." }, 413);
   }
   // A failed count throws to the caller, so an unknown usage blocks the upload.
   if ((await bucketBytes(env)) + bytes.length > R2_STOP_BYTES) {
@@ -258,12 +309,13 @@ async function handleUpload(request, env) {
   const taken = Date.parse(query.get("date") || "");
   const date = new Date(Number.isNaN(taken) || taken > now + 86400000 ? now : taken).toISOString();
   const id = `up_${crypto.randomUUID()}`;
-  const key = `${id}.jpg`;
+  const key = `${id}.${kind.ext}`;
   await env.PHOTOS.put(key, bytes, {
-    httpMetadata: { contentType: "image/jpeg", cacheControl: "public, max-age=31536000, immutable" },
+    httpMetadata: { contentType: kind.type, cacheControl: "public, max-age=31536000, immutable" },
   });
   const record = {
     id, date,
+    media: kind.media,
     image: `${env.R2_PUBLIC_BASE_URL.replace(/\/$/, "")}/${key}`,
     camera: cleanName(query.get("camera")) || "Other camera",
     species: cleanTags([query.get("species")])[0] || "Animal",
@@ -272,6 +324,11 @@ async function handleUpload(request, env) {
   if (!result.ok) {
     await env.PHOTOS.delete(key);
     return json({ error: result.error }, result.status);
+  }
+  const comment = cleanComment(query.get("comment"), 500);
+  if (comment) {
+    const author = cleanComment(query.get("author"), 40);
+    await saveEntry(env, COMMENTS_FILE, (data) => addComment(data, id, comment, author), `Comment on ${id}`);
   }
   // Publish right away. If this fails, the next scheduled run picks the photo up.
   await dispatchUpdate(env).catch(() => {});
@@ -298,13 +355,14 @@ export default {
     const isMeta = path === "/meta" || path === "/metadata";
 
     try {
-      if (request.method === "POST" && (path === "/login" || path === "/upload")) {
+      if (request.method === "POST" && ["/login", "/upload", "/comments"].includes(path)) {
         if (!(await isAuthorized(request, env))) return json({ error: "Not authorized." }, 401);
-        return path === "/login" ? json({ ok: true }) : await handleUpload(request, env);
+        if (path === "/login") return json({ ok: true });
+        return path === "/upload" ? await handleUpload(request, env) : await handleComment(request, env);
       }
 
       if (request.method === "GET") {
-        const file = isCameras ? CAMERA_FILE : isMeta ? META_FILE : TAGS_FILE;
+        const file = path === "/comments" ? COMMENTS_FILE : isCameras ? CAMERA_FILE : isMeta ? META_FILE : TAGS_FILE;
         const { data } = await readFile(env, file);
         return json(data);
       }

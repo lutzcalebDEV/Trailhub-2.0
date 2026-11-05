@@ -843,3 +843,26 @@ body { background: var(--bg); }
 .modal .field, .modal .select, .modal .input { width: 100%; }
 .field-row { display: flex; flex-direction: column; gap: 5px; font-size: 13px; color: var(--text-muted); }
 .form-error { font-size: 13px; color: var(--danger); margin: 0; }
+
+.shot__thumb video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.shot__play {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: 42px; height: 42px; border-radius: 999px; display: grid; place-items: center;
+  background: rgba(0,0,0,.62); color: #fff; pointer-events: none;
+}
+.shot__play svg { fill: currentColor; }
+.buckcard video { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: var(--r-md); margin-bottom: 6px; }
+.form-note { font-size: 12.5px; color: var(--text-muted); margin: 0; }
+
+.lb__comments { width: 300px; max-width: 100%; display: flex; flex-direction: column; gap: 8px; color: #eef3ef; font-size: 13px; }
+.lb__comments .field-row, .lb__comments .form-note { color: #b9c4bd; }
+.lb__comments-title { font-weight: 650; }
+.lb__comments ul { list-style: none; margin: 0; padding: 0; max-height: 140px; overflow: auto; display: flex; flex-direction: column; gap: 8px; }
+.lb__comment-meta { display: flex; gap: 8px; align-items: baseline; font-size: 11.5px; color: #b9c4bd; }
+.lb__comment-text { overflow-wrap: anywhere; }
+.lb__comment-remove { margin-left: auto; background: none; border: 0; padding: 0; color: #b9c4bd; font-size: 11.5px; cursor: pointer; text-decoration: underline; }
+.lb__comments textarea, .lb__comments input {
+  width: 100%; font: inherit; color: #eef3ef; padding: 7px 8px; border: 0; border-radius: var(--r-sm);
+  background: rgba(0,0,0,.28); box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
+}
+@media (max-width: 900px) { .lb__comments { width: 100%; } }

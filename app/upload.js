@@ -1,7 +1,9 @@
 // Vale Trails — sign in and add photos from a phone or an SD card.
 import { html, useState } from "./react.js";
 import { Btn, IconBtn, Select } from "./ui.js";
-import { hasUploads, uploadLogin, uploadPhoto, displayCamera, TAG_OPTIONS, StorageFull } from "./core.js";
+import {
+  hasUploads, uploadLogin, uploadPhoto, displayCamera, TAG_OPTIONS, StorageFull, MAX_VIDEO_BYTES, LS, usePersistent,
+} from "./core.js";
 
 const MAX_EDGE = 1600;
 const OTHER_CAMERA = "Other camera";
@@ -20,7 +22,7 @@ async function prepare(file) {
   });
 }
 
-function SignIn({ onDone }) {
+export function SignIn({ onDone }) {
   const [user, setUser] = useState("");
   const [password, setPassword] = useState("");
   const [state, setState] = useState("idle");
@@ -52,6 +54,8 @@ function Picker({ auth, cameras, camName, onUploaded }) {
   const [files, setFiles] = useState([]);
   const [camera, setCamera] = useState(cameras[0] ? cameras[0].name : OTHER_CAMERA);
   const [species, setSpecies] = useState("Animal");
+  const [comment, setComment] = useState("");
+  const [author, setAuthor] = usePersistent(LS.commentName, "");
   const [progress, setProgress] = useState(null);
   const [failed, setFailed] = useState([]);
   const [full, setFull] = useState(false);
@@ -62,8 +66,11 @@ function Picker({ auth, cameras, camName, onUploaded }) {
     for (let i = 0; i < files.length; i++) {
       setProgress(i + 1);
       try {
-        const blob = await prepare(files[i]);
-        await uploadPhoto(blob, { camera, species, date: new Date(files[i].lastModified).toISOString() }, auth);
+        const video = files[i].type.startsWith("video/");
+        if (video && files[i].size > MAX_VIDEO_BYTES) { bad.push(files[i].name + " (over 80 MB)"); continue; }
+        const blob = video ? files[i] : await prepare(files[i]);
+        const date = new Date(files[i].lastModified).toISOString();
+        await uploadPhoto(blob, { camera, species, date, comment: comment.trim(), author: author.trim() }, auth);
         sent++;
       } catch (e) {
         if (e instanceof StorageFull) { setFull(true); break; }
@@ -73,12 +80,13 @@ function Picker({ auth, cameras, camName, onUploaded }) {
     setProgress(null);
     setFailed(bad);
     setFiles([]);
+    setComment("");
     if (sent) onUploaded(sent, bad.length);
   };
 
   return html`<div className="col" style=${{ gap: 12 }}>
-    <label className="field-row"><span>Photos</span>
-      <input className="input" type="file" accept="image/*" multiple disabled=${progress != null}
+    <label className="field-row"><span>Photos or videos</span>
+      <input className="input" type="file" accept="image/*,video/*" multiple disabled=${progress != null}
         onChange=${(e) => setFiles([...e.target.files])} />
     </label>
     <div className="field-row"><span>Camera</span>
@@ -91,6 +99,16 @@ function Picker({ auth, cameras, camName, onUploaded }) {
       <${Select} value=${species} onChange=${setSpecies} aria-label="Animal"
         options=${TAG_OPTIONS.map((s) => ({ value: s, label: s === "Animal" ? "Not sure" : s }))} />
     </div>
+    <label className="field-row"><span>Comment (optional)</span>
+      <textarea className="input" rows=${2} maxLength=${500} value=${comment}
+        onInput=${(e) => setComment(e.target.value)} />
+    </label>
+    <label className="field-row"><span>Your name (optional)</span>
+      <input className="input" maxLength=${40} value=${author} onInput=${(e) => setAuthor(e.target.value)} />
+    </label>
+    ${files.some((f) => f.type.startsWith("video/")) && html`<p className="form-note">
+      Videos can be up to 80 MB and keep any location data your phone recorded. Everyone with the site link can see them.
+    </p>`}
     ${full && html`<p className="form-error" role="alert">
       Photo storage has reached its limit, so uploads are paused.
     </p>`}
@@ -100,7 +118,7 @@ function Picker({ auth, cameras, camName, onUploaded }) {
     <${Btn} variant="primary" disabled=${!files.length || progress != null} onClick=${send}>
       ${progress != null
         ? `Uploading ${progress} of ${files.length}…`
-        : files.length ? `Upload ${files.length} photo${files.length === 1 ? "" : "s"}` : "Upload"}
+        : files.length ? `Upload ${files.length} file${files.length === 1 ? "" : "s"}` : "Upload"}
     </${Btn}>
   </div>`;
 }
@@ -109,9 +127,9 @@ function Picker({ auth, cameras, camName, onUploaded }) {
 export function UploadDialog({ cameras, camNames, auth, setAuth, onClose, onUploaded }) {
   const camName = (raw) => displayCamera(raw, camNames);
   return html`<div className="modal" onClick=${onClose}>
-    <div className="modal__box" role="dialog" aria-modal="true" aria-label="Upload photos" onClick=${(e) => e.stopPropagation()}>
+    <div className="modal__box" role="dialog" aria-modal="true" aria-label="Upload" onClick=${(e) => e.stopPropagation()}>
       <div className="modal__head">
-        <h2 className="h-sec">Upload photos</h2>
+        <h2 className="h-sec">Upload</h2>
         <${IconBtn} icon="x" bare onClick=${onClose} aria-label="Close" />
       </div>
       ${!hasUploads

@@ -5,6 +5,9 @@ __pycache__/
 # Local secrets / credentials (never commit)
 .env
 
+# Cloudflare's local cache
+.wrangler/
+
 # Scratch / temp files
 *.tmp
 *.part

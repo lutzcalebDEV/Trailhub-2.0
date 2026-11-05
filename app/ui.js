@@ -210,6 +210,16 @@ export function CalHeat({ counts, weeks = 26 }) {
   </div>`;
 }
 
+/* -------------------------------- Media --------------------------------- */
+// A photo or video. Tiles show a video's opening frame; `playable` adds controls.
+export function Media({ capture, alt, className, playable }) {
+  if (capture.media === "video") {
+    return html`<video className=${className} src=${playable ? capture.image : capture.image + "#t=0.1"}
+      controls=${!!playable} muted=${!playable} playsInline preload="metadata" aria-label=${alt} />`;
+  }
+  return html`<img className=${className} src=${capture.image} alt=${alt} loading=${playable ? "eager" : "lazy"} />`;
+}
+
 /* ---------------------------- Camera status ----------------------------- */
 // One card per camera, so a silent camera can't hide behind a busy one.
 export function CameraCard({ name, row, onClick }) {
@@ -235,7 +245,7 @@ export function Shot({ capture, species, onClick, cameraLabel, selectable, selec
       onClick=${onClick} title=${`${species} · ${cam}`}>
     <div className="shot__thumb">
       ${c.image
-        ? html`<img src=${c.image} alt=${species} loading="lazy" />`
+        ? html`<${Media} capture=${c} alt=${species} />`
         : html`<div className="shot__noimg">No image</div>`}
       ${selectable && html`<span className=${cx("shot__check", selected && "is-on")}>
         ${selected && html`<${Icon} name="check" size=${14} />`}
@@ -246,6 +256,7 @@ export function Shot({ capture, species, onClick, cameraLabel, selectable, selec
       ${c.favorite && html`<div className="shot__tr">
         <span className="tod fav" title="Favorite"><${Icon} name="star" size=${13} /></span>
       </div>`}
+      ${c.media === "video" && html`<span className="shot__play"><${Icon} name="play" size=${20} /></span>`}
       ${burst > 1 && html`<span className="shot__burst" title=${`${burst} photos from this trigger`}>
         <${Icon} name="images" size=${12} />${burst}
       </span>`}
@@ -337,9 +348,11 @@ export function LightboxEdit({ capture, species, meta, onMeta, onToggleFavorite,
   </div>`;
 }
 
-export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggleFavorite, onTag, buckNames, onClose, onPrev, onNext, hasPrev, hasNext }) {
+export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggleFavorite, onTag, buckNames, comments, onClose, onPrev, onNext, hasPrev, hasNext }) {
   useEffect(() => {
     const onKey = (e) => {
+      // Arrow keys belong to the field or video being used, not photo navigation.
+      if (e.key !== "Escape" && /^(INPUT|TEXTAREA|SELECT|VIDEO)$/.test(e.target.tagName)) return;
       if (e.key === "Escape") onClose();
       else if (e.key === "ArrowLeft" && hasPrev) onPrev();
       else if (e.key === "ArrowRight" && hasNext) onNext();
@@ -353,7 +366,7 @@ export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggle
   return html`<div className="lb" onClick=${onClose}>
     <div className="lb__stage" onClick=${(e) => e.stopPropagation()}>
       ${c.image
-        ? html`<img className="lb__img" src=${c.image} alt=${species} />`
+        ? html`<${Media} key=${c.id} className="lb__img" capture=${c} alt=${species} playable />`
         : html`<div className="shot__noimg" style=${{ width: "60vw", height: "60vh" }}>No image available</div>`}
       <div className="lb__close"><${IconBtn} icon="x" onClick=${onClose} aria-label="Close" /></div>
       ${hasPrev && html`<button className="lb__nav prev" onClick=${onPrev} aria-label="Previous"><${Icon} name="chevronLeft" size=${22} /></button>`}
@@ -377,6 +390,7 @@ export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggle
         </div>
         ${onMeta && html`<${LightboxEdit} key=${c.id} capture=${c} species=${species} meta=${meta}
           onMeta=${onMeta} onToggleFavorite=${onToggleFavorite} onTag=${onTag} buckNames=${buckNames} />`}
+        ${comments}
         <div className="lb__actions">
           ${c.image && html`<a className="btn btn--sm" href=${c.image} download target="_blank" rel="noopener">
             <${Icon} name="download" size=${15} /><span>Download</span>

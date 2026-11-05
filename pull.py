@@ -1010,6 +1010,7 @@ def load_uploads():
             "confidence": None,
             "moon": None,
             "uploadedBySite": True,
+            "media": "video" if item.get("media") == "video" else "photo",
         })
     return out
 

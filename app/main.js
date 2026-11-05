@@ -5,11 +5,13 @@ import {
   remoteLoadTags, remoteSaveTags, remoteSaveTagsBatch, hasSharedTags, effectiveSpecies, timeAgo,
   loadCameraNames, remoteLoadCameraNames, remoteSaveCameraName, displayCamera,
   loadMetadata, remoteLoadMetadata, remoteSaveMetadata, applyMeta, metaOf, cameraLabels,
+  remoteLoadComments, saveComment,
 } from "./core.js";
 import { filterCaptures, speciesList, reviewQueue } from "./analytics.js";
 import { Sidebar, Topbar, MobileTopbar, MobileNav, VIEWS, loadFilters } from "./shell.js";
 import { Lightbox, Toast } from "./ui.js";
 import { UploadDialog } from "./upload.js";
+import { Comments } from "./comments.js";
 import { Overview } from "./views/overview.js";
 import { Gallery } from "./views/gallery.js";
 import { MapView } from "./views/mapview.js";
@@ -48,6 +50,7 @@ function App() {
   const [lightbox, setLightbox] = useState(null);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [uploadAuth, setUploadAuth] = useState(null);
+  const [comments, setComments] = useState({});
   const [toast, setToast] = useState(null);
   const toastTimer = useRef(0);
 
@@ -137,6 +140,7 @@ function App() {
       if (tags && names) uploadLocalEdits(tags, names);
     }).catch(() => {});
     remoteLoadMetadata().then((map) => { if (alive && map) setRemoteMeta(map); }).catch(() => {});
+    remoteLoadComments().then((map) => { if (alive && map) setComments(map); }).catch(() => {});
     return () => { alive = false; };
   }, [data, uploadLocalEdits]);
   useEffect(() => {
@@ -200,6 +204,17 @@ function App() {
     window.clearTimeout(toastTimer.current);
     toastTimer.current = window.setTimeout(() => setToast(null), 2300);
   }, []);
+
+  const changeComment = useCallback(async (body) => {
+    try {
+      const list = await saveComment(body, uploadAuth);
+      setComments((all) => ({ ...all, [body.photo]: list }));
+      return true;
+    } catch (e) {
+      showToast("err", "Couldn\u2019t save that \u2014 try again");
+      return false;
+    }
+  }, [uploadAuth, showToast]);
 
   // Manual refresh says what it found, so a tap never looks like it did nothing.
   const manualRefresh = useCallback(async () => {
@@ -350,6 +365,8 @@ function App() {
       onToggleFavorite=${() => toggleFavorite(lbItem.id)}
       onTag=${(sp) => assignSpecies(lbItem.id, sp)}
       buckNames=${buckNames}
+      comments=${html`<${Comments} key=${lbItem.id} photo=${String(lbItem.id)} list=${comments[lbItem.id] || []}
+        auth=${uploadAuth} setAuth=${setUploadAuth} onChange=${changeComment} />`}
       hasPrev=${lightbox.index > 0}
       hasNext=${lightbox.index < lightbox.list.length - 1}
       onPrev=${() => setLightbox((s) => ({ ...s, index: Math.max(0, s.index - 1) }))}
@@ -360,7 +377,7 @@ function App() {
       auth=${uploadAuth} setAuth=${setUploadAuth} onClose=${() => setUploadOpen(false)}
       onUploaded=${(sent, failed) => {
         if (!failed) setUploadOpen(false);
-        showToast("ok", `${sent} photo${sent === 1 ? "" : "s"} uploaded. They'll appear in a few minutes.`);
+        showToast("ok", `${sent} file${sent === 1 ? "" : "s"} uploaded. They'll appear in a few minutes.`);
       }} />`}
 
     ${toast && html`<${Toast} kind=${toast.kind}>${toast.msg}</${Toast}>`}

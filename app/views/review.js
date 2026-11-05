@@ -1,6 +1,6 @@
 // Vale Trails — Review: confirm species on AI-flagged captures.
 import { html, useState, useEffect } from "../react.js";
-import { Empty, Btn } from "../ui.js";
+import { Empty, Btn, Media } from "../ui.js";
 import { Icon } from "../icons.js";
 import { SPECIES_ORDER, speciesColor, effectiveSpecies, reviewReason, fmtDateTime } from "../core.js";
 import { eff } from "../analytics.js";
@@ -32,7 +32,7 @@ export function Review(app) {
   return html`<div className="review">
     <div className="reviewcard">
       ${current.image
-        ? html`<img className="reviewcard__img" src=${current.image} alt=${guess} />`
+        ? html`<${Media} key=${current.id} className="reviewcard__img" capture=${current} alt=${guess} playable />`
         : html`<div className="shot__noimg" style=${{ height: "46vh" }}>No image available</div>`}
       <div className="reviewcard__bar">
         ${reason && reason !== "Needs ID" && html`<span className="reason"><${Icon} name="scan" size=${14} />${reason}</span>`}

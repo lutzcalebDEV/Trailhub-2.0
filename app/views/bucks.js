@@ -1,6 +1,6 @@
 // Vale Trails — Bucks: one profile per named deer, built from the photos you name.
 import { html, useState } from "../react.js";
-import { Stat, Panel, Bars, Histogram, Shot, Empty, Btn } from "../ui.js";
+import { Stat, Panel, Bars, Histogram, Shot, Empty, Btn, Media } from "../ui.js";
 import { effectiveSpecies, fmtDate, timeAgo } from "../core.js";
 import { buckProfiles } from "../analytics.js";
 import { windowLabel } from "./insights.js";
@@ -9,7 +9,7 @@ const sightings = (n) => `${n} sighting${n === 1 ? "" : "s"}`;
 
 function BuckCard({ buck, onOpen }) {
   return html`<button className="buckcard" onClick=${onOpen}>
-    <img src=${buck.latest.image} alt=${buck.name} loading="lazy" />
+    <${Media} capture=${buck.latest} alt=${buck.name} />
     <span className="buckcard__name">${buck.name}</span>
     <span className="buckcard__sub">${sightings(buck.events)} · last seen ${timeAgo(buck.last)}</span>
     ${buck.peak && html`<span className="buckcard__sub">Usually ${windowLabel(buck.peak)}</span>`}
