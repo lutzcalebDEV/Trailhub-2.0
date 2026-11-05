@@ -1,4 +1,74 @@
 {
+ "sp_6ab5cdb47b1cb37f0fea9d6c": {
+  "confidence": 0.95,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ab5cdb47b1cb37f0fea9d6e": {
+  "confidence": 0.8,
+  "label": "Deer",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ab5daa9ddd93f8c7884fdc4": {
+  "confidence": 0.95,
+  "label": "Deer",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ab5daa9ddd93f8c7884fdc6": {
+  "confidence": 0.8,
+  "label": "Deer",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ab7651f9a150e46c0d45ced": {
+  "confidence": 0.85,
+  "label": "Deer",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ab7651f9a150e46c0d45cef": {
+  "confidence": 0.85,
+  "label": "Deer",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ab8707b0e05e3ddda796e3d": {
+  "confidence": 0.85,
+  "label": "Raccoon",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ab8707b0e05e3ddda796e3f": {
+  "confidence": 0.8,
+  "label": "Fox",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ab87da5398ad32e05377aaf": {
+  "confidence": 0.95,
+  "label": "Deer",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ab87da5398ad32e05377ab1": {
+  "confidence": 0.85,
+  "label": "Deer",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ab8b6ffa6f3f8c150b4c6ae": {
+  "confidence": 0.53,
+  "label": "Deer",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ab8b6ffa6f3f8c150b4c6b0": {
+  "confidence": 0.85,
+  "label": "Deer",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ab8ee2701f21f04e6bbe87f": {
+  "confidence": 0.8,
+  "label": "Deer",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ab8ee2701f21f04e6bbe881": {
+  "confidence": 0.85,
+  "label": "Deer",
+  "model": "gemini-3.5-flash-lite"
+ },
  "sp_6ab95eb98f794c59f008d47f": {
   "confidence": 1.0,
   "label": "Empty",
@@ -10,6 +80,11 @@
   "model": "gemini-3.5-flash-lite"
  },
  "sp_6ab95eb98f794c59f008d483": {
+  "confidence": 0.85,
+  "label": "Doe",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ab95eb98f794c59f008d485": {
   "confidence": 0.85,
   "label": "Doe",
   "model": "gemini-3.5-flash-lite"
