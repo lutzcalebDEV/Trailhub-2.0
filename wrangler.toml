@@ -13,3 +13,8 @@ name = "trailhub-tags"
 main = "tag-worker.js"
 compatibility_date = "2024-11-01"
 workers_dev = true
+
+# Starts the photo pull every 15 minutes (GitHub's own cron is throttled to a few
+# runs a day). The token needs Actions: Read and write as well as Contents.
+[triggers]
+crons = ["*/15 * * * *"]

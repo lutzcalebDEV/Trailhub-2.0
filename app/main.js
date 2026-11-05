@@ -4,7 +4,7 @@ import {
   LS, usePersistent, usePersistentSet, useData, loadOverrides,
   remoteLoadTags, remoteSaveTags, hasSharedTags, effectiveSpecies, timeAgo,
   loadCameraNames, remoteLoadCameraNames, remoteSaveCameraName, displayCamera,
-  loadMetadata, remoteLoadMetadata, remoteSaveMetadata, applyMeta, metaOf,
+  loadMetadata, remoteLoadMetadata, remoteSaveMetadata, applyMeta, metaOf, cameraLabels,
 } from "./core.js";
 import { filterCaptures, speciesList, reviewQueue } from "./analytics.js";
 import { Sidebar, Topbar, MobileTopbar, MobileNav, VIEWS, loadFilters } from "./shell.js";
@@ -14,6 +14,9 @@ import { Gallery } from "./views/gallery.js";
 import { MapView } from "./views/mapview.js";
 import { Insights } from "./views/insights.js";
 import { Review } from "./views/review.js";
+
+// Past this, the pull has missed far more runs than GitHub's usual throttling explains.
+const STALE_SYNC_MS = 12 * 3600000;
 
 const VIEW_COMPONENTS = { overview: Overview, gallery: Gallery, insights: Insights, map: MapView, review: Review };
 
@@ -72,7 +75,10 @@ function App() {
 
   // Local edits win over the shared baseline.
   const ov = useMemo(() => ({ ...remoteTags, ...localOverrides }), [remoteTags, localOverrides]);
-  const camNames = useMemo(() => ({ ...remoteCamNames, ...localCamNames }), [remoteCamNames, localCamNames]);
+  const camNames = useMemo(
+    () => ({ ...cameraLabels(data.cameras), ...remoteCamNames, ...localCamNames }),
+    [data.cameras, remoteCamNames, localCamNames]
+  );
   const camName = useCallback((raw) => displayCamera(raw, camNames), [camNames]);
   // Per-photo metadata: shared baseline overlaid by this device's edits (per key).
   const metaMap = useMemo(() => {
@@ -92,7 +98,12 @@ function App() {
   const reviewQ = useMemo(() => reviewQueue(captures, ov, archived, reviewed), [captures, ov, archived, reviewed]);
 
   const counts = { total: captures.length, cameras: data.cameras.length, review: reviewQ.length };
-  const status = { demo: data.demo, updated: data.generatedAt ? timeAgo(data.generatedAt) : null };
+  const status = {
+    demo: data.demo,
+    checked: data.generatedAt ? timeAgo(data.generatedAt) : null,
+    stale: !data.generatedAt || Date.now() - data.generatedAt.getTime() > STALE_SYNC_MS,
+    newest: data.captures.length ? timeAgo(data.captures[0].date) : null,
+  };
 
   /* --------------------------- Actions ---------------------------------- */
   const setFilter = useCallback((patch) => setFilters((f) => ({ ...f, ...patch })), []);
@@ -103,6 +114,15 @@ function App() {
     window.clearTimeout(toastTimer.current);
     toastTimer.current = window.setTimeout(() => setToast(null), 2300);
   }, []);
+
+  // Manual refresh says what it found, so a tap never looks like it did nothing.
+  const manualRefresh = useCallback(async () => {
+    const before = new Set(data.captures.map((c) => c.id));
+    const fresh = await refresh();
+    if (!fresh) { showToast("err", "Couldn\u2019t reach the site \u2014 try again"); return; }
+    const added = fresh.captures.filter((c) => !before.has(c.id)).length;
+    showToast("ok", added ? `${added} new photo${added === 1 ? "" : "s"}` : "No new photos yet");
+  }, [data.captures, refresh, showToast]);
 
   const setOverrideTags = useCallback((id, tags) => {
     setLocalOverrides((prev) => {
@@ -207,7 +227,7 @@ function App() {
     filters, setFilter, filtered, spList,
     gridSize, setGridSize, gridLayout, setGridLayout,
     archived, reviewed, assignSpecies, keep, archive: archiveCap,
-    openLightbox, reviewQ, counts, setView,
+    openLightbox, reviewQ, counts, setView, setFilter,
     camName, camNames, bulkAssign, renameCamera,
     metaMap, updateMeta, toggleFavorite,
   };
@@ -218,9 +238,9 @@ function App() {
     <div className="app">
       <${Sidebar} view=${view} setView=${setView} counts=${counts} status=${status} />
       <main className="main">
-        <${MobileTopbar} theme=${theme} toggleTheme=${toggleTheme} onRefresh=${refresh} refreshing=${refreshing} />
+        <${MobileTopbar} theme=${theme} toggleTheme=${toggleTheme} onRefresh=${manualRefresh} refreshing=${refreshing} status=${status} />
         <${Topbar} title=${meta.label} sub=${meta.sub} theme=${theme} toggleTheme=${toggleTheme}
-          onRefresh=${refresh} refreshing=${refreshing} />
+          onRefresh=${manualRefresh} refreshing=${refreshing} />
         <div className="view view__enter" key=${view}>
           <${View} ...${app} />
         </div>

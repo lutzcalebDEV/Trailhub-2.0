@@ -14,6 +14,9 @@ export const VIEWS = [
   { id: "review",   label: "Review",   icon: "scan",      sub: "Confirm species on flagged captures" },
 ];
 
+const badgeCount = (n) => (n > 99 ? "99+" : n);
+const feedTitle = (s) => (s.demo ? "Demo data" : s.stale ? "Sync delayed" : "Auto-sync on");
+
 /* ------------------------------- Sidebar -------------------------------- */
 export function Sidebar({ view, setView, counts, status }) {
   return html`<aside className="sidebar">
@@ -29,16 +32,17 @@ export function Sidebar({ view, setView, counts, status }) {
         onClick=${() => setView(v.id)}
         onKeyDown=${(e) => (e.key === "Enter" || e.key === " ") && setView(v.id)}>
         <${Icon} name=${v.icon} size=${18} />${v.label}
-        ${v.id === "review" && counts.review > 0 && html`<span className="nav__badge">${counts.review}</span>`}
+        ${v.id === "review" && counts.review > 0 && html`<span className="nav__badge">${badgeCount(counts.review)}</span>`}
       </a>`)}
     </nav>
 
     <div className="sidebar__foot">
       <div className="datastat">
-        <span className=${cx("datastat__dot", status.demo && "is-demo")} />
+        <span className=${cx("datastat__dot", (status.demo || status.stale) && "is-demo")} />
         <div>
-          <b>${status.demo ? "Demo data" : "Live feed"}</b>
-          <small>${status.updated ? "Updated " + status.updated : "Awaiting sync"}</small>
+          <b>${feedTitle(status)}</b>
+          <small>${status.checked ? "Checked " + status.checked : "Awaiting sync"}</small>
+          ${status.newest && html`<small>Newest photo ${status.newest}</small>`}
         </div>
       </div>
       <div className="datastat">
@@ -71,10 +75,14 @@ export function Topbar({ title, sub, theme, toggleTheme, onRefresh, refreshing, 
 }
 
 /* ----------------------------- Mobile chrome ---------------------------- */
-export function MobileTopbar({ theme, toggleTheme, onRefresh, refreshing }) {
+export function MobileTopbar({ theme, toggleTheme, onRefresh, refreshing, status }) {
   return html`<div className="mobile-top">
     <${BrandMark} size=${30} />
-    <div className="brand__name">Vale Trails</div>
+    <div className="brand__name">Vale Trails
+      <small className=${status.stale ? "is-stale" : ""}>
+        ${status.checked ? "Checked " + status.checked : "Awaiting sync"}
+      </small>
+    </div>
     <div className="topbar__spacer" />
     <${IconBtn} icon="refresh" bare onClick=${onRefresh} className=${refreshing ? "is-spin" : ""} aria-label="Refresh" />
     <${IconBtn} icon=${theme === "light" ? "moon" : "sun"} bare onClick=${toggleTheme} aria-label="Toggle theme" />
@@ -86,7 +94,7 @@ export function MobileNav({ view, setView, counts }) {
     ${VIEWS.map((v) => html`<button key=${v.id}
       className=${view === v.id ? "is-active" : ""} onClick=${() => setView(v.id)}>
       <${Icon} name=${v.icon} size=${20} />${v.label}
-      ${v.id === "review" && counts.review > 0 && html`<span className="nav__badge">${counts.review}</span>`}
+      ${v.id === "review" && counts.review > 0 && html`<span className="nav__badge">${badgeCount(counts.review)}</span>`}
     </button>`)}
   </nav>`;
 }

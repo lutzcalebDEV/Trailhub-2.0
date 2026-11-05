@@ -47,6 +47,11 @@ MAX_PUBLISHED = 1500   # cap captures written to data.js so the site stays light
 MAX_KEEP = 3000        # cap stored photos+images so the repo doesn't grow forever
 MAX_IMG_PX = 1600      # downscale long edge if Pillow is available
 DOWNLOAD_RETRIES = 3
+HEARTBEAT_SECONDS = 3600  # rewrite data.js at least this often, even with no new photos
+
+# Used only for sun position, to estimate day/night on photos with no SPYPOINT
+# day/night tag. Both cameras sit within about a kilometre of this point.
+SITE_LATLNG = (35.54, -81.39)
 
 
 def atomic_write_text(path: Path, text: str):
@@ -356,10 +361,20 @@ def extract_meta(photo, cam_name_by_id):
     # camera
     cam_id = _first(raw, "camera", "cameraId", "camera_id")
     camera = cam_name_by_id.get(str(cam_id), None) or _first(raw, "cameraName", default="Camera")
-    # day/night: prefer an explicit flag, else derive from hour
+    # day/night: prefer an explicit flag, then SPYPOINT's own "day"/"night" tag,
+    # else estimate from the sun. Never the clock hour: dates here are UTC, so an
+    # hour check labels mid-afternoon in North Carolina as night.
     is_night = _first(raw, "isNight", "night")
+    lowered = {str(t).strip().lower() for t in tags}
+    tod_source = "tag"
     if is_night is None:
-        is_night = when.hour < 6 or when.hour >= 20
+        if "night" in lowered:
+            is_night = True
+        elif "day" in lowered:
+            is_night = False
+        else:
+            is_night = sun_is_down(when)
+            tod_source = "sun"
     # optional extras
     temp = _first(raw, "temperature", "temp")
     conf = _first(raw, "confidence", "score")
@@ -375,10 +390,57 @@ def extract_meta(photo, cam_name_by_id):
         "camera": str(camera),
         "date": when.isoformat(),
         "isNight": bool(is_night),
+        "todSource": tod_source,
         "temp": (round(float(temp)) if _is_num(temp) else None),
         "confidence": conf,
         "moon": _first(raw, "moonPhase", "moon"),
     }
+
+
+def sun_is_down(when, lat=SITE_LATLNG[0], lng=SITE_LATLNG[1], threshold=0.0):
+    """True when the sun is below `threshold` degrees at this moment and place.
+
+    Low-precision solar position (well under a degree, plenty for day vs night).
+    Against 465 photos with a real SPYPOINT tag, 0 degrees scored best (89% right);
+    the misses are mostly photos uploaded well after they were taken.
+    """
+    import math
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=dt.timezone.utc)
+    t = when.astimezone(dt.timezone.utc)
+    day = (t - dt.datetime(2000, 1, 1, 12, tzinfo=dt.timezone.utc)).total_seconds() / 86400
+    mean_long = (280.460 + 0.9856474 * day) % 360
+    anomaly = math.radians((357.528 + 0.9856003 * day) % 360)
+    ecl_long = math.radians(mean_long + 1.915 * math.sin(anomaly) + 0.020 * math.sin(2 * anomaly))
+    obliquity = math.radians(23.439 - 0.0000004 * day)
+    decl = math.asin(math.sin(obliquity) * math.sin(ecl_long))
+    right_asc = math.degrees(math.atan2(math.cos(obliquity) * math.sin(ecl_long), math.cos(ecl_long)))
+    sidereal = (280.46061837 + 360.98564736629 * day + lng) % 360
+    hour_angle = math.radians(sidereal - right_asc)
+    phi = math.radians(lat)
+    elevation = math.degrees(math.asin(
+        math.sin(phi) * math.sin(decl) + math.cos(phi) * math.cos(decl) * math.cos(hour_angle)))
+    return elevation < threshold
+
+
+def repair_day_night(store):
+    """Re-estimate day/night on captures saved by the old UTC-hour check.
+
+    Those records have no todSource. Photos still in SPYPOINT's recent window get
+    their exact tag on the next pull; this corrects the older ones. Idempotent.
+    """
+    fixed = 0
+    for c in store.values():
+        if c.get("todSource"):
+            continue
+        try:
+            c["isNight"] = sun_is_down(dt.datetime.fromisoformat(c["date"]))
+        except (KeyError, TypeError, ValueError):
+            continue
+        c["todSource"] = "sun"
+        fixed += 1
+    if fixed:
+        print(f"Re-estimated day/night on {fixed} older capture(s).")
 
 
 def _is_num(x):
@@ -641,6 +703,26 @@ def prune_store(store):
     return {c["id"]: c for c in items[:MAX_KEEP]}
 
 
+def _recently_published(payload):
+    """True when data.js already holds this content and was written recently.
+
+    Skipping the rewrite stops a frequent schedule from committing (and rebuilding
+    Pages) every run just to bump a timestamp. The heartbeat still refreshes
+    generatedAt, which is what the site's "Checked ... ago" line reads.
+    """
+    try:
+        text = DATA_FILE.read_text(encoding="utf-8")
+        prev = json.loads(text[text.index("{"):text.rindex("}") + 1])
+        stamp = dt.datetime.fromisoformat(prev["generatedAt"])
+    except (OSError, ValueError, KeyError):
+        return False
+    if stamp.tzinfo is None:  # written before timestamps carried a timezone
+        return False
+    age = (dt.datetime.now(dt.timezone.utc) - stamp).total_seconds()
+    same = all(prev.get(k) == payload.get(k) for k in ("demo", "cameras", "captures"))
+    return same and age < HEARTBEAT_SECONDS
+
+
 def write_data_js(captures, cameras=None, demo=False, tags_map=None, meta_map=None):
     """Render the published data.js from a list of captures (atomic write).
 
@@ -671,11 +753,16 @@ def write_data_js(captures, cameras=None, demo=False, tags_map=None, meta_map=No
                     c[k] = v
         out_caps.append(c)
     payload = {
-        "generatedAt": dt.datetime.now().isoformat(timespec="seconds"),
+        # Always explicit UTC: a bare timestamp is read as local time by browsers,
+        # which made the site claim "just now" for hours-old data.
+        "generatedAt": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
         "demo": demo,
         "cameras": cameras or [],
         "captures": out_caps,
     }
+    if _recently_published(payload):
+        print(f"{DATA_FILE.name} already up to date ({len(out_caps)} captures).")
+        return
     atomic_write_text(DATA_FILE, "window.TRAILHUB_DATA = " + json.dumps(payload, indent=2) + ";\n")
     print(f"Wrote {DATA_FILE.name}  ({len(out_caps)} captures)")
 
@@ -750,9 +837,14 @@ def extract_camera_meta(cam):
             lat = dlat
         if lng is None:
             lng = dlng
+    # SPYPOINT keeps the name you gave a camera under config.name. It's published as
+    # "label" so that "name" stays the stable key captures, filters and renames use.
+    config = raw.get("config") if isinstance(raw, dict) else None
+    label = _first(config, "name", default=None) if isinstance(config, dict) else None
     return {
         "id": str(cid) if cid is not None else str(name or "unknown"),
         "name": name or (f"Camera {cid}" if cid is not None else "Camera"),
+        "label": str(label).strip() if label else None,
         "latitude": lat,
         "longitude": lng,
     }
@@ -812,6 +904,26 @@ def _demo_svg(species, night):
            f'<text x="160" y="96" font-family="sans-serif" font-size="20" font-weight="700" '
            f'fill="{fg}" text-anchor="middle">{species}</text></svg>')
     return "data:image/svg+xml;base64," + base64.b64encode(svg.encode()).decode()
+
+
+def best_photo_url(photo):
+    """Return the largest image URL SPYPOINT offers for this photo.
+
+    pyspypoint's url() defaults to "large" and raises (or builds a hostless URL) if
+    that size is missing, which used to drop the photo with no way to notice.
+    """
+    for size in ("large", "medium", "small"):
+        section = getattr(photo, size, None)
+        if getattr(section, "host", "") and getattr(section, "path", ""):
+            return photo.url(size)
+    raise ValueError("no large, medium or small image on this photo")
+
+
+def report_skip(message):
+    """Print a skipped photo, flagged so it shows on the Actions run page."""
+    print(f"  [skip] {message}")
+    if os.environ.get("GITHUB_ACTIONS"):
+        print(f"::warning title=Photo skipped::{message}")
 
 
 def run_pull(limit, inspect):
@@ -894,6 +1006,8 @@ def run_pull(limit, inspect):
     store = load_store()          # durable history, keyed by stable id
     before = len(store)
     new_count = 0
+    skipped = 0
+    repair_day_night(store)
 
     r2 = make_r2_uploader()
     if r2 is not None:
@@ -902,9 +1016,10 @@ def run_pull(limit, inspect):
     for i, p in enumerate(photos):
         raw = _raw(p)
         try:
-            url = p.url()
+            url = best_photo_url(p)
         except Exception as e:
-            print(f"  [skip] photo {i}: no url ({e})")
+            report_skip(f"photo {i}: no url ({e})")
+            skipped += 1
             continue
 
         sid = stable_id(raw, url)
@@ -937,7 +1052,8 @@ def run_pull(limit, inspect):
                     new_count += 1
                     print(f"  [new] {meta['species']:<10} {meta['camera']}")
                 except Exception as e:
-                    print(f"  [skip] {sid}: upload failed ({e})")
+                    report_skip(f"{sid}: upload failed ({e})")
+                    skipped += 1
                     continue
         else:
             # Legacy: keep the image in the repo under photos/.
@@ -950,7 +1066,8 @@ def run_pull(limit, inspect):
                     new_count += 1
                     print(f"  [new] {meta['species']:<10} {meta['camera']}")
                 except Exception as e:
-                    print(f"  [skip] {sid}: download failed after retries ({e})")
+                    report_skip(f"{sid}: download failed after retries ({e})")
+                    skipped += 1
                     continue
         # The API omits temperature for this account -> recover it from the
         # overlay stamped onto the freshly downloaded image (no-op without OCR).
@@ -964,7 +1081,7 @@ def run_pull(limit, inspect):
     save_store(store)
     save_cameras(camera_meta)
     write_data_js(list(store.values()), cameras=camera_meta, demo=False, tags_map=load_tags(), meta_map=load_metadata())
-    print(f"\nStore: {before} -> {len(store)} captures (+{new_count} new this run).")
+    print(f"\nStore: {before} -> {len(store)} captures (+{new_count} new, {skipped} skipped this run).")
     print("Done. Open index.html, or upload index.html + data.js + photos/ to Cloudflare.")
 
 
@@ -973,6 +1090,8 @@ def run_rebuild():
     store = load_store()
     if not store:
         sys.exit("No store.json yet. Run `python pull.py` first (or `--demo` to preview).")
+    repair_day_night(store)
+    save_store(store)
     write_data_js(list(store.values()), cameras=load_cameras(), demo=False, tags_map=load_tags(), meta_map=load_metadata())
     print(f"Rebuilt data.js from store ({len(store)} captures).")
 

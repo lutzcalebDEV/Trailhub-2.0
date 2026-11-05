@@ -207,7 +207,7 @@ h1,h2,h3,h4 { line-height: 1.18; letter-spacing: -0.015em; font-weight: 700; }
 .nav__badge {
   margin-left: auto; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px;
   display: grid; place-items: center; font-size: 11px; font-weight: 700;
-  background: var(--danger-soft); color: var(--danger);
+  background: var(--surface-3); color: var(--text-muted);
 }
 .nav__item.is-active .nav__badge { background: var(--accent); color: var(--accent-contrast); }
 
@@ -605,6 +605,28 @@ h1,h2,h3,h4 { line-height: 1.18; letter-spacing: -0.015em; font-weight: 700; }
 @keyframes pulse { 0%,100% { transform: scale(1); box-shadow: 0 0 0 0 var(--accent-soft); } 50% { transform: scale(1.05); box-shadow: 0 0 0 14px transparent; } }
 
 /* mobile chrome (hidden on desktop) */
+/* camera status */
+.camcards { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.camcard {
+  display: flex; flex-direction: column; gap: 5px; text-align: left; min-width: 0;
+  padding: 12px 14px; border-radius: var(--r-md); cursor: pointer;
+  background: var(--surface); border: 1px solid var(--border); color: inherit;
+  transition: border-color .16s;
+}
+.camcard:hover { border-color: var(--border-strong); }
+.camcard__top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.camcard__name { font-weight: 650; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.camcard__sub { font-size: 12px; color: var(--text-muted); }
+.pill { flex: none; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 650; }
+.pill.is-ok { background: var(--accent-soft); color: var(--accent); }
+.pill.is-quiet { background: var(--day-soft); color: var(--warn); }
+
+.shot__burst {
+  position: absolute; right: 8px; bottom: 8px; display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 7px; border-radius: 999px; font-size: 11px; font-weight: 650;
+  background: rgba(0,0,0,.62); color: #fff;
+}
+
 .mobile-top, .mobilenav, .scrim { display: none; }
 
 /* ------------------------------ Utilities ------------------------------- */
@@ -638,7 +660,9 @@ h1,h2,h3,h4 { line-height: 1.18; letter-spacing: -0.015em; font-weight: 700; }
     background: color-mix(in srgb, var(--bg) 82%, transparent);
     backdrop-filter: blur(14px); border-bottom: 1px solid var(--border);
   }
-  .mobile-top .brand__name { font-size: 15px; }
+  .mobile-top .brand__name { font-size: 15px; line-height: 1.2; }
+  .mobile-top .brand__name small { display: block; font-size: 11px; font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--text-faint); }
+  .mobile-top .brand__name small.is-stale { color: var(--warn); }
   .topbar { top: 56px; padding: 11px 16px; min-height: 56px; }
   .topbar__actions { display: none; }
   .view { padding: 18px 16px 96px; }
@@ -655,7 +679,7 @@ h1,h2,h3,h4 { line-height: 1.18; letter-spacing: -0.015em; font-weight: 700; }
     padding: 5px 9px; border-radius: var(--r-sm); color: var(--text-faint); font-size: 10.5px; font-weight: 650; position: relative;
   }
   .mobilenav button.is-active { color: var(--accent); }
-  .mobilenav .nav__badge { position: absolute; top: 0; right: 6px; min-width: 16px; height: 16px; font-size: 10px; }
+  .mobilenav .nav__badge { position: absolute; top: -3px; left: 54%; margin: 0; min-width: 16px; height: 16px; padding: 0 4px; font-size: 9.5px; }
 
   /* filters drawer */
   .scrim { display: block; position: fixed; inset: 0; z-index: 50; background: rgba(4,6,5,.6); backdrop-filter: blur(3px); animation: fade .2s; }
@@ -672,6 +696,7 @@ h1,h2,h3,h4 { line-height: 1.18; letter-spacing: -0.015em; font-weight: 700; }
 
 @media (max-width: 560px) {
   .grid--stats { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .grid--stats > :last-child:nth-child(odd) { grid-column: 1 / -1; }
   .shots { --tile: 150px; gap: 10px; }
   .h-page { font-size: 19px; }
 }

@@ -47,6 +47,43 @@ export function cameraCounts(captures) {
     .sort((a, b) => b.value - a.value);
 }
 
+// Per-camera freshness: newest photo, past-week count and whether it has gone quiet.
+export const QUIET_DAYS = 3;
+export function cameraStatus(captures, cameras, now = Date.now()) {
+  const week = now - 7 * 86400000;
+  const rows = new Map((cameras || []).map((c) => [c.name, { camera: c.name, last: null, week: 0 }]));
+  for (const c of captures) {
+    if (!rows.has(c.camera)) rows.set(c.camera, { camera: c.camera, last: null, week: 0 });
+    const row = rows.get(c.camera);
+    if (!row.last || c.date > row.last) row.last = c.date;
+    if (c.date.getTime() >= week) row.week++;
+  }
+  return [...rows.values()].map((r) => {
+    const quietDays = r.last ? Math.floor((now - r.last.getTime()) / 86400000) : null;
+    return { ...r, quietDays, quiet: quietDays == null || quietDays >= QUIET_DAYS };
+  });
+}
+
+// One tile per trigger: cameras fire multi-shot bursts of near-identical frames.
+// Expects newest-first captures; returns [{ capture, count }] in the same order.
+export function collapseBursts(captures, limit = Infinity, gapMs = 120000) {
+  const out = [];
+  const open = new Map();
+  for (const c of captures) {
+    const group = open.get(c.camera);
+    if (group && group.oldest - c.date <= gapMs) {
+      group.count++;
+      group.oldest = c.date;
+      continue;
+    }
+    if (out.length >= limit) break;
+    const next = { capture: c, count: 1, oldest: c.date };
+    open.set(c.camera, next);
+    out.push(next);
+  }
+  return out;
+}
+
 export function speciesList(captures, ov) {
   return speciesCounts(captures, ov).map((x) => x.species);
 }

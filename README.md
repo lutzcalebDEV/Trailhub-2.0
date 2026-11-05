@@ -108,9 +108,26 @@ Once a normal `python pull.py` pulls your real photos, you're clear to automate:
    log in, pull, and commit. After that it runs **every hour automatically** and the
    site updates itself.
 
+### Reliable 15-minute updates
+
+GitHub treats scheduled workflows as best effort. This repo's 15-minute cron has
+been running only about 5 times a day, with gaps of up to 10 hours, so new photos
+can take hours to appear even though every run succeeds. For a dependable schedule,
+let the Cloudflare Worker start the job:
+
+1. Give your fine-grained GitHub token **Actions: Read and write** as well as
+   **Contents: Read and write** (or add a separate token as the `DISPATCH_TOKEN`
+   secret).
+2. Set the Worker secrets and deploy, as described under "Shared tags" below. You
+   only need `GITHUB_TOKEN`, `GITHUB_OWNER` and `GITHUB_REPO` for this; `config.js`
+   can stay blank.
+
+`wrangler.toml` already declares the 15-minute Cron Trigger. If a photo can't be
+fetched, the run shows a **Photo skipped** warning on its Actions page.
+
 ### Things to know
 
-- **Schedule is UTC** and may run a few minutes late — fine for hourly.
+- **Schedule is UTC** and may run late or be skipped (see above).
 - **60-day rule:** GitHub pauses scheduled jobs if the repo has no activity for 60
   days. You'll get an email; one click on the Actions tab re-enables it. (The
   hourly photo commits usually keep it alive, but if it ever goes quiet, that's why.)

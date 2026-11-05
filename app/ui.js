@@ -257,8 +257,25 @@ export function CalHeat({ counts, weeks = 26 }) {
   </div>`;
 }
 
+/* ---------------------------- Camera status ----------------------------- */
+// One card per camera, so a silent camera can't hide behind a busy one.
+export function CameraCard({ name, row, onClick }) {
+  return html`<button className="camcard" onClick=${onClick} title=${`Show photos from ${name}`}>
+    <span className="camcard__top">
+      <span className="camcard__name">${name}</span>
+      <span className=${cx("pill", row.quiet ? "is-quiet" : "is-ok")}
+        title=${row.quiet ? "No new photos lately. This can just mean no activity \u2014 if not, check battery and signal in the SPYPOINT app." : ""}>
+        ${row.quiet ? (row.quietDays == null ? "No photos" : `Quiet ${row.quietDays}d`) : "Active"}
+      </span>
+    </span>
+    <span className="camcard__sub">
+      ${row.last ? `Last photo ${timeAgo(row.last)} \u00b7 ${row.week} this week` : "Nothing received yet"}
+    </span>
+  </button>`;
+}
+
 /* ------------------------------ Photo tile ------------------------------ */
-export function Shot({ capture, species, onClick, cameraLabel, selectable, selected }) {
+export function Shot({ capture, species, onClick, cameraLabel, selectable, selected, burst }) {
   const c = capture;
   const cam = cameraLabel || c.camera;
   return html`<button className=${cx("shot", selectable && "is-selectable", selected && "is-selected")}
@@ -278,6 +295,9 @@ export function Shot({ capture, species, onClick, cameraLabel, selectable, selec
         ${c.favorite && html`<span className="tod fav" title="Favorite"><${Icon} name="star" size=${13} /></span>`}
         <span className=${cx("tod", c.isNight ? "night" : "day")}><${Icon} name=${c.isNight ? "moon" : "sun"} size=${13} /></span>
       </div>
+      ${burst > 1 && html`<span className="shot__burst" title=${`${burst} photos from this trigger`}>
+        <${Icon} name="images" size=${12} />${burst}
+      </span>`}
       ${c.temp != null && html`<div className="shot__bl">
         <span className="metabar"><${Icon} name="thermo" size=${12} />${c.temp}°F</span>
       </div>`}

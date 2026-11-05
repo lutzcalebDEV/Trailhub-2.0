@@ -2,7 +2,10 @@ name: Update TrailHub
 
 on:
   schedule:
-    - cron: "*/15 * * * *"   # every 15 minutes (UTC; may run a few min late)
+    # GitHub treats this as best effort and has been running it only ~5 times a day.
+    # Off-the-hour minutes dodge the busiest slots, but the dependable 15-minute
+    # trigger is the Cloudflare cron in tag-worker.js (see the README).
+    - cron: "7,22,37,52 * * * *"
   workflow_dispatch: {}
 
 permissions:

@@ -188,6 +188,20 @@ async function saveEntry(env, path, mutate, message) {
 }
 
 export default {
+  // Cron Trigger (wrangler.toml): starts the photo pull on a dependable schedule,
+  // because GitHub's own cron is heavily throttled on this repo. Needs a token with
+  // Actions: Read and write, as DISPATCH_TOKEN or on GITHUB_TOKEN.
+  async scheduled(event, env) {
+    const token = env.DISPATCH_TOKEN || env.GITHUB_TOKEN;
+    const url = `https://api.github.com/repos/${env.GITHUB_OWNER}/${env.GITHUB_REPO}/actions/workflows/update.yml/dispatches`;
+    const r = await fetch(url, {
+      method: "POST",
+      headers: { ...ghHeaders({ ...env, GITHUB_TOKEN: token }), "Content-Type": "application/json" },
+      body: JSON.stringify({ ref: env.GITHUB_BRANCH || "main" }),
+    });
+    if (!r.ok) throw new Error(`Workflow dispatch failed (${r.status}): ${await r.text()}`);
+  },
+
   async fetch(request, env) {
     if (request.method === "OPTIONS") return new Response(null, { headers: CORS });
 

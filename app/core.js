@@ -126,6 +126,7 @@ function normalizePayload(d) {
     return {
       id: cam.id != null ? String(cam.id) : `camera-${i}`,
       name: cam.name || `Camera ${i + 1}`,
+      label: cam.label || null,
       latitude: Number.isFinite(lat) ? lat : null,
       longitude: Number.isFinite(lng) ? lng : null,
     };
@@ -135,8 +136,16 @@ function normalizePayload(d) {
     captures,
     cameras,
     demo: !!d.demo,
-    generatedAt: d.generatedAt ? new Date(d.generatedAt) : null,
+    generatedAt: parseUtc(d.generatedAt),
   };
+}
+
+// Older data.js files hold a bare UTC timestamp, which Date would read as local time.
+function parseUtc(value) {
+  if (!value) return null;
+  const hasZone = /(Z|[+-]\d{2}:?\d{2})$/.test(value);
+  const date = new Date(hasZone ? value : value + "Z");
+  return isNaN(date.getTime()) ? null : date;
 }
 
 function parseDataScript(text) {
@@ -240,8 +249,26 @@ export async function remoteSaveCameraName(id, name) {
   return { ok: true };
 }
 
-// Resolve a raw camera label to its friendly name (falls back to the raw label).
-export const displayCamera = (raw, names) => (names && names[String(raw)]) || raw || "Camera";
+// "Camera 6a309e41bdc62e4448c0a370" -> "Camera a370". The ids share their opening
+// characters, so the end is the part that tells two cameras apart.
+const shortCamera = (raw) => {
+  const m = /^Camera [0-9a-f]{12,}$/i.exec(String(raw || ""));
+  return m ? "Camera " + String(raw).slice(-4) : raw;
+};
+
+// Resolve a raw camera label to its friendly name (falls back to a short id).
+export const displayCamera = (raw, names) =>
+  (names && names[String(raw)]) || shortCamera(raw) || "Camera";
+
+// Names set in the SPYPOINT app, keyed by raw label. Cameras sharing a name (such
+// as an unchanged factory default) are left out so they stay distinguishable.
+export function cameraLabels(cameras) {
+  const seen = {};
+  for (const c of cameras || []) if (c.label) seen[c.label] = (seen[c.label] || 0) + 1;
+  const out = {};
+  for (const c of cameras || []) if (c.label && seen[c.label] === 1) out[String(c.name)] = c.label;
+  return out;
+}
 
 /* ---------------------- Per-photo metadata (optional) ------------------- */
 // A generic key/value bag per photo id: notes, a favorite flag, and manual
@@ -400,15 +427,24 @@ export function useData(pollMs = 5 * 60 * 1000) {
     try {
       const fresh = await fetchLatestData();
       if (mounted.current) setData(fresh);
-    } catch (e) { /* keep current data */ }
-    finally { if (mounted.current) setRefreshing(false); }
+      return fresh;
+    } catch (e) {
+      return null; // keep current data
+    } finally { if (mounted.current) setRefreshing(false); }
   }, []);
 
   useEffect(() => {
     mounted.current = true;
     refresh();
     const t = setInterval(refresh, pollMs);
-    return () => { mounted.current = false; clearInterval(t); };
+    // Coming back to the tab (or phone) should show new photos right away.
+    const onVisible = () => { if (document.visibilityState === "visible") refresh(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      mounted.current = false;
+      clearInterval(t);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, [refresh, pollMs]);
 
   return { data, refresh, refreshing };

@@ -1,14 +1,14 @@
 // Vale Trails — Overview: the at-a-glance home dashboard (whole dataset).
 import { html } from "../react.js";
-import { Stat, Panel, Bars, Sparkbars, Histogram, Shot, Empty, Btn } from "../ui.js";
+import { Stat, Panel, Bars, Sparkbars, Histogram, Shot, Empty, Btn, CameraCard } from "../ui.js";
 import { effectiveSpecies, fmtDate, labelHour } from "../core.js";
 import {
   speciesCounts, cameraCounts, dailyCounts, hourHistogram,
-  daylightPct, periodDelta, peakHour,
+  daylightPct, periodDelta, peakHour, cameraStatus, collapseBursts,
 } from "../analytics.js";
 
 export function Overview(app) {
-  const { captures, ov, counts, reviewQ, openLightbox, setView, camName } = app;
+  const { captures, data, ov, counts, reviewQ, openLightbox, setView, setFilter, camName } = app;
 
   if (!captures.length) {
     return html`<${Empty} icon="camera" title="No captures yet"
@@ -23,13 +23,16 @@ export function Overview(app) {
   const busiestDay = daily.reduce((a, b) => (b.value > a.value ? b : a), daily[0]);
   const topSpecies = speciesCounts(captures, ov).slice(0, 6);
   const topCams = cameraCounts(captures).slice(0, 5);
-  const recent = captures.slice(0, 12);
+  const recent = collapseBursts(captures, 12);
+  const cams = cameraStatus(captures, data.cameras);
+  const activeCams = cams.filter((c) => !c.quiet).length;
+  const showCamera = (camera) => { setFilter({ camera }); setView("gallery"); };
   const favorites = captures.filter((c) => c.favorite).slice(0, 12);
 
   return html`<div className="col" style=${{ gap: 18 }}>
     <div className="grid grid--stats">
       <${Stat} label="Total captures" value=${counts.total.toLocaleString()} icon="images" tone="acc"
-        sub=${`${counts.cameras} camera${counts.cameras === 1 ? "" : "s"} reporting`} />
+        sub=${`${activeCams} of ${cams.length} camera${cams.length === 1 ? "" : "s"} active`} />
       <${Stat} label="Past 7 days" value=${week.cur.toLocaleString()} icon="bolt" delta=${week.delta}
         sub=${`vs ${week.prev} prior week`} />
       <${Stat} label="Daytime activity" value=${daylight + "%"} icon="sun" tone="day"
@@ -38,6 +41,11 @@ export function Overview(app) {
         sub=${peak ? `${peak.count} captures in that hour` : "No data"} />
       <${Stat} label="Needs review" value=${reviewQ.length} icon="scan" tone=${reviewQ.length ? "warn" : ""}
         sub=${reviewQ.length ? "Tap Review to confirm" : "All caught up"} />
+    </div>
+
+    <div className="camcards">
+      ${cams.map((row) => html`<${CameraCard} key=${row.camera} row=${row}
+        name=${camName(row.camera)} onClick=${() => showCamera(row.camera)} />`)}
     </div>
 
     ${favorites.length ? html`<${Panel} title="Favorites" icon="star"
@@ -51,8 +59,9 @@ export function Overview(app) {
     <${Panel} title="Latest captures" icon="images"
       actions=${html`<${Btn} sm variant="ghost" iconRight="arrowRight" onClick=${() => setView("gallery")}>View all</${Btn}>`}>
       <div className="shots size-S">
-        ${recent.map((c, i) => html`<${Shot} key=${c.id} capture=${c}
-          species=${effectiveSpecies(c, ov)} cameraLabel=${camName(c.camera)} onClick=${() => openLightbox(recent, i)} />`)}
+        ${recent.map(({ capture: c, count }) => html`<${Shot} key=${c.id} capture=${c} burst=${count}
+          species=${effectiveSpecies(c, ov)} cameraLabel=${camName(c.camera)}
+          onClick=${() => openLightbox(captures, captures.indexOf(c))} />`)}
       </div>
     </${Panel}>
 
