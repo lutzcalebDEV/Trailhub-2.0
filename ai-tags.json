@@ -1,7 +1,82 @@
 {
+ "sp_6ae08937aa4e1328117b882e": {
+  "confidence": 0.85,
+  "label": "Deer",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ae08937aa4e1328117b8830": {
+  "confidence": 0.5,
+  "label": "Deer",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ae5139261d2518b5877480d": {
+  "confidence": 0.95,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ae5139261d2518b58774811": {
+  "confidence": 0.99,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ae726a3cb7e9bcb0cb6fc73": {
+  "confidence": 1.0,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ae726a3cb7e9bcb0cb6fc75": {
+  "confidence": 0.85,
+  "label": "Buck",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ae726c183c90435243331db": {
+  "confidence": 0.95,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ae726c183c90435243331dd": {
+  "confidence": 0.95,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ae78c62f3fdae6e9a82d3cd": {
+  "confidence": 0.85,
+  "label": "Buck",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ae78c62f3fdae6e9a82d3cf": {
+  "confidence": 0.95,
+  "label": "Buck",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ae78c80f7ed7d882a1db388": {
+  "confidence": 0.8,
+  "label": "Doe",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ae78c80f7ed7d882a1db38a": {
+  "confidence": 0.95,
+  "label": "Buck",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ae78d436b6a2c048f1f10fe": {
+  "confidence": 0.85,
+  "label": "Doe",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ae78d436b6a2c048f1f1100": {
+  "confidence": 0.8,
+  "label": "Deer",
+  "model": "gemini-3.5-flash-lite"
+ },
  "sp_6ae78ee6ee154b9b2dd6298b": {
   "confidence": 0.85,
   "label": "Doe",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ae78ee6ee154b9b2dd6298d": {
+  "confidence": 0.95,
+  "label": "Deer",
   "model": "gemini-3.5-flash-lite"
  },
  "sp_6ae7b3a6c79430b28979ee56": {
