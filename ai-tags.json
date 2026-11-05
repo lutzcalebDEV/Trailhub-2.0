@@ -39,6 +39,81 @@
   "label": "Empty",
   "model": "gemini-3.5-flash-lite"
  },
+ "sp_6a32dd79633cdfa58af13844": {
+  "confidence": 0.99,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a32dd79633cdfa58af13846": {
+  "confidence": 0.99,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a32dd79633cdfa58af13848": {
+  "confidence": 0.99,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a32dd79633cdfa58af1384a": {
+  "confidence": 0.98,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a32dd79633cdfa58af1384c": {
+  "confidence": 0.98,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a32dd79633cdfa58af1384e": {
+  "confidence": 1.0,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a32dd79633cdfa58af13850": {
+  "confidence": 1.0,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a32dd79633cdfa58af13852": {
+  "confidence": 0.99,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a32dd79633cdfa58af13854": {
+  "confidence": 0.99,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a32dd79633cdfa58af13856": {
+  "confidence": 0.99,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a32dd79633cdfa58af13858": {
+  "confidence": 0.99,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a32dd79633cdfa58af1385a": {
+  "confidence": 1.0,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a32dd79633cdfa58af1385c": {
+  "confidence": 1.0,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a32dd79633cdfa58af13860": {
+  "confidence": 0.99,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a32dd79633cdfa58af13862": {
+  "confidence": 0.98,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
  "sp_6a32dde6593d5784a7aad034": {
   "confidence": 0.98,
   "label": "Empty",
