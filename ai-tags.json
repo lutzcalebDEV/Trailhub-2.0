@@ -1,10 +1,30 @@
 {
+ "sp_6a31c2c2377390f653bfde1c": {
+  "confidence": 0.8,
+  "label": "Other animal",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a31c2dcd3dca5982e6a1f74": {
+  "confidence": 1.0,
+  "label": "Person",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a31c2fe720ea8c3a787c71b": {
+  "confidence": 1.0,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
  "sp_6a32dd79633cdfa58af13832": {
   "confidence": 0.98,
   "label": "Empty",
   "model": "gemini-3.5-flash-lite"
  },
  "sp_6a32dd79633cdfa58af13834": {
+  "confidence": 0.99,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a32dd79633cdfa58af13836": {
   "confidence": 0.99,
   "label": "Empty",
   "model": "gemini-3.5-flash-lite"
@@ -104,12 +124,22 @@
   "label": "Empty",
   "model": "gemini-3.5-flash-lite"
  },
+ "sp_6a32dd79633cdfa58af1385e": {
+  "confidence": 0.99,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
  "sp_6a32dd79633cdfa58af13860": {
   "confidence": 0.99,
   "label": "Empty",
   "model": "gemini-3.5-flash-lite"
  },
  "sp_6a32dd79633cdfa58af13862": {
+  "confidence": 0.98,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a32dd79633cdfa58af13864": {
   "confidence": 0.98,
   "label": "Empty",
   "model": "gemini-3.5-flash-lite"
