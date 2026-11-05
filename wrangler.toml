@@ -23,7 +23,7 @@ crons = ["*/15 * * * *"]
 # Set R2_PUBLIC_BASE_URL to the URL from: npx wrangler r2 bucket dev-url enable trailhub-photos
 [vars]
 UPLOAD_USER = "valecrew"
-R2_PUBLIC_BASE_URL = ""
+R2_PUBLIC_BASE_URL = "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev"
 
 [[r2_buckets]]
 binding = "PHOTOS"
