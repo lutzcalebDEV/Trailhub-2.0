@@ -1,22 +1,14 @@
 // Vale Trails — Insights: movement patterns, timing, species mix and calendar.
 import { html, Fragment } from "../react.js";
 import { FilterBar } from "../shell.js";
-import { Stat, Panel, Histogram, HourStrip, Donut, Legend, Bars, SplitBar, CalHeat, Empty } from "../ui.js";
+import { Stat, Panel, Histogram, HourStrip, Bars, SplitBar, CalHeat, Empty } from "../ui.js";
 import { Icon } from "../icons.js";
 import { labelHour } from "../core.js";
 import {
-  filterCaptures, speciesCounts, hourHistogram, dayNightSplit, daylightPct, peakHour,
+  filterCaptures, hourHistogram, dayNightSplit, daylightPct, peakHour,
   weekdayCounts, speciesByDayNight, speciesActivity, peakWindow,
   tempBuckets, moonCounts, cameraCounts, isoDayCounts,
 } from "../analytics.js";
-
-function buildDonut(counts) {
-  if (counts.length <= 7) return counts.map((c) => ({ value: c.value, color: c.color, label: c.species }));
-  const top = counts.slice(0, 6).map((c) => ({ value: c.value, color: c.color, label: c.species }));
-  const other = counts.slice(6).reduce((s, c) => s + c.value, 0);
-  top.push({ value: other, color: "var(--sp-other)", label: "Other" });
-  return top;
-}
 
 export function Insights(app) {
   const { captures, filtered, filters, setFilter, spList, data, ov, camName } = app;
@@ -36,12 +28,10 @@ export function Insights(app) {
   const peak = peakHour(filtered);
   const wk = weekdayCounts(filtered);
   const busiestWk = wk.reduce((a, b) => (b.value > a.value ? b : a), wk[0]);
-  const counts = speciesCounts(filtered, ov);
   const byDN = speciesByDayNight(filtered, ov, 6);
   const temps = tempBuckets(filtered);
   const moons = moonCounts(filtered);
   const cams = cameraCounts(filtered);
-  const donut = buildDonut(counts);
 
   // Per-species activity timing — the heart of "when is a species most active".
   // When one species is selected we still compare it against the others (ignoring
@@ -56,15 +46,15 @@ export function Insights(app) {
   // Choose the most informative secondary panel based on available data.
   let secondary;
   if (temps) {
-    secondary = html`<${Panel} title="By temperature" icon="thermo">
+    secondary = html`<${Panel} title="Temperature">
       <${Bars} data=${temps.buckets.map((b) => ({ label: `${b.lo}–${b.hi}°F`, value: b.value }))} />
     </${Panel}>`;
   } else if (moons) {
-    secondary = html`<${Panel} title="By moon phase" icon="moon">
+    secondary = html`<${Panel} title="Moon phase">
       <${Bars} data=${moons.map((m) => ({ label: m.moon, value: m.value }))} />
     </${Panel}>`;
   } else {
-    secondary = html`<${Panel} title="By camera" icon="map">
+    secondary = html`<${Panel} title="Camera">
       <${Bars} data=${cams.slice(0, 7).map((c) => ({ label: camName(c.camera), value: c.value }))} />
     </${Panel}>`;
   }
@@ -73,15 +63,12 @@ export function Insights(app) {
     ${filterBar}
 
     <div className="grid grid--stats">
-      <${Stat} label="Captures" value=${filtered.length.toLocaleString()} icon="images" tone="acc" />
-      <${Stat} label="Daytime" value=${daylightPct(filtered) + "%"} icon="sun" tone="day"
+      <${Stat} label="In daylight" value=${daylightPct(filtered) + "%"}
         sub=${`${split.day} day · ${split.night} night`} />
-      <${Stat} label="Peak hour" value=${peak ? labelHour(peak.hour) : "—"} icon="clock"
-        sub=${peak ? `${peak.count} captures` : ""} />
-      <${Stat} label="Busiest day" value=${busiestWk.value ? busiestWk.label : "—"} icon="calendar"
-        sub=${busiestWk.value ? `${busiestWk.value} captures` : ""} />
-      <${Stat} label="Species" value=${counts.length} icon="paw"
-        sub=${counts[0] ? `Top: ${counts[0].species}` : ""} />
+      <${Stat} label="Busiest hour" value=${peak ? labelHour(peak.hour) : "—"}
+        sub=${peak ? `${peak.count} photos` : ""} />
+      <${Stat} label="Busiest day" value=${busiestWk.value ? busiestWk.label : "—"}
+        sub=${busiestWk.value ? `${busiestWk.value} photos` : ""} />
     </div>
 
     ${sel && selPeak && html`<div className="besttime">
@@ -93,7 +80,11 @@ export function Insights(app) {
       </div>
     </div>`}
 
-    <${Panel} title="Active times by species" icon="clock"
+    <${Panel} title="Time of day">
+      <${Histogram} hours=${hourHistogram(filtered)} />
+    </${Panel}>
+
+    <${Panel} title="Time of day by species"
       actions=${html`<span className="faint" style=${{ fontSize: 12 }}>Peak = busiest 3-hour window</span>`}>
       ${activity.length
         ? html`<${Fragment}>
@@ -109,15 +100,11 @@ export function Insights(app) {
             </div>
             <div className="actclock__axis"><span>12a</span><span>6a</span><span>12p</span><span>6p</span><span>11p</span></div>
           </${Fragment}>`
-        : html`<p className="faint">Tag a few captures in Review to see when each species moves.</p>`}
-    </${Panel}>
-
-    <${Panel} title="Activity by hour" icon="clock">
-      <${Histogram} hours=${hourHistogram(filtered)} />
+        : html`<p className="faint">Identify a few photos to see when each species moves.</p>`}
     </${Panel}>
 
     <div className="grid grid--2">
-      <${Panel} title="Day vs night by species" icon="layers">
+      <${Panel} title="Day or night">
         <div className="col" style=${{ gap: 13 }}>
           ${byDN.map((r) => html`<div key=${r.species}>
             <div className="row" style=${{ justifyContent: "space-between", marginBottom: 6 }}>
@@ -132,24 +119,14 @@ export function Insights(app) {
         </div>
       </${Panel}>
 
-      <${Panel} title="Species mix" icon="paw">
-        <div className="row" style=${{ gap: 22, alignItems: "center", flexWrap: "wrap" }}>
-          <${Donut} segments=${donut} centerValue=${filtered.length.toLocaleString()} centerLabel="captures" />
-          <div style=${{ flex: 1, minWidth: 180 }}>
-            <${Legend} items=${donut} />
-          </div>
-        </div>
-      </${Panel}>
-    </div>
-
-    <div className="grid grid--2">
-      <${Panel} title="By day of week" icon="calendar">
+      <${Panel} title="Day of the week">
         <${Bars} data=${wk} max=${Math.max(1, ...wk.map((w) => w.value))} />
       </${Panel}>
-      ${secondary}
     </div>
 
-    <${Panel} title="Activity calendar" icon="calendar"
+    ${secondary}
+
+    <${Panel} title="Calendar"
       actions=${html`<span className="faint" style=${{ fontSize: 12 }}>Last 6 months</span>`}>
       <div className="scroll-x"><${CalHeat} counts=${isoDayCounts(filtered)} weeks=${26} /></div>
     </${Panel}>

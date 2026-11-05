@@ -42,6 +42,7 @@ STORE_FILE = HERE / "store.json"   # durable source of truth (NOT uploaded)
 CAMERA_FILE = HERE / "cameras.json"  # durable camera metadata for map rendering
 TAGS_FILE = HERE / "tags.json"     # user-applied tags/classifications (shared, baked into data.js)
 META_FILE = HERE / "metadata.json"  # per-photo metadata (notes, favorites, corrections; shared, baked into data.js)
+AI_TAGS_FILE = HERE / "ai-tags.json"  # labels from ai_tag.py, used only where nothing better exists
 
 MAX_PUBLISHED = 1500   # cap captures written to data.js so the site stays light
 MAX_KEEP = 3000        # cap stored photos+images so the repo doesn't grow forever
@@ -688,6 +689,22 @@ def load_metadata():
     return out
 
 
+def load_ai_tags():
+    """Load AI labels keyed by photo id: {id: {"label": "Doe", "confidence": 0.9}}.
+
+    "Other animal" isn't overlaid: it's recorded only so ai_tag.py won't ask again,
+    and the photo stays a plain "Animal" for you to review.
+    """
+    try:
+        data = json.loads(AI_TAGS_FILE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(data, dict):
+        return {}
+    return {k: v for k, v in data.items()
+            if isinstance(v, dict) and v.get("label") and v["label"] != "Other animal"}
+
+
 def prune_store(store):
     """Keep only the newest MAX_KEEP captures; delete image files for the rest."""
     items = sorted(store.values(), key=lambda c: c.get("date", ""), reverse=True)
@@ -736,6 +753,7 @@ def write_data_js(captures, cameras=None, demo=False, tags_map=None, meta_map=No
     """
     tags_map = tags_map or {}
     meta_map = meta_map or {}
+    ai_map = {} if demo else load_ai_tags()
     captures = sorted(captures, key=lambda c: c.get("date", ""), reverse=True)[:MAX_PUBLISHED]
     out_caps = []
     for c in captures:
@@ -744,6 +762,12 @@ def write_data_js(captures, cameras=None, demo=False, tags_map=None, meta_map=No
         if user_tags:
             c["tags"] = user_tags
             c["species"] = user_tags[0]
+        elif c.get("species") == "Animal" and str(c.get("id")) in ai_map:
+            ai = ai_map[str(c.get("id"))]
+            c["species"] = ai["label"]
+            c["tags"] = [ai["label"]]
+            c["confidence"] = ai.get("confidence")
+            c["aiTagged"] = True
         elif not c.get("tags"):
             c["tags"] = [c.get("species", "Animal")]
         meta = meta_map.get(str(c.get("id")))

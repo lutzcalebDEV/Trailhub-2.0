@@ -5,10 +5,10 @@ import { Icon } from "../icons.js";
 import { Empty, Btn, Chip } from "../ui.js";
 
 const cx = (...xs) => xs.filter(Boolean).join(" ");
-const TILES = {
-  dark: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-  light: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
-};
+// OpenStreetMap's public tiles: open data, no API key or account. Its usage policy
+// requires the attribution below and a Referer header.
+const OSM_TILES = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
+const OSM_CREDIT = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
 export function MapView(app) {
   const { data, filtered, filters, setFilter, setView, spList, theme, camName, renameCamera } = app;
@@ -37,9 +37,10 @@ export function MapView(app) {
     const L = window.L;
     if (!L || !elRef.current || !cams.length) return;
     const map = L.map(elRef.current, { zoomControl: true, scrollWheelZoom: true });
-    L.tileLayer(theme === "light" ? TILES.light : TILES.dark, {
+    L.tileLayer(OSM_TILES, {
       maxZoom: 19,
-      attribution: '&copy; OpenStreetMap &copy; CARTO',
+      attribution: OSM_CREDIT,
+      referrerPolicy: "strict-origin-when-cross-origin",
     }).addTo(map);
     mapRef.current = map;
     const pts = cams.map((c) => [c.latitude, c.longitude]);
@@ -64,7 +65,7 @@ export function MapView(app) {
       const markup = `<div class="vt-marker" style="width:${size}px;height:${size}px;${active ? "outline:3px solid var(--accent);outline-offset:2px;" : ""}">${count}</div>`;
       const icon = L.divIcon({ className: "", html: markup, iconSize: [size, size], iconAnchor: [size / 2, size / 2] });
       const mk = L.marker([cam.latitude, cam.longitude], { icon }).addTo(group);
-      mk.bindPopup(`<b>${camName(cam.name)}</b><br>${count} capture${count === 1 ? "" : "s"}`);
+      mk.bindPopup(`<b>${camName(cam.name)}</b><br>${count} photo${count === 1 ? "" : "s"}`);
       mk.on("click", () => setFilter({ camera: filters.camera === cam.name ? "All" : cam.name }));
     });
   }, [cams, countByCam, filters.camera, camName]);

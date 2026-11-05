@@ -42,7 +42,6 @@ function App() {
   const [archived, archive$] = usePersistentSet(LS.archived);
   const [reviewed, reviewed$] = usePersistentSet(LS.reviewed);
   const [gridSize, setGridSize] = usePersistent(LS.gridSize, "M");
-  const [gridLayout, setGridLayout] = usePersistent(LS.gridLayout, "grid");
 
   const [lightbox, setLightbox] = useState(null);
   const [toast, setToast] = useState(null);
@@ -225,7 +224,7 @@ function App() {
   const app = {
     data, captures, ov, theme,
     filters, setFilter, filtered, spList,
-    gridSize, setGridSize, gridLayout, setGridLayout,
+    gridSize, setGridSize,
     archived, reviewed, assignSpecies, keep, archive: archiveCap,
     openLightbox, reviewQ, counts, setView, setFilter,
     camName, camNames, bulkAssign, renameCamera,
@@ -239,7 +238,7 @@ function App() {
       <${Sidebar} view=${view} setView=${setView} counts=${counts} status=${status} />
       <main className="main">
         <${MobileTopbar} theme=${theme} toggleTheme=${toggleTheme} onRefresh=${manualRefresh} refreshing=${refreshing} status=${status} />
-        <${Topbar} title=${meta.label} sub=${meta.sub} theme=${theme} toggleTheme=${toggleTheme}
+        <${Topbar} title=${meta.label} theme=${theme} toggleTheme=${toggleTheme}
           onRefresh=${manualRefresh} refreshing=${refreshing} />
         <div className="view view__enter" key=${view}>
           <${View} ...${app} />

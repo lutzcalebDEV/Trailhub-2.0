@@ -1,17 +1,17 @@
 // Vale Trails — app chrome: sidebar, topbar, mobile nav and the shared filter bar.
 import { html, useState, Fragment, createPortal } from "./react.js";
 import { Icon, BrandMark } from "./icons.js";
-import { IconBtn, SearchInput, Select, Segmented, Switch, Chip } from "./ui.js";
+import { IconBtn, Select, Segmented, Switch, Chip } from "./ui.js";
 import { speciesColor, LS } from "./core.js";
 
 const cx = (...xs) => xs.filter(Boolean).join(" ");
 
 export const VIEWS = [
-  { id: "overview", label: "Overview", icon: "dashboard", sub: "Your range at a glance" },
-  { id: "gallery",  label: "Gallery",  icon: "images",    sub: "Every capture, filtered your way" },
-  { id: "insights", label: "Insights", icon: "chart",     sub: "Movement patterns & timing" },
-  { id: "map",      label: "Map",      icon: "map",       sub: "Activity by camera location" },
-  { id: "review",   label: "Review",   icon: "scan",      sub: "Confirm species on flagged captures" },
+  { id: "overview", label: "Home",     icon: "dashboard" },
+  { id: "gallery",  label: "Photos",   icon: "images" },
+  { id: "insights", label: "Patterns", icon: "chart" },
+  { id: "map",      label: "Map",      icon: "map" },
+  { id: "review",   label: "Identify", icon: "scan" },
 ];
 
 const badgeCount = (n) => (n > 99 ? "99+" : n);
@@ -22,11 +22,10 @@ export function Sidebar({ view, setView, counts, status }) {
   return html`<aside className="sidebar">
     <div className="brand">
       <${BrandMark} size=${38} />
-      <div className="brand__name">Vale Trails<small>Trail Camera Intel</small></div>
+      <div className="brand__name">Vale Trails</div>
     </div>
 
     <nav className="nav">
-      <div className="nav__label">Dashboard</div>
       ${VIEWS.map((v) => html`<a key=${v.id} role="button" tabindex="0"
         className=${cx("nav__item", view === v.id && "is-active")}
         onClick=${() => setView(v.id)}
@@ -43,13 +42,6 @@ export function Sidebar({ view, setView, counts, status }) {
           <b>${feedTitle(status)}</b>
           <small>${status.checked ? "Checked " + status.checked : "Awaiting sync"}</small>
           ${status.newest && html`<small>Newest photo ${status.newest}</small>`}
-        </div>
-      </div>
-      <div className="datastat">
-        <span className="datastat__dot" style=${{ background: "var(--info)", boxShadow: "0 0 0 4px rgba(108,199,230,.14)" }} />
-        <div>
-          <b>${counts.total.toLocaleString()} captures</b>
-          <small>${counts.cameras} camera${counts.cameras === 1 ? "" : "s"}</small>
         </div>
       </div>
     </div>
@@ -114,24 +106,23 @@ export function loadFilters() {
     for (const k of Object.keys(out)) {
       if (saved[k] !== undefined && typeof saved[k] === typeof out[k]) out[k] = saved[k];
     }
+    out.q = ""; // search was removed; never restore a query there's no way to clear
     return out;
   } catch (e) {
     return defaultFilters();
   }
 }
 
-export function FilterBar({ filters, set, cameras, speciesList, count, camName }) {
+export function FilterBar({ filters, set, cameras, speciesList, count, camName, children }) {
   const [open, setOpen] = useState(false);
   const cn = camName || ((x) => x);
   const activeCount =
     (filters.species !== "All" ? 1 : 0) +
     (filters.camera !== "All" ? 1 : 0) +
     (filters.tod !== "all" ? 1 : 0) +
-    (filters.bucksOnly ? 1 : 0) +
-    (filters.q ? 1 : 0);
+    (filters.bucksOnly ? 1 : 0);
 
   const controls = html`<${Fragment}>
-    <${SearchInput} value=${filters.q} onChange=${(v) => set({ q: v })} placeholder="Search camera or species" />
     <${Select} value=${filters.species} onChange=${(v) => set({ species: v })}
       options=${[{ value: "All", label: "All species" }, ...speciesList.map((s) => ({ value: s, label: s }))]} />
     <${Select} value=${filters.camera} onChange=${(v) => set({ camera: v })}
@@ -139,14 +130,13 @@ export function FilterBar({ filters, set, cameras, speciesList, count, camName }
     <${Segmented} value=${filters.tod} onChange=${(v) => set({ tod: v })}
       options=${[
         { value: "all", label: "All" },
-        { value: "day", icon: "sun", title: "Daytime" },
-        { value: "night", icon: "moon", title: "Night" },
+        { value: "day", label: "Day", title: "Daytime" },
+        { value: "night", label: "Night", title: "Night" },
       ]} />
     <${Switch} checked=${filters.bucksOnly} onChange=${(v) => set({ bucksOnly: v })}>Bucks only</${Switch}>
   </${Fragment}>`;
 
   const chips = [];
-  if (filters.q) chips.push({ k: "q", label: `"${filters.q}"`, clear: () => set({ q: "" }) });
   if (filters.species !== "All") chips.push({ k: "sp", label: filters.species, dot: speciesColor(filters.species), clear: () => set({ species: "All" }) });
   if (filters.camera !== "All") chips.push({ k: "cam", label: cn(filters.camera), clear: () => set({ camera: "All" }) });
   if (filters.tod !== "all") chips.push({ k: "tod", label: filters.tod === "day" ? "Daytime" : "Night", clear: () => set({ tod: "all" }) });
@@ -159,7 +149,8 @@ export function FilterBar({ filters, set, cameras, speciesList, count, camName }
         <${Icon} name="sliders" size=${15} /><span>Filters</span>
         ${activeCount > 0 && html`<span className="nav__badge">${activeCount}</span>`}
       </button>
-      <span className="filterbar__count">${count.toLocaleString()} result${count === 1 ? "" : "s"}</span>
+      <span className="filterbar__count">${count.toLocaleString()} photo${count === 1 ? "" : "s"}</span>
+      ${children && html`<div className="filterbar__tools">${children}</div>`}
     </div>
 
     ${chips.length > 0 && html`<div className="filterchips">
@@ -172,7 +163,7 @@ export function FilterBar({ filters, set, cameras, speciesList, count, camName }
         <div className="drawer__grip" />
         <div className="filterbar__inline">${controls}</div>
         <button className="btn btn--primary mt" onClick=${() => setOpen(false)} style=${{ width: "100%" }}>
-          Show ${count.toLocaleString()} result${count === 1 ? "" : "s"}
+          Show ${count.toLocaleString()} photo${count === 1 ? "" : "s"}
         </button>
       </div>
     </div>`, document.body)}

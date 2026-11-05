@@ -17,6 +17,7 @@ export const SPECIES = {
   Turkey:   "var(--sp-turkey)",
   Opossum:  "var(--sp-opossum)",
   Person:   "var(--sp-person)",
+  Empty:    "var(--sp-other)",
 };
 export const SPECIES_ORDER = Object.keys(SPECIES);
 export const TAG_OPTIONS = [...SPECIES_ORDER, "Animal"];
@@ -113,6 +114,7 @@ function normalizePayload(d) {
         image: c.image || "",
         isNight: !!c.isNight,
         confidence: c.confidence == null ? null : c.confidence,
+        aiTagged: !!c.aiTagged,
         temp: c.temp == null ? null : c.temp,
         moon: c.moon || moonFromDate(date),
       };
@@ -356,7 +358,6 @@ export const LS = {
   archived: "trailhub-archived-ids",
   reviewed: "trailhub-reviewed-ids",
   gridSize: "trailhub-grid-size",
-  gridLayout: "trailhub-grid-layout",
   camCoords: "trailhub-camera-coords",
   camNames: "trailhub-camera-names",
   meta: "trailhub-metadata",

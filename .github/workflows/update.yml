@@ -44,6 +44,7 @@ jobs:
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
           R2_PUBLIC_BASE_URL: ${{ secrets.R2_PUBLIC_BASE_URL }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           set -e
           git config user.name "trailhub-bot"
@@ -63,6 +64,10 @@ jobs:
             # downloads photos it hasn't seen (tracked in store.json), so re-running
             # is cheap and idempotent.
             python pull.py --limit 100
+
+            # Optional AI labels. Never allowed to stop new photos publishing.
+            python ai_tag.py || echo "::warning::AI tagging failed; photos still publish."
+            python pull.py --rebuild
 
             git add -A
             if git diff --cached --quiet; then

@@ -17,11 +17,10 @@ just static files — no server, no AI, no credentials in the cloud.
 - `tags.json` — your photo tags/reclassifications (shared source of truth, baked into `data.js`)
 - `tag-worker.js` — optional Cloudflare Worker that saves tags for everyone (see "Shared tags")
 
-The dashboard has four views: **Recent** (last 7 days), **Patterns** (scouting
-analytics — daylight-movement %, peak hours, day/night split by species, plus
-temperature and moon breakdowns when that data is available), **Calendar**, and
-**All**. Every filter (Bucks Only, species, camera, day/night) flows into the
-Patterns view, so you can ask "when does this buck move at this camera?"
+The site has five pages: **Home** (camera status and the latest photos), **Photos**
+(everything, grouped by day), **Patterns** (when animals move), **Map**, and
+**Identify** (put a name to untagged photos). Filters carry across Photos, Patterns
+and Map, so you can ask "when does this buck move at this camera?"
 
 ## 1. Preview it right now (no setup)
 
@@ -193,6 +192,22 @@ Notes:
   people you'd share the site with.
 - No Worker yet? Everything still works — tags just stay on each device until you
   finish the setup.
+
+## 6. AI tagging (optional, free)
+
+`ai_tag.py` sends photos SPYPOINT left as a generic "Animal" to the free tier of the
+Gemini API and saves the answers in `ai-tags.json`. Your tags and SPYPOINT's specific
+labels always win, and answers under 70% confidence stay in **Review**. On the free
+tier, Google may use these images to improve its products.
+
+1. Create a key at [Google AI Studio](https://aistudio.google.com/apikey).
+2. Add `GEMINI_API_KEY=your-key` to `.env` next to `pull.py` (it's gitignored).
+3. Run `python ai_tag.py --check`, then `python ai_tag.py --eval 10`.
+4. If the results look right, add `GEMINI_API_KEY` as a repository secret. Each run
+   then tags up to 15 waiting photos until the backlog is done.
+
+Set `AI_MODEL` or `AI_MAX_PER_RUN` to change the model or batch size. Your model's
+daily limit is shown in AI Studio, and leftovers wait for the next run.
 
 ## Useful flags
 

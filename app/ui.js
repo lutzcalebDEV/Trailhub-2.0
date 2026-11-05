@@ -64,14 +64,6 @@ export function Select({ value, onChange, options, className = "", ...rest }) {
   </div>`;
 }
 
-export function SearchInput({ value, onChange, placeholder = "Search", className = "" }) {
-  return html`<div className=${cx("search", className)}>
-    <${Icon} name="search" size=${16} />
-    <input className="input" type="search" value=${value} placeholder=${placeholder}
-      onChange=${(e) => onChange(e.target.value)} />
-  </div>`;
-}
-
 export function Switch({ checked, onChange, children }) {
   return html`<button type="button" role="switch" aria-checked=${checked}
     className=${cx("switch", checked && "is-on")} onClick=${() => onChange(!checked)}>
@@ -153,7 +145,7 @@ export function Histogram({ hours }) {
       ${hours.map((v, h) => {
         const pct = (v / max) * 100;
         const cls = v === 0 ? "hist__bar dim" : (h === peak ? "hist__bar peak" : "hist__bar");
-        return html`<div className="hist__col" key=${h} title=${`${labelHour(h)} · ${v} capture${v === 1 ? "" : "s"}`}>
+        return html`<div className="hist__col" key=${h} title=${`${labelHour(h)} · ${v} photo${v === 1 ? "" : "s"}`}>
           <div className=${cls} style=${{ height: Math.max(pct, v > 0 ? 6 : 2) + "%" }} />
         </div>`;
       })}
@@ -186,45 +178,6 @@ export function Sparkbars({ data }) {
       style=${{ height: Math.max((d.value / max) * 100, d.value > 0 ? 8 : 3) + "%" }}
       title=${(d.label ? d.label + " · " : "") + d.value}><i /></div>`)}
   </div>`;
-}
-
-export function Donut({ segments, size = 150, thickness = 16, centerValue, centerLabel }) {
-  const r = (size - thickness) / 2;
-  const C = 2 * Math.PI * r;
-  const total = segments.reduce((s, x) => s + x.value, 0) || 1;
-  let acc = 0;
-  const cx0 = size / 2;
-  return html`<div className="donut" style=${{ width: size, height: size }}>
-    <svg width=${size} height=${size}>
-      <g transform=${`rotate(-90 ${cx0} ${cx0})`}>
-        <circle cx=${cx0} cy=${cx0} r=${r} fill="none" stroke="var(--surface-3)" strokeWidth=${thickness} />
-        ${segments.map((seg, i) => {
-          const len = (seg.value / total) * C;
-          const dash = Math.max(len - 2, 0);
-          const el = html`<circle key=${i} cx=${cx0} cy=${cx0} r=${r} fill="none"
-            stroke=${seg.color} strokeWidth=${thickness} strokeLinecap="round"
-            strokeDasharray=${`${dash} ${C - dash}`} strokeDashoffset=${-acc} />`;
-          acc += len;
-          return el;
-        })}
-      </g>
-    </svg>
-    <div style=${{ position: "absolute", inset: 0, display: "grid", placeItems: "center", textAlign: "center" }}>
-      <div>
-        <div className="donut__c">${centerValue}</div>
-        <div className="donut__l">${centerLabel}</div>
-      </div>
-    </div>
-  </div>`;
-}
-
-export function Legend({ items, fmt }) {
-  return html`<ul className="legend">
-    ${items.map((it, i) => html`<li key=${i}>
-      <span className="k"><span className="sdot" style=${{ background: it.color }} />${it.label}</span>
-      <span className="v">${fmt ? fmt(it.value) : it.value}</span>
-    </li>`)}
-  </ul>`;
 }
 
 export function CalHeat({ counts, weeks = 26 }) {
@@ -275,7 +228,7 @@ export function CameraCard({ name, row, onClick }) {
 }
 
 /* ------------------------------ Photo tile ------------------------------ */
-export function Shot({ capture, species, onClick, cameraLabel, selectable, selected, burst }) {
+export function Shot({ capture, species, onClick, cameraLabel, selectable, selected, burst, timeLabel }) {
   const c = capture;
   const cam = cameraLabel || c.camera;
   return html`<button className=${cx("shot", selectable && "is-selectable", selected && "is-selected")}
@@ -284,27 +237,22 @@ export function Shot({ capture, species, onClick, cameraLabel, selectable, selec
       ${c.image
         ? html`<img src=${c.image} alt=${species} loading="lazy" />`
         : html`<div className="shot__noimg">No image</div>`}
-      <div className="shot__grad" />
       ${selectable && html`<span className=${cx("shot__check", selected && "is-on")}>
         ${selected && html`<${Icon} name="check" size=${14} />`}
       </span>`}
-      <div className="shot__tl">
+      ${species !== "Animal" && html`<div className="shot__tl">
         <span className="sbadge"><span className="sbadge__dot" style=${{ background: speciesColor(species) }} />${species}</span>
-      </div>
-      <div className="shot__tr">
-        ${c.favorite && html`<span className="tod fav" title="Favorite"><${Icon} name="star" size=${13} /></span>`}
-        <span className=${cx("tod", c.isNight ? "night" : "day")}><${Icon} name=${c.isNight ? "moon" : "sun"} size=${13} /></span>
-      </div>
+      </div>`}
+      ${c.favorite && html`<div className="shot__tr">
+        <span className="tod fav" title="Favorite"><${Icon} name="star" size=${13} /></span>
+      </div>`}
       ${burst > 1 && html`<span className="shot__burst" title=${`${burst} photos from this trigger`}>
         <${Icon} name="images" size=${12} />${burst}
       </span>`}
-      ${c.temp != null && html`<div className="shot__bl">
-        <span className="metabar"><${Icon} name="thermo" size=${12} />${c.temp}°F</span>
-      </div>`}
     </div>
     <div className="shot__meta">
-      <span className="shot__cam"><${Icon} name="camera" size=${13} /><span>${cam}</span></span>
-      <span className="shot__time">${timeAgo(c.date)}</span>
+      <span className="shot__cam"><span>${cam}</span></span>
+      <span className="shot__time">${timeLabel || timeAgo(c.date)}</span>
     </div>
   </button>`;
 }
@@ -400,7 +348,7 @@ export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggle
             <span><${Icon} name=${c.isNight ? "moon" : "sun"} size=${15} />${c.isNight ? "Night" : "Day"}</span>
             ${c.temp != null && html`<span><${Icon} name="thermo" size=${15} />${c.temp}°F</span>`}
             ${c.moon && html`<span><${Icon} name="moon" size=${15} />${c.moon}</span>`}
-            ${c.confidence != null && html`<span><${Icon} name="target" size=${15} />${Math.round(c.confidence * 100)}%</span>`}
+            ${c.confidence != null && html`<span><${Icon} name="target" size=${15} />${c.aiTagged ? "AI " : ""}${Math.round(c.confidence * 100)}%</span>`}
           </div>
         </div>
         ${onMeta && html`<${LightboxEdit} key=${c.id} capture=${c} meta=${meta}
