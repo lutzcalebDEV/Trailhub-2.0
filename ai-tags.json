@@ -1,4 +1,44 @@
 {
+ "sp_6a58313af0402617574a05f3": {
+  "confidence": 0.95,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a5a732fc3795cb0eda37cb0": {
+  "confidence": 0.98,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a5a732fc3795cb0eda37cb2": {
+  "confidence": 0.95,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a5c1800c373074e326ea2d3": {
+  "confidence": 0.99,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a5c1800c373074e326ea2d5": {
+  "confidence": 0.95,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a5d1fd9d4ff69290cf80c09": {
+  "confidence": 0.99,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a5d209e2822acec7a7396a6": {
+  "confidence": 0.99,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a5d209e2822acec7a7396a8": {
+  "confidence": 0.98,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
  "sp_6a5df69f4c4bb50df5ea9b65": {
   "confidence": 0.85,
   "label": "Empty",
@@ -22,6 +62,41 @@
  "sp_6a5df69f4c4bb50df5ea9b6d": {
   "confidence": 0.8,
   "label": "Raccoon",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a5df69f4c4bb50df5ea9b6f": {
+  "confidence": 0.95,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a5df69f4c4bb50df5ea9b71": {
+  "confidence": 0.95,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a5df69f4c4bb50df5ea9b73": {
+  "confidence": 0.95,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a5df69f4c4bb50df5ea9b75": {
+  "confidence": 0.95,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a5df69f4c4bb50df5ea9b77": {
+  "confidence": 0.95,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a5df69f4c4bb50df5ea9b79": {
+  "confidence": 0.95,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a5df69f4c4bb50df5ea9b7b": {
+  "confidence": 0.95,
+  "label": "Empty",
   "model": "gemini-3.5-flash-lite"
  },
  "sp_6a5e671ff7956ef2adbb4fe4": {
