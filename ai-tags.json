@@ -1,4 +1,9 @@
 {
+ "sp_6a8b48fab5a28bf4b69330f4": {
+  "confidence": 0.95,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
  "sp_6a8b9e1163325a421dc6d10d": {
   "confidence": 1.0,
   "label": "Vehicle",
@@ -47,6 +52,76 @@
  "sp_6a8b9e1163325a421dc6d11f": {
   "confidence": 0.98,
   "label": "Person",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a8b9e1163325a421dc6d121": {
+  "confidence": 0.99,
+  "label": "Person",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a8b9e1163325a421dc6d123": {
+  "confidence": 0.99,
+  "label": "Person",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a8b9e1163325a421dc6d125": {
+  "confidence": 1.0,
+  "label": "Person",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a8b9e1163325a421dc6d127": {
+  "confidence": 0.99,
+  "label": "Person",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a8b9e1163325a421dc6d129": {
+  "confidence": 0.95,
+  "label": "Person",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a8b9e1163325a421dc6d12b": {
+  "confidence": 0.99,
+  "label": "Person",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a8b9e1163325a421dc6d12d": {
+  "confidence": 0.99,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a8b9e1163325a421dc6d12f": {
+  "confidence": 0.95,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a8b9e1163325a421dc6d131": {
+  "confidence": 0.99,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a8b9e1163325a421dc6d133": {
+  "confidence": 0.95,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a8b9e1163325a421dc6d135": {
+  "confidence": 0.99,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a8b9e1163325a421dc6d137": {
+  "confidence": 0.99,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a8b9e1163325a421dc6d139": {
+  "confidence": 0.99,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a8b9e1163325a421dc6d13b": {
+  "confidence": 0.99,
+  "label": "Vehicle",
   "model": "gemini-3.5-flash-lite"
  },
  "sp_6a97c190058707edafe8596b": {
