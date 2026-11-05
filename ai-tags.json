@@ -1,7 +1,82 @@
 {
+ "sp_6a692b62d2351516ad599b8a": {
+  "confidence": 0.98,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a692b62d2351516ad599b8c": {
+  "confidence": 0.95,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a69ff164989f49d0073745e": {
+  "confidence": 0.85,
+  "label": "Deer",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a69ff164989f49d00737460": {
+  "confidence": 0.85,
+  "label": "Deer",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a6c7733bd1585480f95a2c2": {
+  "confidence": 0.95,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a6c7733bd1585480f95a2c4": {
+  "confidence": 0.85,
+  "label": "Raccoon",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a6d9136ca9c2d3b7e478890": {
+  "confidence": 0.85,
+  "label": "Raccoon",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a6d9136ca9c2d3b7e478892": {
+  "confidence": 0.95,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a6d9136ca9c2d3b7e478894": {
+  "confidence": 0.8,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a6d9136ca9c2d3b7e478896": {
+  "confidence": 0.95,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a6d9136ca9c2d3b7e478898": {
+  "confidence": 0.82,
+  "label": "Fox",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a6d9136ca9c2d3b7e47889a": {
+  "confidence": 0.95,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a6d9136ca9c2d3b7e47889c": {
+  "confidence": 0.85,
+  "label": "Raccoon",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a6d9136ca9c2d3b7e47889e": {
+  "confidence": 0.85,
+  "label": "Raccoon",
+  "model": "gemini-3.5-flash-lite"
+ },
  "sp_6a6dc8a2a76bdf34da952add": {
   "confidence": 0.8,
   "label": "Doe",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a6dc8a2a76bdf34da952adf": {
+  "confidence": 0.85,
+  "label": "Deer",
   "model": "gemini-3.5-flash-lite"
  },
  "sp_6a6df3824fa928b9e24fdc55": {
