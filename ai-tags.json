@@ -1,4 +1,79 @@
 {
+ "sp_6a373d83826b33e6310c5e1f": {
+  "confidence": 0.5,
+  "label": "Deer",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a377129f8b0b67d1aa66547": {
+  "confidence": 0.95,
+  "label": "Doe",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a3771750677ba97f740b6b1": {
+  "confidence": 0.85,
+  "label": "Doe",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a378cfa0677ba97f741a682": {
+  "confidence": 0.85,
+  "label": "Raccoon",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a37c765e2d7599816a598fb": {
+  "confidence": 0.95,
+  "label": "Doe",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a37c7ab720e4570a1ff400b": {
+  "confidence": 0.85,
+  "label": "Doe",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a381ea981f9be98ece3fba2": {
+  "confidence": 0.98,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a38d2c6dd5b09bd8e93e22c": {
+  "confidence": 0.95,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a39067a878a7b7f17a9ac15": {
+  "confidence": 0.85,
+  "label": "Fox",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a390b26f52c799f92883569": {
+  "confidence": 0.95,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a393d331cb4cfc50ca71b1c": {
+  "confidence": 0.98,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a393d7e3257e4ccb8b98fe5": {
+  "confidence": 0.99,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a393e035fc81a17dc20910a": {
+  "confidence": 0.99,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a393e55984cf4898f567f20": {
+  "confidence": 0.95,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a393e965fc81a17dc209678": {
+  "confidence": 0.99,
+  "label": "Person",
+  "model": "gemini-3.5-flash-lite"
+ },
  "sp_6a393f3695971dc82efefea0": {
   "confidence": 0.99,
   "label": "Person",
