@@ -1,4 +1,24 @@
 {
+ "sp_6a74282eaf284dded860cc5d": {
+  "confidence": 0.85,
+  "label": "Fox",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a74282eaf284dded860cc5f": {
+  "confidence": 0.8,
+  "label": "Fox",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a746022a62a2cf4b7679250": {
+  "confidence": 0.95,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a746022a62a2cf4b7679252": {
+  "confidence": 0.95,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
  "sp_6a74df6481ceaed59652a576": {
   "confidence": 0.98,
   "label": "Empty",
