@@ -1,6 +1,76 @@
 {
+ "sp_6a5df69f4c4bb50df5ea9b65": {
+  "confidence": 0.85,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a5df69f4c4bb50df5ea9b67": {
+  "confidence": 0.95,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a5df69f4c4bb50df5ea9b69": {
+  "confidence": 0.95,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a5df69f4c4bb50df5ea9b6b": {
+  "confidence": 0.95,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a5df69f4c4bb50df5ea9b6d": {
+  "confidence": 0.8,
+  "label": "Raccoon",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a5e671ff7956ef2adbb4fe4": {
+  "confidence": 0.99,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a5e671ff7956ef2adbb4fe8": {
+  "confidence": 0.99,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a602933c80719c875dca532": {
+  "confidence": 0.85,
+  "label": "Raccoon",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a602933c80719c875dca534": {
+  "confidence": 0.85,
+  "label": "Fox",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a616e5dd43dd1fa680fd805": {
+  "confidence": 0.95,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a616e5dd43dd1fa680fd807": {
+  "confidence": 0.95,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a617ab0db1b4a63a7b28374": {
+  "confidence": 0.85,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a617ab0db1b4a63a7b28376": {
+  "confidence": 0.85,
+  "label": "Raccoon",
+  "model": "gemini-3.5-flash-lite"
+ },
  "sp_6a61eb212ce0fd88434f0bdd": {
   "confidence": 1.0,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a61eb212ce0fd88434f0bdf": {
+  "confidence": 0.95,
   "label": "Empty",
   "model": "gemini-3.5-flash-lite"
  },
@@ -65,6 +135,11 @@
   "model": "gemini-3.5-flash-lite"
  },
  "sp_6a65df9e20be8f7fe4d7bb25": {
+  "confidence": 0.95,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a65df9e20be8f7fe4d7bb27": {
   "confidence": 0.95,
   "label": "Empty",
   "model": "gemini-3.5-flash-lite"
