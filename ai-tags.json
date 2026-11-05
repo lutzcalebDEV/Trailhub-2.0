@@ -34,6 +34,81 @@
   "label": "Vehicle",
   "model": "gemini-3.5-flash-lite"
  },
+ "sp_6a7f5ca52e4bc55ec6544d47": {
+  "confidence": 0.99,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a7f5ca52e4bc55ec6544d49": {
+  "confidence": 0.99,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a7f5ca52e4bc55ec6544d4b": {
+  "confidence": 0.99,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a7f5ca52e4bc55ec6544d4d": {
+  "confidence": 0.99,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a7f5ca52e4bc55ec6544d4f": {
+  "confidence": 0.99,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a7f5ca52e4bc55ec6544d51": {
+  "confidence": 0.99,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a7f5ca52e4bc55ec6544d53": {
+  "confidence": 0.99,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a7f5ca52e4bc55ec6544d55": {
+  "confidence": 0.98,
+  "label": "Person",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a7f5ca52e4bc55ec6544d57": {
+  "confidence": 0.99,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a7f5ca52e4bc55ec6544d59": {
+  "confidence": 0.99,
+  "label": "Person",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a7f5ca52e4bc55ec6544d5b": {
+  "confidence": 0.99,
+  "label": "Person",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a7f5ca52e4bc55ec6544d5d": {
+  "confidence": 0.99,
+  "label": "Person",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a7f5ca52e4bc55ec6544d5f": {
+  "confidence": 0.99,
+  "label": "Person",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a7f5ca52e4bc55ec6544d61": {
+  "confidence": 0.99,
+  "label": "Person",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a7f5ca52e4bc55ec6544d63": {
+  "confidence": 1.0,
+  "label": "Person",
+  "model": "gemini-3.5-flash-lite"
+ },
  "sp_6a7f6b77dd6e962a14f278de": {
   "confidence": 1.0,
   "label": "Person",
