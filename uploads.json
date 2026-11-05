@@ -6,5 +6,13 @@
   "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/up_e7470a30-7f46-423a-b986-3bf0f6c1a870.jpg",
   "camera": "Other camera",
   "species": "Animal"
+ },
+ "up_feb974af-e538-40e2-8ab8-cf20c4cf28e9": {
+  "id": "up_feb974af-e538-40e2-8ab8-cf20c4cf28e9",
+  "date": "2026-11-01T20:57:44.000Z",
+  "media": "photo",
+  "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/up_feb974af-e538-40e2-8ab8-cf20c4cf28e9.jpg",
+  "camera": "Camera 6a309e41bdc62e4448c0a370",
+  "species": "Animal"
  }
 }
