@@ -1,4 +1,39 @@
 {
+ "sp_6a778264da80eec62c2a20db": {
+  "confidence": 0.99,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a778264da80eec62c2a20dd": {
+  "confidence": 0.99,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a778264da80eec62c2a20df": {
+  "confidence": 0.99,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a778264da80eec62c2a20e1": {
+  "confidence": 0.95,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a778264da80eec62c2a20e3": {
+  "confidence": 0.99,
+  "label": "Person",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a778264da80eec62c2a20e5": {
+  "confidence": 0.95,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a778264da80eec62c2a20e7": {
+  "confidence": 0.98,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
  "sp_6a77abe1da80eec62c2bca10": {
   "confidence": 0.98,
   "label": "Vehicle",
@@ -26,6 +61,46 @@
  },
  "sp_6a77abe1da80eec62c2bca1a": {
   "confidence": 0.99,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a77abe1da80eec62c2bca1c": {
+  "confidence": 1.0,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a77abe1da80eec62c2bca1e": {
+  "confidence": 0.99,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a77abe1da80eec62c2bca20": {
+  "confidence": 0.99,
+  "label": "Person",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a77abe1da80eec62c2bca22": {
+  "confidence": 0.99,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a77abe1da80eec62c2bca24": {
+  "confidence": 0.99,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a77abe1da80eec62c2bca26": {
+  "confidence": 0.99,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a77abe1da80eec62c2bca28": {
+  "confidence": 0.99,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a77abe1da80eec62c2bca2a": {
+  "confidence": 1.0,
   "label": "Vehicle",
   "model": "gemini-3.5-flash-lite"
  },
