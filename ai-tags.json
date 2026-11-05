@@ -1,4 +1,69 @@
 {
+ "sp_6ab1e62773e4c121f7eac365": {
+  "confidence": 0.85,
+  "label": "Deer",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ab21f7b2b521978e8a196ff": {
+  "confidence": 0.85,
+  "label": "Deer",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ab21f7b2b521978e8a19701": {
+  "confidence": 0.8,
+  "label": "Deer",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ab22d27e2dfb4b8d170bf98": {
+  "confidence": 0.95,
+  "label": "Deer",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ab22d27e2dfb4b8d170bf9a": {
+  "confidence": 0.82,
+  "label": "Doe",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ab256a42269d70bd921cb2d": {
+  "confidence": 0.95,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ab256a42269d70bd921cb2f": {
+  "confidence": 0.95,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ab4c28edcf837c77d4f0d28": {
+  "confidence": 0.85,
+  "label": "Deer",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ab4c28edcf837c77d4f0d2a": {
+  "confidence": 0.85,
+  "label": "Deer",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ab4c28edcf837c77d4f0d2c": {
+  "confidence": 0.85,
+  "label": "Deer",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ab4c28edcf837c77d4f0d2e": {
+  "confidence": 0.8,
+  "label": "Deer",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ab524892502f9ff5fbc6696": {
+  "confidence": 0.85,
+  "label": "Deer",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ab524892502f9ff5fbc6698": {
+  "confidence": 0.85,
+  "label": "Deer",
+  "model": "gemini-3.5-flash-lite"
+ },
  "sp_6ab5cdb47b1cb37f0fea9d6c": {
   "confidence": 0.95,
   "label": "Empty",
@@ -7,6 +72,16 @@
  "sp_6ab5cdb47b1cb37f0fea9d6e": {
   "confidence": 0.8,
   "label": "Deer",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ab5cdb47b1cb37f0fea9d70": {
+  "confidence": 0.8,
+  "label": "Doe",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6ab5cdb47b1cb37f0fea9d72": {
+  "confidence": 0.82,
+  "label": "Doe",
   "model": "gemini-3.5-flash-lite"
  },
  "sp_6ab5daa9ddd93f8c7884fdc4": {
