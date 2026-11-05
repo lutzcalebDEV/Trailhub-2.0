@@ -1,4 +1,69 @@
 {
+ "sp_6aa716785457030df22be267": {
+  "confidence": 0.99,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6aa7170131cac2fcec8c6cc8": {
+  "confidence": 0.99,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6aa7170131cac2fcec8c6cca": {
+  "confidence": 0.99,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6aa717b2c971fc29d9fd3034": {
+  "confidence": 0.95,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6aa717b2c971fc29d9fd3036": {
+  "confidence": 0.99,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6aad81247e9738e2252568e5": {
+  "confidence": 0.99,
+  "label": "Person",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6aad81247e9738e2252568e7": {
+  "confidence": 0.99,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6aad81247e9738e2252568e9": {
+  "confidence": 0.95,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6aad81247e9738e2252568eb": {
+  "confidence": 0.95,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6aad81247e9738e2252568ed": {
+  "confidence": 0.95,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6aad81247e9738e2252568ef": {
+  "confidence": 0.99,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6aad81247e9738e2252568f1": {
+  "confidence": 0.99,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6aad81247e9738e2252568f3": {
+  "confidence": 0.95,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
  "sp_6aad8ffc0207c0a8800f7bd8": {
   "confidence": 0.85,
   "label": "Vehicle",
@@ -35,6 +100,16 @@
   "model": "gemini-3.5-flash-lite"
  },
  "sp_6aad8ffc0207c0a8800f7be6": {
+  "confidence": 0.95,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6aad8ffc0207c0a8800f7be8": {
+  "confidence": 0.99,
+  "label": "Person",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6aad8ffc0207c0a8800f7bea": {
   "confidence": 0.95,
   "label": "Vehicle",
   "model": "gemini-3.5-flash-lite"
