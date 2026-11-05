@@ -1,4 +1,59 @@
 {
+ "sp_6a61eb212ce0fd88434f0bdd": {
+  "confidence": 1.0,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a641d9f40870df9cabc1b6f": {
+  "confidence": 0.95,
+  "label": "Doe",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a641d9f40870df9cabc1b71": {
+  "confidence": 0.8,
+  "label": "Doe",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a6562ddea829c56acd033f4": {
+  "confidence": 0.99,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a6562ddea829c56acd033f6": {
+  "confidence": 1.0,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a6562ddea829c56acd033f8": {
+  "confidence": 0.99,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a6562ddea829c56acd033fa": {
+  "confidence": 0.99,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a656f1fdf3c93ffcbda1922": {
+  "confidence": 0.85,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a656f1fdf3c93ffcbda1924": {
+  "confidence": 0.99,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a65a7ca55bd005bb55ac29f": {
+  "confidence": 0.95,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a65a7ca55bd005bb55ac2a1": {
+  "confidence": 0.85,
+  "label": "Bird",
+  "model": "gemini-3.5-flash-lite"
+ },
  "sp_6a65df9e20be8f7fe4d7bb21": {
   "confidence": 0.95,
   "label": "Empty",
@@ -10,6 +65,16 @@
   "model": "gemini-3.5-flash-lite"
  },
  "sp_6a65df9e20be8f7fe4d7bb25": {
+  "confidence": 0.95,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a65df9e20be8f7fe4d7bb29": {
+  "confidence": 0.98,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a65df9e20be8f7fe4d7bb2b": {
   "confidence": 0.95,
   "label": "Empty",
   "model": "gemini-3.5-flash-lite"
@@ -66,6 +131,11 @@
  },
  "sp_6a68f31f5fcba1487149dd11": {
   "confidence": 0.95,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a68f31f5fcba1487149dd13": {
+  "confidence": 0.99,
   "label": "Empty",
   "model": "gemini-3.5-flash-lite"
  },
