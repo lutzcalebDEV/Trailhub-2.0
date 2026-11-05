@@ -1,4 +1,74 @@
 {
+ "sp_6a43f8e940fa352d80dec6cc": {
+  "confidence": 1.0,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a43fbb0c07c89aaa04441d0": {
+  "confidence": 1.0,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a44446e2bb829a382d81f35": {
+  "confidence": 0.85,
+  "label": "Doe",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a4451c3edd3bfe6b7cbfb7e": {
+  "confidence": 0.95,
+  "label": "Doe",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a4463e08282da081684c4a1": {
+  "confidence": 0.95,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a450612506e08983bec623e": {
+  "confidence": 1.0,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a4552f38c4b5e574b753e64": {
+  "confidence": 0.95,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a4552f38c4b5e574b753e68": {
+  "confidence": 0.95,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a4555251195fa03bc3b932f": {
+  "confidence": 1.0,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a459be48c63fda0fb57ea92": {
+  "confidence": 0.95,
+  "label": "Doe",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a45a6e2dc49dadadcb1b5d9": {
+  "confidence": 0.8,
+  "label": "Doe",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a4626db08d6c5882b88bc03": {
+  "confidence": 1.0,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a462cfaf96851d079387e24": {
+  "confidence": 0.9,
+  "label": "Doe",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a46a172992efd2733b1a45d": {
+  "confidence": 1.0,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
  "sp_6a46aabfb342995255ea4ff6": {
   "confidence": 0.99,
   "label": "Empty",
@@ -41,6 +111,11 @@
  },
  "sp_6a4aa14bb0d67ec2d6dd4cc6": {
   "confidence": 0.95,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6a4aa7af12471916f28960e2": {
+  "confidence": 0.99,
   "label": "Empty",
   "model": "gemini-3.5-flash-lite"
  },
