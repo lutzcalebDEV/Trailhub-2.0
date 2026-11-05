@@ -9,16 +9,18 @@ import {
 import { filterCaptures, speciesList, reviewQueue } from "./analytics.js";
 import { Sidebar, Topbar, MobileTopbar, MobileNav, VIEWS, loadFilters } from "./shell.js";
 import { Lightbox, Toast } from "./ui.js";
+import { UploadDialog } from "./upload.js";
 import { Overview } from "./views/overview.js";
 import { Gallery } from "./views/gallery.js";
 import { MapView } from "./views/mapview.js";
 import { Insights } from "./views/insights.js";
 import { Review } from "./views/review.js";
+import { Bucks } from "./views/bucks.js";
 
 // Past this, the pull has missed far more runs than GitHub's usual throttling explains.
 const STALE_SYNC_MS = 12 * 3600000;
 
-const VIEW_COMPONENTS = { overview: Overview, gallery: Gallery, insights: Insights, map: MapView, review: Review };
+const VIEW_COMPONENTS = { overview: Overview, gallery: Gallery, bucks: Bucks, insights: Insights, map: MapView, review: Review };
 
 function App() {
   const { data, refresh, refreshing } = useData();
@@ -44,6 +46,8 @@ function App() {
   const [gridSize, setGridSize] = usePersistent(LS.gridSize, "M");
 
   const [lightbox, setLightbox] = useState(null);
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [uploadAuth, setUploadAuth] = useState(null);
   const [toast, setToast] = useState(null);
   const toastTimer = useRef(0);
 
@@ -74,6 +78,27 @@ function App() {
     });
   }, []);
 
+  const settleMeta = useCallback((id, patch) => {
+    const key = String(id);
+    setRemoteMeta((r) => {
+      const entry = { ...(r[key] || {}) };
+      for (const [k, v] of Object.entries(patch)) {
+        if (v == null || v === "") delete entry[k];
+        else entry[k] = v;
+      }
+      return { ...r, [key]: entry };
+    });
+    setLocalMeta((prev) => {
+      if (!prev[key]) return prev;
+      const entry = { ...prev[key] };
+      for (const k of Object.keys(patch)) delete entry[k];
+      const next = { ...prev };
+      if (Object.keys(entry).length) next[key] = entry;
+      else delete next[key];
+      return next;
+    });
+  }, []);
+
   // Upload edits only this device has: anything made before sharing was switched on,
   // or a save that failed. Runs once per page load, so failures retry on the next.
   const uploadedLocal = useRef(false);
@@ -93,8 +118,12 @@ function App() {
         if (sharedNames[id] !== name) await remoteSaveCameraName(id, name);
       }
       settleCameraNames(names);
+      for (const [id, entry] of Object.entries(loadMetadata())) {
+        await remoteSaveMetadata(id, entry);
+        settleMeta(id, entry);
+      }
     } catch (e) { /* stays on this device until the next load */ }
-  }, [settleTags, settleCameraNames]);
+  }, [settleTags, settleCameraNames, settleMeta]);
 
   // Reload shared data with every refresh, so edits from other devices show up
   // on the same schedule as new photos.
@@ -145,6 +174,10 @@ function App() {
   const captures = useMemo(
     () => data.captures.map((c) => applyMeta(c, metaMap)),
     [data.captures, metaMap]
+  );
+  const buckNames = useMemo(
+    () => [...new Set(captures.map((c) => c.buck).filter(Boolean))].sort(),
+    [captures]
   );
   const spList = useMemo(() => speciesList(captures, ov), [captures, ov]);
   const filtered = useMemo(() => filterCaptures(captures, filters, ov), [captures, filters, ov]);
@@ -261,12 +294,15 @@ function App() {
     });
     if (hasSharedTags) {
       remoteSaveMetadata(id, patch)
-        .then(() => { if (!opts.silent) showToast("ok", opts.okMsg || "Saved for everyone"); })
+        .then(() => {
+          settleMeta(id, patch);
+          if (!opts.silent) showToast("ok", opts.okMsg || "Saved for everyone");
+        })
         .catch(() => showToast("err", "Couldn\u2019t sync \u2014 saved on this device"));
     } else if (!opts.silent) {
       showToast("ok", opts.okMsg || "Saved");
     }
-  }, [showToast]);
+  }, [settleMeta, showToast]);
 
   // Convenience: flip the favorite flag on a photo.
   const toggleFavorite = useCallback((id) => {
@@ -293,9 +329,10 @@ function App() {
     <div className="app">
       <${Sidebar} view=${view} setView=${setView} counts=${counts} status=${status} />
       <main className="main">
-        <${MobileTopbar} theme=${theme} toggleTheme=${toggleTheme} onRefresh=${manualRefresh} refreshing=${refreshing} status=${status} />
+        <${MobileTopbar} theme=${theme} toggleTheme=${toggleTheme} onRefresh=${manualRefresh} refreshing=${refreshing} status=${status}
+          onUpload=${() => setUploadOpen(true)} />
         <${Topbar} title=${meta.label} theme=${theme} toggleTheme=${toggleTheme}
-          onRefresh=${manualRefresh} refreshing=${refreshing} />
+          onRefresh=${manualRefresh} refreshing=${refreshing} onUpload=${() => setUploadOpen(true)} />
         <div className="view view__enter" key=${view}>
           <${View} ...${app} />
         </div>
@@ -312,11 +349,19 @@ function App() {
       onMeta=${(patch, opts) => updateMeta(lbItem.id, patch, opts)}
       onToggleFavorite=${() => toggleFavorite(lbItem.id)}
       onTag=${(sp) => assignSpecies(lbItem.id, sp)}
+      buckNames=${buckNames}
       hasPrev=${lightbox.index > 0}
       hasNext=${lightbox.index < lightbox.list.length - 1}
       onPrev=${() => setLightbox((s) => ({ ...s, index: Math.max(0, s.index - 1) }))}
       onNext=${() => setLightbox((s) => ({ ...s, index: Math.min(s.list.length - 1, s.index + 1) }))}
       onClose=${() => setLightbox(null)} />`}
+
+    ${uploadOpen && html`<${UploadDialog} cameras=${data.cameras} camNames=${camNames}
+      auth=${uploadAuth} setAuth=${setUploadAuth} onClose=${() => setUploadOpen(false)}
+      onUploaded=${(sent, failed) => {
+        if (!failed) setUploadOpen(false);
+        showToast("ok", `${sent} photo${sent === 1 ? "" : "s"} uploaded. They'll appear in a few minutes.`);
+      }} />`}
 
     ${toast && html`<${Toast} kind=${toast.kind}>${toast.msg}</${Toast}>`}
   </${Fragment}>`;

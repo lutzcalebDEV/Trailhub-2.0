@@ -261,10 +261,11 @@ export function Shot({ capture, species, onClick, cameraLabel, selectable, selec
 // Editable per-photo metadata: favorite flag, a free-text note, and manual
 // corrections to temp / moon. Remounts per photo (keyed by id) so the draft
 // resets cleanly. Notes/temp save on blur; the star toggles immediately.
-export function LightboxEdit({ capture, species, meta, onMeta, onToggleFavorite, onTag }) {
+export function LightboxEdit({ capture, species, meta, onMeta, onToggleFavorite, onTag, buckNames }) {
   const c = capture;
   const m = meta || {};
   const [note, setNote] = useState(m.note || "");
+  const [buck, setBuck] = useState(m.buck || "");
   const [temp, setTemp] = useState(c.temp == null ? "" : String(c.temp));
   const [moon, setMoon] = useState(c.moon || "");
   const isFav = !!m.favorite;
@@ -273,6 +274,12 @@ export function LightboxEdit({ capture, species, meta, onMeta, onToggleFavorite,
     const v = note.trim();
     if (v === (m.note || "")) return;
     onMeta({ note: v || null }, { okMsg: v ? "Note saved" : "Note removed" });
+  };
+  const commitBuck = () => {
+    const v = buck.trim().slice(0, 40);
+    if (v === (m.buck || "")) return;
+    onMeta({ buck: v || null }, { okMsg: v ? `Named ${v}` : "Name removed" });
+    if (v && species !== "Buck") onTag("Buck");
   };
   const commitTemp = () => {
     const raw = temp.trim();
@@ -306,6 +313,15 @@ export function LightboxEdit({ capture, species, meta, onMeta, onToggleFavorite,
         </select>
       </label>
       <label className="lb__field">
+        <span><${Icon} name="target" size=${13} />Buck name</span>
+        <input type="text" list="buck-names" value=${buck} placeholder="\u2014" maxLength=${40}
+          onInput=${(e) => setBuck(e.target.value)} onBlur=${commitBuck}
+          onKeyDown=${(e) => e.key === "Enter" && e.target.blur()} />
+        <datalist id="buck-names">
+          ${(buckNames || []).map((n) => html`<option key=${n} value=${n} />`)}
+        </datalist>
+      </label>
+      <label className="lb__field">
         <span><${Icon} name="thermo" size=${13} />Temp \u00b0F</span>
         <input type="number" inputMode="numeric" value=${temp}
           onInput=${(e) => setTemp(e.target.value)} onBlur=${commitTemp}
@@ -321,7 +337,7 @@ export function LightboxEdit({ capture, species, meta, onMeta, onToggleFavorite,
   </div>`;
 }
 
-export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggleFavorite, onTag, onClose, onPrev, onNext, hasPrev, hasNext }) {
+export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggleFavorite, onTag, buckNames, onClose, onPrev, onNext, hasPrev, hasNext }) {
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === "Escape") onClose();
@@ -352,13 +368,15 @@ export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggle
             <span><${Icon} name="camera" size=${15} />${cameraLabel || c.camera}</span>
             <span><${Icon} name="clock" size=${15} />${fmtDateTime(c.date)}</span>
             <span><${Icon} name=${c.isNight ? "moon" : "sun"} size=${15} />${c.isNight ? "Night" : "Day"}</span>
-            ${c.temp != null && html`<span><${Icon} name="thermo" size=${15} />${c.temp}°F</span>`}
+            ${c.temp != null && html`<span><${Icon} name="thermo" size=${15} />${c.tempEstimated ? "~" : ""}${c.temp}°F</span>`}
+            ${c.weather && html`<span>Wind ${c.weather.wind} mph ${c.weather.windDir}</span>`}
+            ${c.weather && html`<span>${c.weather.pressure} inHg${c.weather.trend ? ", " + c.weather.trend.toLowerCase() : ""}</span>`}
             ${c.moon && html`<span><${Icon} name="moon" size=${15} />${c.moon}</span>`}
             ${c.confidence != null && html`<span><${Icon} name="target" size=${15} />${c.aiTagged ? "AI " : ""}${Math.round(c.confidence * 100)}%</span>`}
           </div>
         </div>
         ${onMeta && html`<${LightboxEdit} key=${c.id} capture=${c} species=${species} meta=${meta}
-          onMeta=${onMeta} onToggleFavorite=${onToggleFavorite} onTag=${onTag} />`}
+          onMeta=${onMeta} onToggleFavorite=${onToggleFavorite} onTag=${onTag} buckNames=${buckNames} />`}
         <div className="lb__actions">
           ${c.image && html`<a className="btn btn--sm" href=${c.image} download target="_blank" rel="noopener">
             <${Icon} name="download" size=${15} /><span>Download</span>

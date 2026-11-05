@@ -3,8 +3,9 @@ import { html } from "../react.js";
 import { Stat, Panel, Sparkbars, Histogram, Shot, Empty, Btn, CameraCard } from "../ui.js";
 import { effectiveSpecies, fmtDate, labelHour } from "../core.js";
 import {
-  dailyCounts, hourHistogram, daylightPct, periodDelta, peakHour, cameraStatus, collapseBursts,
+  dailyCounts, hourHistogram, daylightPct, periodDelta, peakHour, cameraStatus, collapseBursts, bestSit,
 } from "../analytics.js";
+import { windowLabel } from "./insights.js";
 
 export function Overview(app) {
   const { captures, data, ov, reviewQ, openLightbox, setView, setFilter, camName } = app;
@@ -22,6 +23,7 @@ export function Overview(app) {
   const recent = collapseBursts(captures, 12);
   const favorites = captures.filter((c) => c.favorite).slice(0, 6);
   const cams = cameraStatus(captures, data.cameras);
+  const sit = bestSit(captures, ov);
   const showCamera = (camera) => { setFilter({ camera }); setView("gallery"); };
   const seeAll = (label) => html`<${Btn} sm variant="ghost" iconRight="arrowRight"
     onClick=${() => setView("gallery")}>${label}</${Btn}>`;
@@ -31,6 +33,12 @@ export function Overview(app) {
       ${cams.map((row) => html`<${CameraCard} key=${row.camera} row=${row}
         name=${camName(row.camera)} onClick=${() => showCamera(row.camera)} />`)}
     </div>
+
+    ${sit && html`<div className="bestsit">
+      <span className="bestsit__k">Best bet</span>
+      <b>${camName(sit.camera)}, ${windowLabel(sit)}</b>
+      <span className="muted">${sit.count} of ${sit.total} recent ${sit.subject} sightings</span>
+    </div>`}
 
     <${Panel} title="Latest photos" className="panel--plain" pad=${false} actions=${seeAll("All photos")}>
       <div className="shots size-M">

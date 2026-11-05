@@ -30,6 +30,9 @@
 //                     (merges the given keys into that photo; send a key as null to
 //                      remove it, or an empty meta object to clear the whole entry.)
 //   (POST an empty tags array or empty name to clear an entry.)
+//   POST /login       checks the upload username and password (Basic auth)
+//   POST /upload      stores one JPEG in R2 and lists it in uploads.json (Basic auth);
+//                     body is the image; query has date, camera, species
 // ---------------------------------------------------------------------------
 
 // Each resource maps a request path to a JSON file committed in the repo. pull.py
@@ -39,11 +42,13 @@ const TAGS_FILE = "tags.json";
 const CAMERA_FILE = "camera-names.json";
 const META_FILE = "metadata.json";
 const BATCH_MAX = 2000; // above the site's 1,500-photo cap
+const UPLOADS_FILE = "uploads.json";
+const MAX_IMAGE_BYTES = 6 * 1024 * 1024;
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
 function json(body, status = 200) {
@@ -189,19 +194,78 @@ async function saveEntry(env, path, mutate, message) {
   return { ok: false, status: 409, error: "Conflict after retries, please try again." };
 }
 
+// Starts the photo pull. Needs a token with Actions: Read and write, as DISPATCH_TOKEN
+// or on GITHUB_TOKEN.
+async function dispatchUpdate(env) {
+  const token = env.DISPATCH_TOKEN || env.GITHUB_TOKEN;
+  const url = `https://api.github.com/repos/${env.GITHUB_OWNER}/${env.GITHUB_REPO}/actions/workflows/update.yml/dispatches`;
+  const r = await fetch(url, {
+    method: "POST",
+    headers: { ...ghHeaders({ ...env, GITHUB_TOKEN: token }), "Content-Type": "application/json" },
+    body: JSON.stringify({ ref: env.GITHUB_BRANCH || "main" }),
+  });
+  if (!r.ok) throw new Error(`Workflow dispatch failed (${r.status}): ${await r.text()}`);
+}
+
+// Comparing hashes keeps the check's timing from revealing the password.
+async function sameText(a, b) {
+  const hash = async (s) => new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)));
+  const [x, y] = await Promise.all([hash(a), hash(b)]);
+  let diff = 0;
+  for (let i = 0; i < x.length; i++) diff |= x[i] ^ y[i];
+  return diff === 0;
+}
+
+// The password lives only in the UPLOAD_PASSWORD Worker secret. If it's unset,
+// nobody can sign in.
+async function isAuthorized(request, env) {
+  const header = request.headers.get("Authorization") || "";
+  if (!env.UPLOAD_PASSWORD || !env.UPLOAD_USER || !header.startsWith("Basic ")) return false;
+  let decoded;
+  try { decoded = b64decode(header.slice(6)); } catch (_) { return false; }
+  const split = decoded.indexOf(":");
+  if (split < 0) return false;
+  const userOk = await sameText(decoded.slice(0, split), env.UPLOAD_USER);
+  const passwordOk = await sameText(decoded.slice(split + 1), env.UPLOAD_PASSWORD);
+  return userOk && passwordOk;
+}
+
+async function handleUpload(request, env) {
+  if (!env.PHOTOS || !env.R2_PUBLIC_BASE_URL) return json({ error: "Photo storage isn't set up." }, 503);
+  const bytes = new Uint8Array(await request.arrayBuffer());
+  if (bytes.length > MAX_IMAGE_BYTES) return json({ error: "Image too large." }, 413);
+  if (bytes.length < 3 || bytes[0] !== 0xff || bytes[1] !== 0xd8 || bytes[2] !== 0xff) {
+    return json({ error: "Only JPEG images are accepted." }, 415);
+  }
+  const query = new URL(request.url).searchParams;
+  const now = Date.now();
+  const taken = Date.parse(query.get("date") || "");
+  const date = new Date(Number.isNaN(taken) || taken > now + 86400000 ? now : taken).toISOString();
+  const id = `up_${crypto.randomUUID()}`;
+  const key = `${id}.jpg`;
+  await env.PHOTOS.put(key, bytes, {
+    httpMetadata: { contentType: "image/jpeg", cacheControl: "public, max-age=31536000, immutable" },
+  });
+  const record = {
+    id, date,
+    image: `${env.R2_PUBLIC_BASE_URL.replace(/\/$/, "")}/${key}`,
+    camera: cleanName(query.get("camera")) || "Other camera",
+    species: cleanTags([query.get("species")])[0] || "Animal",
+  };
+  const result = await saveEntry(env, UPLOADS_FILE, (data) => { data[id] = record; }, `Add uploaded photo ${id}`);
+  if (!result.ok) {
+    await env.PHOTOS.delete(key);
+    return json({ error: result.error }, result.status);
+  }
+  // Publish right away. If this fails, the next scheduled run picks the photo up.
+  await dispatchUpdate(env).catch(() => {});
+  return json({ ok: true, id, image: record.image });
+}
+
 export default {
-  // Cron Trigger (wrangler.toml): starts the photo pull on a dependable schedule,
-  // because GitHub's own cron is heavily throttled on this repo. Needs a token with
-  // Actions: Read and write, as DISPATCH_TOKEN or on GITHUB_TOKEN.
+  // Cron Trigger (wrangler.toml): GitHub's own cron is heavily throttled on this repo.
   async scheduled(event, env) {
-    const token = env.DISPATCH_TOKEN || env.GITHUB_TOKEN;
-    const url = `https://api.github.com/repos/${env.GITHUB_OWNER}/${env.GITHUB_REPO}/actions/workflows/update.yml/dispatches`;
-    const r = await fetch(url, {
-      method: "POST",
-      headers: { ...ghHeaders({ ...env, GITHUB_TOKEN: token }), "Content-Type": "application/json" },
-      body: JSON.stringify({ ref: env.GITHUB_BRANCH || "main" }),
-    });
-    if (!r.ok) throw new Error(`Workflow dispatch failed (${r.status}): ${await r.text()}`);
+    await dispatchUpdate(env);
   },
 
   async fetch(request, env) {
@@ -218,6 +282,11 @@ export default {
     const isMeta = path === "/meta" || path === "/metadata";
 
     try {
+      if (request.method === "POST" && (path === "/login" || path === "/upload")) {
+        if (!(await isAuthorized(request, env))) return json({ error: "Not authorized." }, 401);
+        return path === "/login" ? json({ ok: true }) : await handleUpload(request, env);
+      }
+
       if (request.method === "GET") {
         const file = isCameras ? CAMERA_FILE : isMeta ? META_FILE : TAGS_FILE;
         const { data } = await readFile(env, file);

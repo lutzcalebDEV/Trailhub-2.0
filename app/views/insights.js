@@ -5,10 +5,12 @@ import { Stat, Panel, Histogram, HourStrip, Bars, SplitBar, CalHeat, Empty } fro
 import { Icon } from "../icons.js";
 import { labelHour } from "../core.js";
 import {
-  filterCaptures, hourHistogram, dayNightSplit, daylightPct, peakHour,
+  filterCaptures, weatherRates, hourHistogram, dayNightSplit, daylightPct, peakHour,
   weekdayCounts, speciesByDayNight, speciesActivity, peakWindow,
   tempBuckets, moonCounts, cameraCounts, isoDayCounts,
 } from "../analytics.js";
+
+export const windowLabel = (p) => (p ? labelHour(p.start) + "–" + labelHour(p.end) : "—");
 
 export function Insights(app) {
   const { captures, filtered, filters, setFilter, spList, data, ov, camName } = app;
@@ -40,7 +42,6 @@ export function Insights(app) {
   const activityBase = sel ? filterCaptures(captures, { ...filters, species: "All" }, ov) : filtered;
   const activity = speciesActivity(activityBase, ov, 6);
   const selPeak = sel ? peakWindow(hourHistogram(filtered)) : null;
-  const windowLabel = (p) => (p ? `${labelHour(p.start)}–${labelHour(p.end)}` : "—");
   const dielLabel = (dp) => (dp >= 65 ? "mostly daytime" : dp <= 35 ? "mostly nocturnal" : "active day & night");
 
   // Choose the most informative secondary panel based on available data.
@@ -58,6 +59,8 @@ export function Insights(app) {
       <${Bars} data=${cams.slice(0, 7).map((c) => ({ label: camName(c.camera), value: c.value }))} />
     </${Panel}>`;
   }
+
+  const weather = weatherRates(filtered, data.weatherHours);
 
   return html`<div className="col" style=${{ gap: 18 }}>
     ${filterBar}
@@ -123,6 +126,16 @@ export function Insights(app) {
         <${Bars} data=${wk} max=${Math.max(1, ...wk.map((w) => w.value))} />
       </${Panel}>
     </div>
+
+    ${weather && html`<${Panel} title="Weather"
+      actions=${html`<span className="faint" style=${{ fontSize: 12 }}>Sightings per 100 hours of each condition</span>`}>
+      <div className="grid grid--3">
+        ${[["Wind", weather.wind], ["Pressure", weather.trend], ["Rain", weather.sky]].map(([title, rows]) => html`<div key=${title}>
+          <div className="h-sub">${title}</div>
+          <${Bars} data=${rows} fmt=${(v) => v.toFixed(1)} />
+        </div>`)}
+      </div>
+    </${Panel}>`}
 
     ${secondary}
 

@@ -43,6 +43,8 @@ CAMERA_FILE = HERE / "cameras.json"  # durable camera metadata for map rendering
 TAGS_FILE = HERE / "tags.json"     # user-applied tags/classifications (shared, baked into data.js)
 META_FILE = HERE / "metadata.json"  # per-photo metadata (notes, favorites, corrections; shared, baked into data.js)
 AI_TAGS_FILE = HERE / "ai-tags.json"  # labels from ai_tag.py, used only where nothing better exists
+WEATHER_FILE = HERE / "weather.json"  # hourly history from Open-Meteo, keyed by UTC hour
+UPLOADS_FILE = HERE / "uploads.json"  # photos added through the site, written by the Worker
 
 MAX_PUBLISHED = 1500   # cap captures written to data.js so the site stays light
 MAX_KEEP = 3000        # cap stored photos+images so the repo doesn't grow forever
@@ -53,6 +55,22 @@ HEARTBEAT_SECONDS = 3600  # rewrite data.js at least this often, even with no ne
 # Used only for sun position, to estimate day/night on photos with no SPYPOINT
 # day/night tag. Both cameras sit within about a kilometre of this point.
 SITE_LATLNG = (35.54, -81.39)
+OCR_VERSION = 2          # bump to re-read every photo's info bar
+OVERLAY_PER_RUN = 150    # keeps a backlog from slowing any one run
+R2_MOVES_PER_RUN = 300   # keeps a backlog from slowing any one run
+MAX_UPLOAD_DELAY = dt.timedelta(days=14)
+
+
+def _site_timezone():
+    """The camera clocks' timezone. Falls back to EST if tz data isn't installed."""
+    try:
+        from zoneinfo import ZoneInfo
+        return ZoneInfo("America/New_York")
+    except Exception:
+        return dt.timezone(dt.timedelta(hours=-5))
+
+
+SITE_TZ = _site_timezone()
 
 
 def atomic_write_text(path: Path, text: str):
@@ -223,6 +241,47 @@ class R2Uploader:
         return f"{self.public_base_url}/{key}"
 
 
+def move_photos_to_r2(store, r2, limit=R2_MOVES_PER_RUN):
+    """Copy repo-hosted photos to R2 and point their records at the new URLs.
+
+    The first copy is fetched back through the public URL before anything changes:
+    a wrong bucket setting must not repoint the site at images that don't load.
+    """
+    import urllib.request
+    moved = 0
+    pending = [c for c in store.values() if str(c.get("image", "")).startswith("photos/")]
+    for c in sorted(pending, key=lambda c: c.get("date", ""), reverse=True)[:limit]:
+        path = HERE / c["image"]
+        if not path.exists():
+            continue
+        try:
+            url = r2.upload(path, path.name)
+            if not moved:
+                request = urllib.request.Request(url, headers={"User-Agent": "TrailHub/1.0"})
+                with urllib.request.urlopen(request, timeout=30) as response:
+                    if response.status != 200 or not response.read(3).startswith(b"\xff\xd8"):
+                        raise RuntimeError("the public URL didn't return the image")
+        except Exception as e:
+            print(f"::warning title=R2 move stopped::{e}")
+            break
+        c["image"] = url
+        moved += 1
+    if moved:
+        print(f"Moved {moved} photo(s) to R2; {len(pending) - moved} left.")
+
+
+def delete_hosted_copies(store):
+    """Remove local files for photos now on R2, once their info bar has been read."""
+    removed = 0
+    for c in store.values():
+        if str(c.get("image", "")).startswith("http") and c.get("overlayRead") == OCR_VERSION:
+            for path in PHOTOS_DIR.glob(f"{c.get('id')}.*"):
+                path.unlink(missing_ok=True)
+                removed += 1
+    if removed:
+        print(f"Removed {removed} local copies now hosted on R2.")
+
+
 def make_r2_uploader():
     """Return an R2Uploader if the env is fully configured, else None (with a note)."""
     cfg = _r2_config()
@@ -353,7 +412,12 @@ def extract_meta(photo, cam_name_by_id):
     raw = _raw(photo)
     # timestamp
     ts = _first(raw, "date", "originDate", "createdAt", "timestamp")
-    when = parse_date(ts)
+    uploaded = parse_date(ts)
+    # "date" is when SPYPOINT received the photo. originDate is when it was taken.
+    when, time_source = uploaded, "upload"
+    captured = camera_time_to_utc(raw.get("originDate"))
+    if captured is not None and plausible_capture(captured, uploaded):
+        when, time_source = captured, "camera"
     # species tags: SPYPOINT stores recognitions under "tag" (singular); other
     # schemas use tags/labels/etc. Search known keys (incl. nested) and accept
     # either plain strings or {nameId/name/label} objects.
@@ -390,12 +454,36 @@ def extract_meta(photo, cam_name_by_id):
         "species": species,
         "camera": str(camera),
         "date": when.isoformat(),
+        "uploaded": uploaded.isoformat(),
+        "timeSource": time_source,
         "isNight": bool(is_night),
         "todSource": tod_source,
         "temp": (round(float(temp)) if _is_num(temp) else None),
         "confidence": conf,
         "moon": _first(raw, "moonPhase", "moon"),
     }
+
+
+def camera_time_to_utc(value):
+    """Convert a SPYPOINT originDate to real UTC.
+
+    It's the camera's wall clock with a misleading "Z" on the end: 06:57 local comes
+    through as 06:57Z, about five hours behind the matching upload time.
+    """
+    if not value:
+        return None
+    try:
+        naive = dt.datetime.fromisoformat(str(value).replace("Z", "")[:19])
+    except ValueError:
+        return None
+    return naive.replace(tzinfo=SITE_TZ).astimezone(dt.timezone.utc)
+
+
+def plausible_capture(captured, uploaded):
+    """A capture comes before its upload, within reason. Guards against a bad clock."""
+    if uploaded.tzinfo is None:
+        uploaded = uploaded.replace(tzinfo=dt.timezone.utc)
+    return dt.timedelta(hours=-1) <= uploaded - captured <= MAX_UPLOAD_DELAY
 
 
 def sun_is_down(when, lat=SITE_LATLNG[0], lng=SITE_LATLNG[1], threshold=0.0):
@@ -491,48 +579,90 @@ def _maybe_downscale(path: Path):
         pass  # never let image processing break a pull
 
 
-def ocr_temp_f(path: Path):
-    """Read the Fahrenheit temperature SPYPOINT burns into the photo's info bar.
+def parse_overlay(text):
+    """Pull (temp F, (hour, minute)) from the info bar's text; either can be None.
 
-    Trail cameras stamp a strip like "06/17/2026 01:56 PM 89F 31C ... SPYPOINT"
-    along the bottom edge. The API doesn't return temperature for this account, so
-    we OCR that strip. Returns an int (degF) or None. No-ops gracefully when Pillow
-    or pytesseract (or the tesseract binary) aren't installed.
+    Only the time and the F reading are used. OCR often drops the colon, so that's
+    optional, but it garbles the date and C reading too often to trust them.
+    """
+    import re
+    flat = text.replace("\n", " ")
+    temp_match = re.search(r"(-?\d{1,3})\s*\u00b0?\s*F", flat)
+    temp = _temp_in_range(temp_match.group(1)) if temp_match else None
+    clock = None
+    time_match = re.search(r"(?:^|\s)(\d{2})[:;.]?(\d{2})\s*([AP])M", flat)
+    if time_match:
+        hour, minute = int(time_match.group(1)), int(time_match.group(2))
+        if 1 <= hour <= 12 and minute < 60:
+            clock = (hour % 12 + (12 if time_match.group(3) == "P" else 0), minute)
+    return temp, clock
+
+
+def read_overlay(path: Path):
+    """Read the black info bar SPYPOINT prints along the bottom of each photo.
+
+    Returns (temp, clock) as parse_overlay does, or None if OCR isn't available. The
+    bar is the bottom 5% of the frame, and the moon icon and logo are cropped off.
     """
     try:
-        from PIL import Image
+        from PIL import Image, ImageEnhance, ImageOps
         import pytesseract
-    except ImportError:
-        return None
-    import re
-    try:
         with Image.open(path) as im:
-            if im.mode != "RGB":
-                im = im.convert("RGB")
             w, h = im.size
-            # The overlay sits in a thin strip along the bottom edge; upscaling and
-            # greyscaling the crop makes the small font far easier for tesseract.
-            strip = im.crop((0, int(h * 0.90), w, h)).convert("L")
-            strip = strip.resize((strip.width * 2, strip.height * 2))
-            text = pytesseract.image_to_string(strip, config="--psm 7")
+            strip = im.convert("L").crop((0, round(h * 0.953), int(w * 0.72), h))
+        strip = ImageOps.invert(strip).resize((strip.width * 4, strip.height * 4), Image.BICUBIC)
+        strip = ImageEnhance.Contrast(strip).enhance(1.4)
+        config = "--psm 7 -c tessedit_char_whitelist=0123456789/:APMFC-\u00b0"
+        return parse_overlay(pytesseract.image_to_string(strip, config=config))
     except Exception:
         return None
-    if not text:
-        return None
-    flat = text.replace("\n", " ")
-    # Prefer an explicit Fahrenheit reading; fall back to Celsius -> Fahrenheit.
-    m = re.search(r"(-?\d{1,3})\s*[\u00b0\u02da\u2070o*]?\s*F\b", flat)
-    if m:
-        val = _temp_in_range(m.group(1))
-        if val is not None:
-            return val
-    m = re.search(r"(-?\d{1,3})\s*[\u00b0\u02da\u2070o*]?\s*C\b", flat)
-    if m:
-        try:
-            return _bound_temp(round(int(m.group(1)) * 9 / 5 + 32))
-        except ValueError:
-            return None
+
+
+def overlay_capture(clock, uploaded):
+    """The latest moment at this clock time that isn't after the upload."""
+    local = uploaded.astimezone(SITE_TZ)
+    for days_back in range(MAX_UPLOAD_DELAY.days + 1):
+        day = local - dt.timedelta(days=days_back)
+        candidate = day.replace(hour=clock[0], minute=clock[1], second=0, microsecond=0)
+        if plausible_capture(candidate.astimezone(dt.timezone.utc), uploaded):
+            return candidate.astimezone(dt.timezone.utc)
     return None
+
+
+def backfill_overlays(store, limit=OVERLAY_PER_RUN):
+    """Fill in temperatures, and capture times SPYPOINT no longer reports, from photos.
+
+    Works through a limited batch per run, newest first. Returns how many it read.
+    """
+    pending = []
+    for c in store.values():
+        if c.get("overlayRead") != OCR_VERSION:
+            path = next(PHOTOS_DIR.glob(f"{c.get('id')}.*"), None)
+            if path:
+                pending.append((c, path))
+    pending.sort(key=lambda item: item[0].get("date", ""), reverse=True)
+    done = 0
+    for c, path in pending[:limit]:
+        result = read_overlay(path)
+        if result is None:
+            continue
+        temp, clock = result
+        if temp is not None and not _is_num(c.get("temp")):
+            c["temp"] = temp
+        if clock is not None and c.get("timeSource") != "camera":
+            uploaded = dt.datetime.fromisoformat(c.get("uploaded") or c["date"])
+            captured = overlay_capture(clock, uploaded)
+            if captured is not None:
+                c["uploaded"] = uploaded.isoformat()
+                c["date"] = captured.isoformat()
+                c["timeSource"] = "overlay"
+                if c.get("todSource") == "sun":
+                    c["isNight"] = sun_is_down(captured)
+        c["overlayRead"] = OCR_VERSION
+        done += 1
+    if done:
+        print(f"Read the info bar on {done} photo(s); {len(pending) - done} left.")
+    return done
 
 
 def _bound_temp(val):
@@ -599,12 +729,22 @@ def save_store(store):
     atomic_write_text(STORE_FILE, json.dumps(store, indent=1))
 
 
+def blur_location(value):
+    """Round a coordinate to about 1 km. This repo and site are public."""
+    return None if value is None else round(float(value), 2)
+
+
 def load_cameras():
     if not CAMERA_FILE.exists():
         return []
     try:
         data = json.loads(CAMERA_FILE.read_text(encoding="utf-8"))
-        return data if isinstance(data, list) else []
+        if not isinstance(data, list):
+            return []
+        for cam in data:
+            cam["latitude"] = blur_location(cam.get("latitude"))
+            cam["longitude"] = blur_location(cam.get("longitude"))
+        return data
     except (json.JSONDecodeError, OSError):
         print("  [warn] cameras.json unreadable; skipping saved camera metadata.")
         return []
@@ -705,6 +845,150 @@ def load_ai_tags():
             if isinstance(v, dict) and v.get("label") and v["label"] != "Other animal"}
 
 
+# ---- weather (Open-Meteo: free, no key) ------------------------------------
+# Each hour is stored as [temp F, rain mm, sea-level pressure hPa, wind mph, wind deg].
+_WEATHER_VARS = "temperature_2m,precipitation,pressure_msl,wind_speed_10m,wind_direction_10m"
+_WEATHER_QUERY = (f"latitude={SITE_LATLNG[0]}&longitude={SITE_LATLNG[1]}&hourly={_WEATHER_VARS}"
+                  "&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=GMT")
+_COMPASS = ("N", "NE", "E", "SE", "S", "SW", "W", "NW")
+RECENT_WEATHER_DAYS = 7  # newer than this comes from the forecast API, not the archive
+
+
+def load_weather():
+    try:
+        data = json.loads(WEATHER_FILE.read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def weather_key(date_text):
+    """The UTC hour a capture falls in, matching Open-Meteo's GMT timestamps."""
+    when = dt.datetime.fromisoformat(date_text)
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=dt.timezone.utc)
+    return when.astimezone(dt.timezone.utc).strftime("%Y-%m-%dT%H:00")
+
+
+def _fetch_hours(url):
+    import urllib.request
+    request = urllib.request.Request(url, headers={"User-Agent": "TrailHub/1.0"})
+    with urllib.request.urlopen(request, timeout=30) as response:
+        hourly = json.loads(response.read().decode("utf-8"))["hourly"]
+    columns = [hourly[v] for v in _WEATHER_VARS.split(",")]
+    hours = {}
+    for i, key in enumerate(hourly["time"]):
+        row = [col[i] for col in columns]
+        if all(v is not None for v in row):
+            hours[key] = row
+    return hours
+
+
+def update_weather(captures):
+    """Fetch history for any capture hour not cached yet. Never stops a pull."""
+    cache = load_weather()
+    missing = {weather_key(c["date"]) for c in captures if c.get("date")} - set(cache)
+    if not missing:
+        return
+    today = dt.datetime.now(dt.timezone.utc).date()
+    cutoff = (today - dt.timedelta(days=RECENT_WEATHER_DAYS)).isoformat()
+    try:
+        older = sorted(k for k in missing if k[:10] < cutoff)
+        if older:
+            cache.update(_fetch_hours(
+                "https://archive-api.open-meteo.com/v1/archive?" + _WEATHER_QUERY
+                + f"&start_date={older[0][:10]}&end_date={cutoff}"))
+        if len(older) < len(missing):
+            cache.update(_fetch_hours(
+                "https://api.open-meteo.com/v1/forecast?" + _WEATHER_QUERY
+                + f"&past_days={RECENT_WEATHER_DAYS + 1}&forecast_days=1"))
+    except Exception as e:
+        print(f"  [weather] skipped: {e}")
+        return
+    now = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:00")
+    cache = {k: v for k, v in sorted(cache.items()) if k <= now}
+    atomic_write_text(WEATHER_FILE, json.dumps(cache, separators=(",", ":")))
+
+
+def _wind_band(mph):
+    if mph < 5:
+        return "Under 5 mph"
+    if mph < 10:
+        return "5\u201310 mph"
+    if mph < 15:
+        return "10\u201315 mph"
+    return "15+ mph"
+
+
+def _pressure_trend(key, pressure, cache):
+    """Compare with three hours earlier, the span hunters usually mean by a trend."""
+    before = dt.datetime.fromisoformat(key) - dt.timedelta(hours=3)
+    earlier = cache.get(before.strftime("%Y-%m-%dT%H:00"))
+    if earlier is None:
+        return None
+    change = pressure - earlier[2]
+    return "Rising" if change > 1 else "Falling" if change < -1 else "Steady"
+
+
+def weather_for(key, cache):
+    row = cache.get(key)
+    if row is None:
+        return None
+    temp, rain, pressure, wind, direction = row
+    return {
+        "tempF": round(temp),
+        "wind": round(wind),
+        "windDir": _COMPASS[int((direction + 22.5) % 360 // 45)],
+        "windBand": _wind_band(wind),
+        "pressure": round(pressure * 0.02953, 2),
+        "trend": _pressure_trend(key, pressure, cache),
+        "sky": "Rain" if rain >= 0.1 else "Dry",
+    }
+
+
+def weather_hours(cache, first_key, last_key):
+    """Hours of each condition, so the site can compare sightings to how often it
+    happens. Without this, whatever weather is most common would always look best."""
+    totals = {"windBand": {}, "trend": {}, "sky": {}}
+    for key in cache:
+        if first_key <= key <= last_key:
+            w = weather_for(key, cache)
+            for field, counts in totals.items():
+                if w[field]:
+                    counts[w[field]] = counts.get(w[field], 0) + 1
+    return totals
+
+
+def load_uploads():
+    """Photos added through the site, as captures. Malformed entries are skipped."""
+    try:
+        data = json.loads(UPLOADS_FILE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    out = []
+    for item in (data.values() if isinstance(data, dict) else []):
+        try:
+            when = dt.datetime.fromisoformat(str(item["date"]).replace("Z", "+00:00"))
+            image = str(item["image"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if not image.startswith("https://"):
+            continue
+        out.append({
+            "id": str(item["id"]),
+            "species": str(item.get("species") or "Animal"),
+            "camera": str(item.get("camera") or "Other camera"),
+            "date": when.isoformat(),
+            "image": image,
+            "isNight": sun_is_down(when),
+            "temp": None,
+            "confidence": None,
+            "moon": None,
+            "uploadedBySite": True,
+        })
+    return out
+
+
 def prune_store(store):
     """Keep only the newest MAX_KEEP captures; delete image files for the rest."""
     items = sorted(store.values(), key=lambda c: c.get("date", ""), reverse=True)
@@ -736,7 +1020,7 @@ def _recently_published(payload):
     if stamp.tzinfo is None:  # written before timestamps carried a timezone
         return False
     age = (dt.datetime.now(dt.timezone.utc) - stamp).total_seconds()
-    same = all(prev.get(k) == payload.get(k) for k in ("demo", "cameras", "captures"))
+    same = all(prev.get(k) == payload.get(k) for k in ("demo", "cameras", "captures", "weatherHours"))
     return same and age < HEARTBEAT_SECONDS
 
 
@@ -754,6 +1038,9 @@ def write_data_js(captures, cameras=None, demo=False, tags_map=None, meta_map=No
     tags_map = tags_map or {}
     meta_map = meta_map or {}
     ai_map = {} if demo else load_ai_tags()
+    if not demo:
+        captures = list(captures) + load_uploads()
+    weather = {} if demo else load_weather()
     captures = sorted(captures, key=lambda c: c.get("date", ""), reverse=True)[:MAX_PUBLISHED]
     out_caps = []
     for c in captures:
@@ -770,6 +1057,13 @@ def write_data_js(captures, cameras=None, demo=False, tags_map=None, meta_map=No
             c["aiTagged"] = True
         elif not c.get("tags"):
             c["tags"] = [c.get("species", "Animal")]
+        if weather:
+            w = weather_for(weather_key(c["date"]), weather)
+            if w:
+                c["weather"] = w
+                if c.get("temp") is None:
+                    c["temp"] = w["tempF"]
+                    c["tempEstimated"] = True
         meta = meta_map.get(str(c.get("id")))
         if meta:
             for k, v in meta.items():
@@ -784,6 +1078,9 @@ def write_data_js(captures, cameras=None, demo=False, tags_map=None, meta_map=No
         "cameras": cameras or [],
         "captures": out_caps,
     }
+    if weather and out_caps:
+        payload["weatherHours"] = weather_hours(
+            weather, weather_key(out_caps[-1]["date"]), weather_key(out_caps[0]["date"]))
     if _recently_published(payload):
         print(f"{DATA_FILE.name} already up to date ({len(out_caps)} captures).")
         return
@@ -869,8 +1166,8 @@ def extract_camera_meta(cam):
         "id": str(cid) if cid is not None else str(name or "unknown"),
         "name": name or (f"Camera {cid}" if cid is not None else "Camera"),
         "label": str(label).strip() if label else None,
-        "latitude": lat,
-        "longitude": lng,
+        "latitude": blur_location(lat),
+        "longitude": blur_location(lng),
     }
 
 
@@ -1061,6 +1358,10 @@ def run_pull(limit, inspect):
         prev = store.get(sid) or {}
         if meta.get("temp") is None and _is_num(prev.get("temp")):
             meta["temp"] = int(prev["temp"])
+        if prev.get("overlayRead"):
+            meta["overlayRead"] = prev["overlayRead"]
+        if meta["timeSource"] == "upload" and prev.get("timeSource") == "overlay":
+            meta["date"], meta["timeSource"] = prev["date"], "overlay"
 
         if r2 is not None:
             # Host on R2. Reuse an already-uploaded URL from the store so we don't
@@ -1093,17 +1394,16 @@ def run_pull(limit, inspect):
                     report_skip(f"{sid}: download failed after retries ({e})")
                     skipped += 1
                     continue
-        # The API omits temperature for this account -> recover it from the
-        # overlay stamped onto the freshly downloaded image (no-op without OCR).
-        if meta.get("temp") is None and dest.exists():
-            t = ocr_temp_f(dest)
-            if t is not None:
-                meta["temp"] = t
         store[sid] = meta
 
+    backfill_overlays(store)
+    if r2 is not None:
+        move_photos_to_r2(store, r2)
+        delete_hosted_copies(store)
     store = prune_store(store)
     save_store(store)
     save_cameras(camera_meta)
+    update_weather(list(store.values()) + load_uploads())
     write_data_js(list(store.values()), cameras=camera_meta, demo=False, tags_map=load_tags(), meta_map=load_metadata())
     print(f"\nStore: {before} -> {len(store)} captures (+{new_count} new, {skipped} skipped this run).")
     print("Done. Open index.html, or upload index.html + data.js + photos/ to Cloudflare.")
@@ -1121,33 +1421,14 @@ def run_rebuild():
 
 
 def run_ocr_temps():
-    """Backfill Fahrenheit temperatures by OCR-ing the overlay on photos we already
-    have on disk. Safe to re-run -- it only fills captures still missing a temp."""
-    try:
-        import pytesseract  # noqa: F401
-        from PIL import Image  # noqa: F401
-    except ImportError:
-        sys.exit("OCR needs Pillow + pytesseract plus the tesseract binary "
-                 "(e.g. `winget install tesseract`). See README.")
+    """Read the info bar on every photo not read yet, then rebuild data.js."""
     store = load_store()
     if not store:
         sys.exit("No store.json yet. Run `python pull.py` first.")
-    done = scanned = 0
-    for sid, meta in store.items():
-        if _is_num(meta.get("temp")):
-            continue
-        photo = next((m for m in PHOTOS_DIR.glob(f"{sid}.*") if m.suffix.lower() != ".part"), None)
-        if not photo or not photo.exists():
-            continue
-        scanned += 1
-        t = ocr_temp_f(photo)
-        if t is not None:
-            meta["temp"] = t
-            done += 1
-            print(f"  [temp] {sid[:10]} -> {t}\u00b0F")
+    done = backfill_overlays(store, limit=len(store))
     save_store(store)
     write_data_js(list(store.values()), cameras=load_cameras(), demo=False, tags_map=load_tags(), meta_map=load_metadata())
-    print(f"\nOCR temps: set {done} of {scanned} scanned ({len(store)} total). data.js rebuilt.")
+    print(f"Read {done} photo(s). data.js rebuilt.")
 
 
 def main():

@@ -9,6 +9,7 @@ const cx = (...xs) => xs.filter(Boolean).join(" ");
 export const VIEWS = [
   { id: "overview", label: "Home",     icon: "dashboard" },
   { id: "gallery",  label: "Photos",   icon: "images" },
+  { id: "bucks",    label: "Bucks",    icon: "target" },
   { id: "insights", label: "Patterns", icon: "chart" },
   { id: "map",      label: "Map",      icon: "map" },
   { id: "review",   label: "Identify", icon: "scan" },
@@ -49,7 +50,7 @@ export function Sidebar({ view, setView, counts, status }) {
 }
 
 /* -------------------------------- Topbar -------------------------------- */
-export function Topbar({ title, sub, theme, toggleTheme, onRefresh, refreshing, children }) {
+export function Topbar({ title, sub, theme, toggleTheme, onRefresh, refreshing, onUpload, children }) {
   return html`<header className="topbar">
     <div className="topbar__titles">
       <div className="h-page">${title}</div>
@@ -58,6 +59,7 @@ export function Topbar({ title, sub, theme, toggleTheme, onRefresh, refreshing, 
     <div className="topbar__spacer" />
     <div className="topbar__actions">
       ${children}
+      <button className="btn btn--sm" onClick=${onUpload}><${Icon} name="upload" size=${15} /><span>Upload</span></button>
       <${IconBtn} icon="refresh" bare onClick=${onRefresh} title="Refresh data"
         className=${refreshing ? "is-spin" : ""} aria-label="Refresh" />
       <${IconBtn} icon=${theme === "light" ? "moon" : "sun"} bare onClick=${toggleTheme}
@@ -67,7 +69,7 @@ export function Topbar({ title, sub, theme, toggleTheme, onRefresh, refreshing, 
 }
 
 /* ----------------------------- Mobile chrome ---------------------------- */
-export function MobileTopbar({ theme, toggleTheme, onRefresh, refreshing, status }) {
+export function MobileTopbar({ theme, toggleTheme, onRefresh, refreshing, status, onUpload }) {
   return html`<div className="mobile-top">
     <${BrandMark} size=${30} />
     <div className="brand__name">Vale Trails
@@ -76,6 +78,7 @@ export function MobileTopbar({ theme, toggleTheme, onRefresh, refreshing, status
       </small>
     </div>
     <div className="topbar__spacer" />
+    <${IconBtn} icon="upload" bare onClick=${onUpload} aria-label="Upload photos" />
     <${IconBtn} icon="refresh" bare onClick=${onRefresh} className=${refreshing ? "is-spin" : ""} aria-label="Refresh" />
     <${IconBtn} icon=${theme === "light" ? "moon" : "sun"} bare onClick=${toggleTheme} aria-label="Toggle theme" />
   </div>`;

@@ -13,8 +13,6 @@ __pycache__/
 _legacy_index.html
 _schema_probe.json
 
-# NOTE: once Cloudflare R2 hosting is live (the R2_* secrets are set and uploads
-# are confirmed), add "photos/" below so newly downloaded images stop being
-# committed to the repo. Don't add it before R2 works, or new captures would have
-# uncommitted local images and show as broken on the site.
-# photos/
+# Photos move to Cloudflare R2 on their own once the R2_* secrets are set: pull.py
+# copies each one, checks the public URL, and removes the repo copy on later runs.
+# Add "photos/" here after that finishes.

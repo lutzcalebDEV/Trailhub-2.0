@@ -128,7 +128,7 @@ export function MapView(app) {
                 <span className="camrow__pin"><${Icon} name="pin" size=${18} /></span>
                 <div className="camrow__body">
                   <div className="camrow__name">${camName(cam.name)}</div>
-                  <div className="camrow__meta">${cam.latitude.toFixed(4)}, ${cam.longitude.toFixed(4)}</div>
+                  <div className="camrow__meta">Approximate location</div>
                 </div>
                 <span className="camrow__count tnum">${countByCam.get(cam.name) || 0}</span>
               </button>

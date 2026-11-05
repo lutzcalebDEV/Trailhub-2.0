@@ -115,6 +115,8 @@ function normalizePayload(d) {
         isNight: !!c.isNight,
         confidence: c.confidence == null ? null : c.confidence,
         aiTagged: !!c.aiTagged,
+        tempEstimated: !!c.tempEstimated,
+        weather: c.weather || null,
         temp: c.temp == null ? null : c.temp,
         moon: c.moon || moonFromDate(date),
       };
@@ -139,6 +141,7 @@ function normalizePayload(d) {
     cameras,
     demo: !!d.demo,
     generatedAt: parseUtc(d.generatedAt),
+    weatherHours: d.weatherHours || null,
   };
 }
 
@@ -223,6 +226,37 @@ export async function remoteSaveTagsBatch(items) {
   });
   if (!r.ok) throw new Error("Tag save failed (" + r.status + ")");
   return { ok: true };
+}
+
+/* ---------------------------- Photo uploads ----------------------------- */
+export const hasUploads = !!TAGS_API;
+
+const basicAuth = ({ user, password }) => {
+  const bytes = new TextEncoder().encode(`${user}:${password}`);
+  return "Basic " + btoa(String.fromCharCode(...bytes));
+};
+
+// Returns "ok", "denied" or "error".
+export async function uploadLogin(user, password) {
+  try {
+    const r = await fetch(TAGS_API + "/login", {
+      method: "POST",
+      headers: { Authorization: basicAuth({ user, password }) },
+    });
+    return r.ok ? "ok" : r.status === 401 ? "denied" : "error";
+  } catch (e) {
+    return "error";
+  }
+}
+
+export async function uploadPhoto(blob, { date, camera, species }, auth) {
+  const query = new URLSearchParams({ date, camera, species });
+  const r = await fetch(`${TAGS_API}/upload?${query}`, {
+    method: "POST",
+    headers: { Authorization: basicAuth(auth), "Content-Type": "image/jpeg" },
+    body: blob,
+  });
+  if (!r.ok) throw new Error("Upload failed (" + r.status + ")");
 }
 
 /* ------------------- Shared camera names (optional) --------------------- */

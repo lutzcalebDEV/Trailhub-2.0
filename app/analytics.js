@@ -53,7 +53,10 @@ export function cameraStatus(captures, cameras, now = Date.now()) {
   const week = now - 7 * 86400000;
   const rows = new Map((cameras || []).map((c) => [c.name, { camera: c.name, last: null, week: 0 }]));
   for (const c of captures) {
-    if (!rows.has(c.camera)) rows.set(c.camera, { camera: c.camera, last: null, week: 0 });
+    if (!rows.has(c.camera)) {
+      if (cameras && cameras.length) continue; // e.g. a phone upload, which isn't a camera to watch
+      rows.set(c.camera, { camera: c.camera, last: null, week: 0 });
+    }
     const row = rows.get(c.camera);
     if (!row.last || c.date > row.last) row.last = c.date;
     if (c.date.getTime() >= week) row.week++;
@@ -82,6 +85,86 @@ export function collapseBursts(captures, limit = Infinity, gapMs = 120000) {
     out.push(next);
   }
   return out;
+}
+
+// Where and when to sit: the camera and 3-hour window with the most recent activity.
+// Sightings fade by half each week, so a pattern from last week beats an old one.
+const NOT_GAME = new Set(["Person", "Vehicle", "Empty"]);
+const MIN_SIGHTINGS = 8;
+export function bestSit(captures, ov, now = Date.now(), days = 21) {
+  const recent = captures.filter((c) =>
+    now - c.date.getTime() < days * 86400000 && !NOT_GAME.has(effectiveSpecies(c, ov)));
+  const bucks = collapseBursts(recent.filter((c) => effectiveSpecies(c, ov) === "Buck"));
+  const useBucks = bucks.length >= MIN_SIGHTINGS;
+  const events = useBucks ? bucks : collapseBursts(recent);
+  if (events.length < MIN_SIGHTINGS) return null;
+
+  const byCamera = new Map();
+  for (const { capture: c } of events) {
+    if (!byCamera.has(c.camera)) byCamera.set(c.camera, { score: Array(24).fill(0), count: Array(24).fill(0) });
+    const row = byCamera.get(c.camera);
+    const h = c.date.getHours();
+    row.score[h] += 0.5 ** ((now - c.date.getTime()) / (7 * 86400000));
+    row.count[h]++;
+  }
+  let best = null;
+  for (const [camera, row] of byCamera) {
+    for (let start = 0; start < 24; start++) {
+      const hours = [start, (start + 1) % 24, (start + 2) % 24];
+      const score = hours.reduce((s, h) => s + row.score[h], 0);
+      if (!best || score > best.score) {
+        best = { camera, start, end: (start + 3) % 24, score, count: hours.reduce((s, h) => s + row.count[h], 0) };
+      }
+    }
+  }
+  return { ...best, total: events.length, subject: useBucks ? "buck" : "animal" };
+}
+
+// One profile per named buck. A sighting is a trigger, not a frame.
+export function buckProfiles(captures) {
+  const named = new Map();
+  for (const c of captures) {
+    if (!c.buck) continue;
+    if (!named.has(c.buck)) named.set(c.buck, []);
+    named.get(c.buck).push(c);
+  }
+  return [...named.entries()].map(([name, shots]) => {
+    const events = collapseBursts(shots).map((e) => e.capture);
+    const hours = hourHistogram(events);
+    return {
+      name, shots, hours,
+      events: events.length,
+      latest: shots[0],
+      last: shots[0].date,
+      first: shots[shots.length - 1].date,
+      peak: peakWindow(hours),
+      dayPct: daylightPct(events),
+      cameras: cameraCounts(events),
+    };
+  }).sort((a, b) => b.last - a.last);
+}
+
+// Sightings per 100 hours of each condition, so common weather doesn't win by default.
+const MIN_WEATHER_HOURS = 24;
+export function weatherRates(captures, hours) {
+  if (!hours) return null;
+  const events = collapseBursts(captures).map((e) => e.capture).filter((c) => c.weather);
+  if (events.length < 10) return null;
+  const rates = (field, order) => {
+    const counts = {};
+    for (const c of events) {
+      const k = c.weather[field];
+      if (k) counts[k] = (counts[k] || 0) + 1;
+    }
+    return order
+      .filter((label) => (hours[field]?.[label] || 0) >= MIN_WEATHER_HOURS)
+      .map((label) => ({ label, value: ((counts[label] || 0) / hours[field][label]) * 100 }));
+  };
+  return {
+    wind: rates("windBand", ["Under 5 mph", "5\u201310 mph", "10\u201315 mph", "15+ mph"]),
+    trend: rates("trend", ["Falling", "Steady", "Rising"]),
+    sky: rates("sky", ["Dry", "Rain"]),
+  };
 }
 
 export function speciesList(captures, ov) {

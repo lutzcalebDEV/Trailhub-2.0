@@ -17,8 +17,9 @@ just static files — no server, no AI, no credentials in the cloud.
 - `tags.json` — your photo tags/reclassifications (shared source of truth, baked into `data.js`)
 - `tag-worker.js` — optional Cloudflare Worker that saves tags for everyone (see "Shared tags")
 
-The site has five pages: **Home** (camera status and the latest photos), **Photos**
-(everything, grouped by day), **Patterns** (when animals move), **Map**, and
+The site has six pages: **Home** (camera status, the best bet for a sit, and the
+latest photos), **Photos** (everything, grouped by day), **Bucks** (a history for each
+deer you name), **Patterns** (when animals move, including by weather), **Map**, and
 **Identify** (put a name to untagged photos). Filters carry across Photos, Patterns
 and Map, so you can ask "when does this buck move at this camera?"
 
@@ -210,6 +211,31 @@ tier, Google may use these images to improve its products.
 Set `AI_MODEL` or `AI_MAX_PER_RUN` to change the model or batch size. Your model's
 daily limit is shown in AI Studio, and leftovers wait for the next run.
 
+## 7. Photo storage and uploads (Cloudflare R2)
+
+Photos can live in a free Cloudflare R2 bucket in place of this repo. People with the
+upload login can then add photos from the **Upload** button, and they're resized and
+stripped of location data on the device before leaving it.
+
+1. Create the bucket and turn on its public URL:
+   ```
+   npx wrangler r2 bucket create trailhub-photos
+   npx wrangler r2 bucket dev-url enable trailhub-photos
+   ```
+2. Put that URL in `R2_PUBLIC_BASE_URL` in `wrangler.toml`.
+3. Set the upload password, then deploy. The username is `UPLOAD_USER` in the same
+   file, `valecrew` by default.
+   ```
+   npx wrangler secret put UPLOAD_PASSWORD
+   npx wrangler deploy
+   ```
+4. In the dashboard, create an R2 API token with **Object Read & Write** on this
+   bucket. Add these repository secrets: `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`,
+   `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` (`trailhub-photos`) and `R2_PUBLIC_BASE_URL`.
+
+The next runs move existing photos to R2 and remove them from the repo. Older copies
+stay in git history until that history is rewritten.
+
 ## Useful flags
 
 ```
@@ -250,4 +276,9 @@ nothing else needs to change.
   "Tag and reclassify photos"), including more than one tag per photo.
 - The free SPYPOINT plan transmits a limited number of photos per month, so this
   is meant for modest volumes.
-- Anything you publish to the static site is public to anyone with the URL.
+- Anything you publish to the static site is public to anyone with the URL. Camera
+  coordinates are rounded to about 1 km for that reason, but the photos themselves
+  and this repo's history are public.
+- Weather comes from [Open-Meteo](https://open-meteo.com/) (free, no key) for the
+  whole property, not each camera. A `~` before a temperature means it's from that
+  data because the photo's info bar couldn't be read.

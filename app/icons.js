@@ -12,6 +12,7 @@ const P = {
   moon: html`<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/>`,
   thermo: html`<path d="M14 14.8V5a2 2 0 0 0-4 0v9.8a4 4 0 1 0 4 0Z"/>`,
   download: html`<g><path d="M12 3v12"/><path d="m7 10.5 5 5 5-5"/><path d="M5 21h14"/></g>`,
+  upload: html`<g><path d="M12 16V4"/><path d="m7 8.5 5-5 5 5"/><path d="M5 21h14"/></g>`,
   x: html`<path d="M6 6l12 12M18 6 6 18"/>`,
   chevronDown: html`<path d="m6 9 6 6 6-6"/>`,
   chevronLeft: html`<path d="m15 6-6 6 6 6"/>`,

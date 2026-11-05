@@ -10,3 +10,6 @@ boto3
 Pillow
 pytesseract
 
+
+# Time zone data for the camera clocks (Linux usually has it; Windows needs this).
+tzdata
