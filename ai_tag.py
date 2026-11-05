@@ -34,6 +34,7 @@ ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/interactions"
 DEFAULT_MODEL = "gemini-3.5-flash-lite"
 MAX_ERRORS_IN_A_ROW = 3
 REQUEST_GAP_SECONDS = 4.5  # stays under a 15 requests-per-minute limit
+BUSY_RETRY_SECONDS = (10, 30)  # waits after Google reports it's overloaded
 
 LABELS = [
     "Buck", "Doe", "Deer", "Turkey", "Raccoon", "Squirrel", "Fox", "Coyote",
@@ -50,6 +51,8 @@ Name the main subject using one label.
 - Other animal: an animal that fits no other label, or can't be identified.
 - Empty: nothing but trees, leaves, shadows or rain.
 
+Deer are by far the most common animal here. Glowing eyes at night are normal for
+deer, so only choose a predator when the body shape clearly shows one.
 Ignore the black info bar along the bottom edge. Night photos are infrared and grey.
 Animals are often small, partly hidden or at the edge of the frame, so check closely
 before choosing Empty. If several animals appear, label the most notable one.
@@ -104,14 +107,17 @@ def call_gemini(image: bytes, api_key: str, model: str) -> dict:
             "Api-Revision": "2026-05-20",
         },
     )
-    try:
-        with urllib.request.urlopen(request, timeout=60) as response:
-            return json.loads(response.read().decode("utf-8"))
-    except urllib.error.HTTPError as e:
-        detail = e.read().decode("utf-8", "replace")[:300]
-        if e.code == 429:
-            raise QuotaExhausted(detail) from e
-        raise RuntimeError(f"HTTP {e.code}: {detail}") from e
+    for wait in (*BUSY_RETRY_SECONDS, None):
+        try:
+            with urllib.request.urlopen(request, timeout=60) as response:
+                return json.loads(response.read().decode("utf-8"))
+        except urllib.error.HTTPError as e:
+            detail = e.read().decode("utf-8", "replace")[:300]
+            if e.code == 429:
+                raise QuotaExhausted(detail) from e
+            if e.code != 503 or wait is None:
+                raise RuntimeError(f"HTTP {e.code}: {detail}") from e
+            time.sleep(wait)
 
 
 def _strings(node):

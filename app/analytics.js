@@ -167,6 +167,9 @@ export function weatherRates(captures, hours) {
   };
 }
 
+// False triggers aren't activity, so charts and summaries leave them out.
+export const withoutEmpty = (captures, ov) => captures.filter((c) => effectiveSpecies(c, ov) !== "Empty");
+
 export function speciesList(captures, ov) {
   return speciesCounts(captures, ov).map((x) => x.species);
 }

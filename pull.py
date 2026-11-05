@@ -1030,6 +1030,45 @@ def prune_store(store):
     return {c["id"]: c for c in items[:MAX_KEEP]}
 
 
+BURST_SECONDS = 120
+LOW_CONFIDENCE = 0.5  # below the site's 0.7 line, so the photo goes to Identify
+_DEER_LABELS = {"Buck", "Doe", "Deer"}
+
+
+def flag_burst_conflicts(captures):
+    """Lower confidence on AI tags that disagree with the rest of their burst.
+
+    Frames seconds apart show the same animal, so a Coyote next to a Buck means one
+    is wrong, however sure the model sounded. Captures must be sorted by date.
+    """
+    def kind(c):
+        species = c.get("species")
+        return "Deer" if species in _DEER_LABELS else species
+
+    last_by_camera = {}
+    burst_by_camera = {}
+    for c in captures:
+        when = dt.datetime.fromisoformat(c["date"])
+        camera = c.get("camera")
+        previous = last_by_camera.get(camera)
+        if previous is None or abs((previous - when).total_seconds()) > BURST_SECONDS:
+            _flag_burst(burst_by_camera.get(camera, []), kind)
+            burst_by_camera[camera] = []
+        burst_by_camera[camera].append(c)
+        last_by_camera[camera] = when
+    for burst in burst_by_camera.values():
+        _flag_burst(burst, kind)
+
+
+def _flag_burst(burst, kind):
+    animals = {kind(c) for c in burst if kind(c) not in ("Empty", "Animal", None)}
+    if len(animals) < 2:
+        return
+    for c in burst:
+        if c.get("aiTagged"):
+            c["confidence"] = min(c.get("confidence") or 1, LOW_CONFIDENCE)
+
+
 def _recently_published(payload):
     """True when data.js already holds this content and was written recently.
 
@@ -1096,6 +1135,7 @@ def write_data_js(captures, cameras=None, demo=False, tags_map=None, meta_map=No
                 if k not in _META_RESERVED:
                     c[k] = v
         out_caps.append(c)
+    flag_burst_conflicts(out_caps)
     payload = {
         # Always explicit UTC: a bare timestamp is read as local time by browsers,
         # which made the site claim "just now" for hours-old data.

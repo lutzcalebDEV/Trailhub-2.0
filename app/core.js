@@ -16,7 +16,12 @@ export const SPECIES = {
   Coyote:   "var(--sp-coyote)",
   Turkey:   "var(--sp-turkey)",
   Opossum:  "var(--sp-opossum)",
+  Bear:     "var(--sp-other)",
+  Bobcat:   "var(--sp-other)",
+  Rabbit:   "var(--sp-other)",
+  Bird:     "var(--sp-other)",
   Person:   "var(--sp-person)",
+  Vehicle:  "var(--sp-other)",
   Empty:    "var(--sp-other)",
 };
 export const SPECIES_ORDER = Object.keys(SPECIES);

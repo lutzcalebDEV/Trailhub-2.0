@@ -3,7 +3,7 @@ import { html } from "../react.js";
 import { Stat, Panel, Sparkbars, Histogram, Shot, Empty, Btn, CameraCard } from "../ui.js";
 import { effectiveSpecies, fmtDate, labelHour } from "../core.js";
 import {
-  dailyCounts, hourHistogram, daylightPct, periodDelta, peakHour, cameraStatus, collapseBursts, bestSit,
+  dailyCounts, hourHistogram, daylightPct, periodDelta, peakHour, cameraStatus, collapseBursts, bestSit, withoutEmpty,
 } from "../analytics.js";
 import { windowLabel } from "./insights.js";
 
@@ -15,12 +15,13 @@ export function Overview(app) {
       message="Once your cameras start uploading, they'll show up here automatically." />`;
   }
 
-  const week = periodDelta(captures, 7);
-  const daylight = daylightPct(captures);
-  const peak = peakHour(captures);
-  const daily = dailyCounts(captures, 14);
+  const seen = withoutEmpty(captures, ov);
+  const week = periodDelta(seen, 7);
+  const daylight = daylightPct(seen);
+  const peak = peakHour(seen);
+  const daily = dailyCounts(seen, 14);
   const busiestDay = daily.reduce((a, b) => (b.value > a.value ? b : a), daily[0]);
-  const recent = collapseBursts(captures, 12);
+  const recent = collapseBursts(seen, 12);
   const favorites = captures.filter((c) => c.favorite).slice(0, 6);
   const cams = cameraStatus(captures, data.cameras);
   const sit = bestSit(captures, ov);
@@ -81,7 +82,7 @@ export function Overview(app) {
         </div>
       </${Panel}>
       <${Panel} title="Time of day">
-        <${Histogram} hours=${hourHistogram(captures)} />
+        <${Histogram} hours=${hourHistogram(seen)} />
       </${Panel}>
     </div>
   </div>`;
