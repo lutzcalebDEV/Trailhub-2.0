@@ -18,11 +18,12 @@ import { MapView } from "./views/mapview.js";
 import { Insights } from "./views/insights.js";
 import { Review } from "./views/review.js";
 import { Bucks } from "./views/bucks.js";
+import { Uploads } from "./views/uploads.js";
 
 // Past this, the pull has missed far more runs than GitHub's usual throttling explains.
 const STALE_SYNC_MS = 12 * 3600000;
 
-const VIEW_COMPONENTS = { overview: Overview, gallery: Gallery, bucks: Bucks, insights: Insights, map: MapView, review: Review };
+const VIEW_COMPONENTS = { overview: Overview, gallery: Gallery, uploads: Uploads, bucks: Bucks, insights: Insights, map: MapView, review: Review };
 
 function App() {
   const { data, refresh, refreshing } = useData();
@@ -175,10 +176,14 @@ function App() {
     return out;
   }, [remoteMeta, localMeta]);
   // Apply the metadata overlay so every view sees notes / favorites / corrections.
-  const captures = useMemo(
+  const allCaptures = useMemo(
     () => data.captures.map((c) => applyMeta(c, metaMap)),
     [data.captures, metaMap]
   );
+  // Uploads live in their own tab. Screenshots and phone photos aren't camera data,
+  // so they stay out of the charts, the best-bet card and the Identify queue.
+  const captures = useMemo(() => allCaptures.filter((c) => !c.uploadedBySite), [allCaptures]);
+  const uploads = useMemo(() => allCaptures.filter((c) => c.uploadedBySite), [allCaptures]);
   const buckNames = useMemo(
     () => [...new Set(captures.map((c) => c.buck).filter(Boolean))].sort(),
     [captures]
@@ -192,7 +197,7 @@ function App() {
     demo: data.demo,
     checked: data.generatedAt ? timeAgo(data.generatedAt) : null,
     stale: !data.generatedAt || Date.now() - data.generatedAt.getTime() > STALE_SYNC_MS,
-    newest: data.captures.length ? timeAgo(data.captures[0].date) : null,
+    newest: captures.length ? timeAgo(captures[0].date) : null,
   };
 
   /* --------------------------- Actions ---------------------------------- */
@@ -334,6 +339,7 @@ function App() {
     gridSize, setGridSize,
     archived, reviewed, assignSpecies, keep, archive: archiveCap,
     openLightbox, reviewQ, counts, setView, setFilter,
+    uploads, comments, openUpload: () => setUploadOpen(true),
     camName, camNames, bulkAssign, renameCamera,
     metaMap, updateMeta, toggleFavorite,
   };

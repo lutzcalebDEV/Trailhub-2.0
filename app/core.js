@@ -117,6 +117,7 @@ function normalizePayload(d) {
         aiTagged: !!c.aiTagged,
         tempEstimated: !!c.tempEstimated,
         media: c.media === "video" ? "video" : "photo",
+        uploadedBySite: !!c.uploadedBySite,
         weather: c.weather || null,
         temp: c.temp == null ? null : c.temp,
         moon: c.moon || moonFromDate(date),

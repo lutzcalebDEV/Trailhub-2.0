@@ -1,7 +1,7 @@
 // Vale Trails — reusable UI primitives, chart widgets, photo tile and lightbox.
 // Pure presentation: all data shaping happens in the views. Components map 1:1
 // to the classes defined in styles.css.
-import { html, useEffect, useState } from "./react.js";
+import { html, useEffect, useRef, useState } from "./react.js";
 import { Icon } from "./icons.js";
 import {
   speciesColor, fmtDate, fmtDateTime, timeAgo, labelHour, isoDay, TAG_OPTIONS,
@@ -361,10 +361,41 @@ export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggle
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose, onPrev, onNext, hasPrev, hasNext]);
 
+  // The page behind shouldn't scroll while a photo is open.
+  useEffect(() => {
+    const before = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = before; };
+  }, []);
+
+  // Each photo starts at the top, even if the details were scrolled down.
+  const stage = useRef(null);
+  const photoId = capture && capture.id;
+  useEffect(() => { if (stage.current) stage.current.scrollTop = 0; }, [photoId]);
+
+  // Swipe on a photo to move between photos. Videos are left out because dragging
+  // there belongs to the player's seek bar.
+  const swipe = useRef(null);
+  const onTouchStart = (e) => {
+    const t = e.touches[0];
+    swipe.current = e.target.tagName === "IMG" && e.touches.length === 1 ? { x: t.clientX, y: t.clientY } : null;
+  };
+  const onTouchEnd = (e) => {
+    if (!swipe.current) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - swipe.current.x;
+    const dy = t.clientY - swipe.current.y;
+    swipe.current = null;
+    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    if (dx < 0 && hasNext) onNext();
+    else if (dx > 0 && hasPrev) onPrev();
+  };
+
   if (!capture) return null;
   const c = capture;
   return html`<div className="lb" onClick=${onClose}>
-    <div className="lb__stage" onClick=${(e) => e.stopPropagation()}>
+    <div className="lb__stage" ref=${stage} onClick=${(e) => e.stopPropagation()}
+      onTouchStart=${onTouchStart} onTouchEnd=${onTouchEnd}>
       ${c.image
         ? html`<${Media} key=${c.id} className="lb__img" capture=${c} alt=${species} playable />`
         : html`<div className="shot__noimg" style=${{ width: "60vw", height: "60vh" }}>No image available</div>`}

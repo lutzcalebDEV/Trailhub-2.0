@@ -16,7 +16,7 @@ function dayLabel(date) {
 }
 
 // [{ key, label, items }] in display order; items keep their incoming order.
-function groupByDay(items) {
+export function groupByDay(items) {
   const groups = [];
   for (const item of items) {
     const key = isoDay(item.capture.date);

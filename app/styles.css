@@ -866,3 +866,43 @@ body { background: var(--bg); }
   background: rgba(0,0,0,.28); box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
 }
 @media (max-width: 900px) { .lb__comments { width: 100%; } }
+
+/* Full view: details sit beside or below the photo, never on top of it. */
+.lb__stage {
+  display: grid; grid-template-columns: minmax(0, 1fr) 360px; place-items: stretch;
+  height: 100vh; height: 100dvh; padding: 0;
+}
+.lb__img {
+  grid-column: 1; grid-row: 1; align-self: center; justify-self: center;
+  max-width: 100%; max-height: 100vh; max-height: 100dvh; border-radius: 0; box-shadow: none;
+}
+.lb__panel {
+  position: static; grid-column: 2; grid-row: 1; min-height: 0; overflow-y: auto;
+  flex-direction: column; align-items: stretch; gap: 14px; padding: 60px 18px 22px;
+  background: #101312;
+}
+.lb__edit, .lb__comments { width: 100%; }
+.lb__actions { margin-left: 0; }
+.lb__nav.next { right: 378px; }
+
+@media (max-width: 900px) {
+  .lb__stage { display: block; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .lb__img { display: block; width: 100%; max-height: 62vh; max-height: 62dvh; object-fit: contain; margin-top: env(safe-area-inset-top, 0px); }
+  .lb__panel { overflow: visible; padding: 16px 16px calc(24px + env(safe-area-inset-bottom, 0px)); }
+  .lb__close { position: fixed; top: calc(8px + env(safe-area-inset-top, 0px)); right: 8px; z-index: 2; }
+  .lb__nav { width: 38px; height: 38px; top: calc(28vw + env(safe-area-inset-top, 0px)); }
+  .lb__nav.prev { left: 8px; }
+  .lb__nav.next { right: 8px; }
+}
+.lb__corrections { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+.lb__field { min-width: 0; }
+
+.lb__nav, .lb__close { z-index: 3; touch-action: manipulation; }
+
+@media (max-width: 900px) {
+  .lb__nav { width: 44px; height: 44px; }
+  .lb__img { touch-action: pan-y; }
+  /* iPhones zoom the page when a focused field is under 16px. */
+  input, textarea, select, .input, .select, .lb__note, .lb__field input, .lb__field select,
+  .lb__comments input, .lb__comments textarea, .camrow__input { font-size: 16px; }
+}

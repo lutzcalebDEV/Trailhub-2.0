@@ -9,6 +9,7 @@ const cx = (...xs) => xs.filter(Boolean).join(" ");
 export const VIEWS = [
   { id: "overview", label: "Home",     icon: "dashboard" },
   { id: "gallery",  label: "Photos",   icon: "images" },
+  { id: "uploads",  label: "Uploads",  icon: "upload" },
   { id: "bucks",    label: "Bucks",    icon: "target" },
   { id: "insights", label: "Patterns", icon: "chart" },
   { id: "map",      label: "Map",      icon: "map" },

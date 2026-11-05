@@ -26,7 +26,6 @@ import sys
 import time
 import urllib.error
 import urllib.request
-from pathlib import Path
 
 from pull import HERE, atomic_write_text, load_store, load_tags
 
@@ -81,7 +80,7 @@ def load_api_key():
     return key
 
 
-def call_gemini(path: Path, api_key: str, model: str) -> dict:
+def call_gemini(image: bytes, api_key: str, model: str) -> dict:
     """Send one photo and return the decoded JSON reply."""
     body = {
         "model": model,
@@ -90,7 +89,7 @@ def call_gemini(path: Path, api_key: str, model: str) -> dict:
             {"type": "text", "text": PROMPT},
             {
                 "type": "image",
-                "data": base64.b64encode(path.read_bytes()).decode("ascii"),
+                "data": base64.b64encode(image).decode("ascii"),
                 "mime_type": "image/jpeg",
             },
         ],
@@ -146,10 +145,19 @@ def parse_reply(reply: dict):
     return None
 
 
-def photo_path(capture):
+def has_photo(capture):
     image = str(capture.get("image", ""))
-    path = HERE / image
-    return path if image.startswith("photos/") and path.exists() else None
+    return image.startswith("https://") or (image.startswith("photos/") and (HERE / image).exists())
+
+
+def photo_bytes(capture):
+    """Read a photo from Cloudflare R2, or from the repo if it hasn't moved."""
+    image = str(capture["image"])
+    if not image.startswith("https://"):
+        return (HERE / image).read_bytes()
+    request = urllib.request.Request(image, headers={"User-Agent": "TrailHub/1.0"})
+    with urllib.request.urlopen(request, timeout=30) as response:
+        return response.read()
 
 
 def load_ai_tags():
@@ -165,21 +173,21 @@ def newest_first(captures):
 
 
 def run_check(api_key, model):
-    capture = next((c for c in newest_first(load_store().values()) if photo_path(c)), None)
+    capture = next((c for c in newest_first(load_store().values()) if has_photo(c)), None)
     if capture is None:
         sys.exit("No local photos found to test with.")
-    reply = call_gemini(photo_path(capture), api_key, model)
+    reply = call_gemini(photo_bytes(capture), api_key, model)
     print(json.dumps(reply, indent=2)[:1500])
     print(f"\nModel: {model}\nPhoto: {capture['image']}\nParsed: {parse_reply(reply)}")
 
 
 def run_eval(api_key, model, count):
-    bucks = [c for c in newest_first(load_store().values()) if c.get("species") == "Buck" and photo_path(c)]
+    bucks = [c for c in newest_first(load_store().values()) if c.get("species") == "Buck" and has_photo(c)]
     results = {}
     for i, capture in enumerate(bucks[:count]):
         if i:
             time.sleep(REQUEST_GAP_SECONDS)
-        parsed = parse_reply(call_gemini(photo_path(capture), api_key, model))
+        parsed = parse_reply(call_gemini(photo_bytes(capture), api_key, model))
         label = parsed[0] if parsed else "(no answer)"
         results[label] = results.get(label, 0) + 1
         print(f"  {capture['id'][:18]:<20} {parsed}")
@@ -194,7 +202,7 @@ def run_tagging(api_key, model, limit):
     pending = [
         c for c in newest_first(load_store().values())
         if c.get("species") == "Animal" and c["id"] not in done
-        and c["id"] not in user_tags and photo_path(c)
+        and c["id"] not in user_tags and has_photo(c)
     ]
     print(f"AI tagging: {len(pending)} photo(s) waiting, up to {limit} this run ({model}).")
     tagged = errors = 0
@@ -202,7 +210,7 @@ def run_tagging(api_key, model, limit):
         if tagged or errors:
             time.sleep(REQUEST_GAP_SECONDS)
         try:
-            parsed = parse_reply(call_gemini(photo_path(capture), api_key, model))
+            parsed = parse_reply(call_gemini(photo_bytes(capture), api_key, model))
             if parsed is None:
                 raise RuntimeError("reply had no usable label")
         except QuotaExhausted:
