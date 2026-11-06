@@ -1,5 +1,5 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-11-06T22:36:54+00:00",
+  "generatedAt": "2026-11-06T22:41:37+00:00",
   "demo": false,
   "cameras": [
     {
@@ -19,6 +19,62 @@ window.TRAILHUB_DATA = {
   ],
   "captures": [
     {
+      "species": "Doe",
+      "camera": "Camera 6a309e41bdc62e4448c0a370",
+      "date": "2026-11-06T22:36:38+00:00",
+      "uploaded": "2026-11-06T22:36:58.777000+00:00",
+      "timeSource": "camera",
+      "isNight": true,
+      "todSource": "tag",
+      "temp": 65,
+      "confidence": 0.95,
+      "moon": null,
+      "id": "sp_6aee568aac73566621f1d3a6",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aee568aac73566621f1d3a6.jpg",
+      "overlayRead": 2,
+      "tags": [
+        "Doe"
+      ],
+      "aiTagged": true,
+      "weather": {
+        "tempF": 70,
+        "wind": 4,
+        "windDir": "W",
+        "windBand": "Under 5 mph",
+        "pressure": 29.87,
+        "trend": "Steady",
+        "sky": "Dry"
+      }
+    },
+    {
+      "species": "Doe",
+      "camera": "Camera 6a309e41bdc62e4448c0a370",
+      "date": "2026-11-06T22:36:37+00:00",
+      "uploaded": "2026-11-06T22:36:58.777000+00:00",
+      "timeSource": "camera",
+      "isNight": true,
+      "todSource": "tag",
+      "temp": 65,
+      "confidence": 0.95,
+      "moon": null,
+      "id": "sp_6aee568aac73566621f1d3a8",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aee568aac73566621f1d3a8.jpg",
+      "overlayRead": 2,
+      "tags": [
+        "Doe"
+      ],
+      "aiTagged": true,
+      "weather": {
+        "tempF": 70,
+        "wind": 4,
+        "windDir": "W",
+        "windBand": "Under 5 mph",
+        "pressure": 29.87,
+        "trend": "Steady",
+        "sky": "Dry"
+      }
+    },
+    {
       "species": "Deer",
       "camera": "Camera 6a309e41bdc62e4448c0a370",
       "date": "2026-11-06T22:34:34+00:00",
@@ -30,8 +86,8 @@ window.TRAILHUB_DATA = {
       "confidence": 0.8,
       "moon": null,
       "id": "sp_6aee560f1ab0418c3262a68b",
-      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aee560f1ab0418c3262a68b.jpg",
       "overlayRead": 2,
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aee560f1ab0418c3262a68b.jpg",
       "tags": [
         "Deer"
       ],
@@ -58,8 +114,8 @@ window.TRAILHUB_DATA = {
       "confidence": 0.85,
       "moon": null,
       "id": "sp_6aee560f1ab0418c3262a68d",
-      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aee560f1ab0418c3262a68d.jpg",
       "overlayRead": 2,
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aee560f1ab0418c3262a68d.jpg",
       "tags": [
         "Doe"
       ],
