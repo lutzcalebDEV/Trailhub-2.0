@@ -9452,8 +9452,8 @@
   "confidence": null,
   "moon": null,
   "id": "sp_6aee32be5328d2f12273861a",
-  "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aee32be5328d2f12273861a.jpg",
-  "overlayRead": 2
+  "overlayRead": 2,
+  "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aee32be5328d2f12273861a.jpg"
  },
  "sp_6aee32be5328d2f12273861c": {
   "species": "Animal",
@@ -9467,7 +9467,7 @@
   "confidence": null,
   "moon": null,
   "id": "sp_6aee32be5328d2f12273861c",
-  "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aee32be5328d2f12273861c.jpg",
-  "overlayRead": 2
+  "overlayRead": 2,
+  "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aee32be5328d2f12273861c.jpg"
  }
 }
