@@ -2,6 +2,48 @@
   {
     "fields": {
       "camera": "6a309e41bdc62e4448c0a370",
+      "date": "2026-11-06T20:04:14.511Z",
+      "id": "6aee32be5328d2f12273861a",
+      "large": "<omitted>",
+      "medium": "<omitted>",
+      "originDate": "2026-11-06T15:03:50.000Z",
+      "originName": "PICT0427.JPG",
+      "originSize": 75007,
+      "preview": [],
+      "small": "<omitted>",
+      "tag": [
+        "day"
+      ]
+    },
+    "detected": [
+      "day"
+    ],
+    "normalized": "Animal"
+  },
+  {
+    "fields": {
+      "camera": "6a309e41bdc62e4448c0a370",
+      "date": "2026-11-06T20:04:14.511Z",
+      "id": "6aee32be5328d2f12273861c",
+      "large": "<omitted>",
+      "medium": "<omitted>",
+      "originDate": "2026-11-06T15:03:49.000Z",
+      "originName": "PICT0426.JPG",
+      "originSize": 66302,
+      "preview": [],
+      "small": "<omitted>",
+      "tag": [
+        "day"
+      ]
+    },
+    "detected": [
+      "day"
+    ],
+    "normalized": "Animal"
+  },
+  {
+    "fields": {
+      "camera": "6a309e41bdc62e4448c0a370",
       "date": "2026-11-06T17:01:44.873Z",
       "id": "6aee07f84cb974e2088ed63a",
       "large": "<omitted>",
@@ -51,48 +93,6 @@
       "originDate": "2026-11-06T11:32:47.000Z",
       "originName": "PICT0423.JPG",
       "originSize": 75556,
-      "preview": [],
-      "small": "<omitted>",
-      "tag": [
-        "night"
-      ]
-    },
-    "detected": [
-      "night"
-    ],
-    "normalized": "Animal"
-  },
-  {
-    "fields": {
-      "camera": "6a309e41bdc62e4448c0a370",
-      "date": "2026-11-06T16:33:07.785Z",
-      "id": "6aee0143e13efac538b24384",
-      "large": "<omitted>",
-      "medium": "<omitted>",
-      "originDate": "2026-11-06T11:32:46.000Z",
-      "originName": "PICT0422.JPG",
-      "originSize": 69766,
-      "preview": [],
-      "small": "<omitted>",
-      "tag": [
-        "day"
-      ]
-    },
-    "detected": [
-      "day"
-    ],
-    "normalized": "Animal"
-  },
-  {
-    "fields": {
-      "camera": "6a309e41bdc62e4448c0a370",
-      "date": "2026-11-06T12:31:01.660Z",
-      "id": "6aedc885529fafa151f20cd1",
-      "large": "<omitted>",
-      "medium": "<omitted>",
-      "originDate": "2026-11-06T07:30:38.000Z",
-      "originName": "PICT0421.JPG",
-      "originSize": 84250,
       "preview": [],
       "small": "<omitted>",
       "tag": [
