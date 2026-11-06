@@ -1,5 +1,5 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-11-06T12:31:32+00:00",
+  "generatedAt": "2026-11-06T13:36:23+00:00",
   "demo": false,
   "cameras": [
     {
@@ -30,8 +30,8 @@ window.TRAILHUB_DATA = {
       "confidence": 0.8,
       "moon": null,
       "id": "sp_6aedc885529fafa151f20cd1",
-      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aedc885529fafa151f20cd1.jpg",
       "overlayRead": 2,
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aedc885529fafa151f20cd1.jpg",
       "tags": [
         "Deer"
       ],
@@ -58,8 +58,8 @@ window.TRAILHUB_DATA = {
       "confidence": 0.95,
       "moon": null,
       "id": "sp_6aedc885529fafa151f20cd3",
-      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aedc885529fafa151f20cd3.jpg",
       "overlayRead": 2,
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aedc885529fafa151f20cd3.jpg",
       "tags": [
         "Doe"
       ],
