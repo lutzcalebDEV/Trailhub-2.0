@@ -3503,5 +3503,25 @@
   "confidence": 0.85,
   "label": "Deer",
   "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6aef10c2ff8ce6528cd1d407": {
+  "confidence": 0.95,
+  "label": "Doe",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6aef10c2ff8ce6528cd1d409": {
+  "confidence": 0.95,
+  "label": "Doe",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6aef114ae4c2240d5366b8ad": {
+  "confidence": 0.85,
+  "label": "Deer",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6aef114ae4c2240d5366b8af": {
+  "confidence": 0.8,
+  "label": "Doe",
+  "model": "gemini-3.5-flash-lite"
  }
 }
