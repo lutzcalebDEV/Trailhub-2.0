@@ -2,6 +2,52 @@
   {
     "fields": {
       "camera": "6a309e41bdc62e4448c0a370",
+      "date": "2026-11-07T07:14:12.205Z",
+      "id": "6aeecfc4b14a641dde0631d4",
+      "large": "<omitted>",
+      "medium": "<omitted>",
+      "originDate": "2026-11-07T02:13:49.000Z",
+      "originName": "PICT0441.JPG",
+      "originSize": 47690,
+      "preview": [],
+      "small": "<omitted>",
+      "tag": [
+        "buck",
+        "night"
+      ]
+    },
+    "detected": [
+      "buck",
+      "night"
+    ],
+    "normalized": "Buck"
+  },
+  {
+    "fields": {
+      "camera": "6a309e41bdc62e4448c0a370",
+      "date": "2026-11-07T07:14:12.205Z",
+      "id": "6aeecfc4b14a641dde0631d6",
+      "large": "<omitted>",
+      "medium": "<omitted>",
+      "originDate": "2026-11-07T02:13:48.000Z",
+      "originName": "PICT0440.JPG",
+      "originSize": 29032,
+      "preview": [],
+      "small": "<omitted>",
+      "tag": [
+        "buck",
+        "night"
+      ]
+    },
+    "detected": [
+      "buck",
+      "night"
+    ],
+    "normalized": "Buck"
+  },
+  {
+    "fields": {
+      "camera": "6a309e41bdc62e4448c0a370",
       "date": "2026-11-07T07:08:52.492Z",
       "id": "6aeece840700890649e5a934",
       "large": "<omitted>",
@@ -51,52 +97,6 @@
       "originDate": "2026-11-07T02:03:12.000Z",
       "originName": "PICT0437.JPG",
       "originSize": 47507,
-      "preview": [],
-      "small": "<omitted>",
-      "tag": [
-        "buck",
-        "night"
-      ]
-    },
-    "detected": [
-      "buck",
-      "night"
-    ],
-    "normalized": "Buck"
-  },
-  {
-    "fields": {
-      "camera": "6a309e41bdc62e4448c0a370",
-      "date": "2026-11-07T07:03:31.551Z",
-      "id": "6aeecd43e1baf82e6d9e1554",
-      "large": "<omitted>",
-      "medium": "<omitted>",
-      "originDate": "2026-11-07T02:03:11.000Z",
-      "originName": "PICT0436.JPG",
-      "originSize": 28790,
-      "preview": [],
-      "small": "<omitted>",
-      "tag": [
-        "buck",
-        "night"
-      ]
-    },
-    "detected": [
-      "buck",
-      "night"
-    ],
-    "normalized": "Buck"
-  },
-  {
-    "fields": {
-      "camera": "6a309e41bdc62e4448c0a370",
-      "date": "2026-11-07T06:35:13.930Z",
-      "id": "6aeec6a1348a5d4cccfdf2cc",
-      "large": "<omitted>",
-      "medium": "<omitted>",
-      "originDate": "2026-11-07T01:34:43.000Z",
-      "originName": "PICT0435.JPG",
-      "originSize": 49154,
       "preview": [],
       "small": "<omitted>",
       "tag": [
