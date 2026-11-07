@@ -1,5 +1,5 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-11-07T06:36:28+00:00",
+  "generatedAt": "2026-11-07T07:06:21+00:00",
   "demo": false,
   "cameras": [
     {
@@ -21,6 +21,60 @@ window.TRAILHUB_DATA = {
     {
       "species": "Buck",
       "camera": "Camera 6a309e41bdc62e4448c0a370",
+      "date": "2026-11-07T07:03:12+00:00",
+      "uploaded": "2026-11-07T07:03:31.551000+00:00",
+      "timeSource": "camera",
+      "isNight": true,
+      "todSource": "tag",
+      "temp": 51,
+      "confidence": null,
+      "moon": null,
+      "id": "sp_6aeecd43e1baf82e6d9e1552",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeecd43e1baf82e6d9e1552.jpg",
+      "overlayRead": 2,
+      "tags": [
+        "Buck"
+      ],
+      "weather": {
+        "tempF": 54,
+        "wind": 6,
+        "windDir": "NE",
+        "windBand": "5\u201310 mph",
+        "pressure": 29.92,
+        "trend": "Steady",
+        "sky": "Dry"
+      }
+    },
+    {
+      "species": "Buck",
+      "camera": "Camera 6a309e41bdc62e4448c0a370",
+      "date": "2026-11-07T07:03:11+00:00",
+      "uploaded": "2026-11-07T07:03:31.551000+00:00",
+      "timeSource": "camera",
+      "isNight": true,
+      "todSource": "tag",
+      "temp": 51,
+      "confidence": null,
+      "moon": null,
+      "id": "sp_6aeecd43e1baf82e6d9e1554",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeecd43e1baf82e6d9e1554.jpg",
+      "overlayRead": 2,
+      "tags": [
+        "Buck"
+      ],
+      "weather": {
+        "tempF": 54,
+        "wind": 6,
+        "windDir": "NE",
+        "windBand": "5\u201310 mph",
+        "pressure": 29.92,
+        "trend": "Steady",
+        "sky": "Dry"
+      }
+    },
+    {
+      "species": "Buck",
+      "camera": "Camera 6a309e41bdc62e4448c0a370",
       "date": "2026-11-07T06:34:43+00:00",
       "uploaded": "2026-11-07T06:35:13.930000+00:00",
       "timeSource": "camera",
@@ -30,14 +84,14 @@ window.TRAILHUB_DATA = {
       "confidence": null,
       "moon": null,
       "id": "sp_6aeec6a1348a5d4cccfdf2cc",
-      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeec6a1348a5d4cccfdf2cc.jpg",
       "overlayRead": 2,
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeec6a1348a5d4cccfdf2cc.jpg",
       "tags": [
         "Buck"
       ],
       "weather": {
         "tempF": 55,
-        "wind": 6,
+        "wind": 7,
         "windDir": "NE",
         "windBand": "5\u201310 mph",
         "pressure": 29.91,
@@ -57,14 +111,14 @@ window.TRAILHUB_DATA = {
       "confidence": null,
       "moon": null,
       "id": "sp_6aeec6a1348a5d4cccfdf2ce",
-      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeec6a1348a5d4cccfdf2ce.jpg",
       "overlayRead": 2,
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeec6a1348a5d4cccfdf2ce.jpg",
       "tags": [
         "Buck"
       ],
       "weather": {
         "tempF": 55,
-        "wind": 6,
+        "wind": 7,
         "windDir": "NE",
         "windBand": "5\u201310 mph",
         "pressure": 29.91,
@@ -84,15 +138,15 @@ window.TRAILHUB_DATA = {
       "confidence": 0.95,
       "moon": null,
       "id": "sp_6aeec68cdd8bc41625907c57",
-      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeec68cdd8bc41625907c57.jpg",
       "overlayRead": 2,
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeec68cdd8bc41625907c57.jpg",
       "tags": [
         "Empty"
       ],
       "aiTagged": true,
       "weather": {
         "tempF": 55,
-        "wind": 6,
+        "wind": 7,
         "windDir": "NE",
         "windBand": "5\u201310 mph",
         "pressure": 29.91,
@@ -112,15 +166,15 @@ window.TRAILHUB_DATA = {
       "confidence": 0.65,
       "moon": null,
       "id": "sp_6aeec68cdd8bc41625907c59",
-      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeec68cdd8bc41625907c59.jpg",
       "overlayRead": 2,
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeec68cdd8bc41625907c59.jpg",
       "tags": [
         "Deer"
       ],
       "aiTagged": true,
       "weather": {
         "tempF": 55,
-        "wind": 6,
+        "wind": 7,
         "windDir": "NE",
         "windBand": "5\u201310 mph",
         "pressure": 29.91,
@@ -19032,18 +19086,18 @@ window.TRAILHUB_DATA = {
   ],
   "weatherHours": {
     "windBand": {
-      "5\u201310 mph": 1419,
+      "5\u201310 mph": 1420,
       "10\u201315 mph": 245,
       "Under 5 mph": 1703,
       "15+ mph": 75
     },
     "trend": {
       "Falling": 687,
-      "Steady": 2054,
+      "Steady": 2055,
       "Rising": 701
     },
     "sky": {
-      "Dry": 2850,
+      "Dry": 2851,
       "Rain": 592
     }
   }
