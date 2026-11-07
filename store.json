@@ -9542,8 +9542,8 @@
   "confidence": null,
   "moon": null,
   "id": "sp_6aeec6a1348a5d4cccfdf2cc",
-  "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeec6a1348a5d4cccfdf2cc.jpg",
-  "overlayRead": 2
+  "overlayRead": 2,
+  "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeec6a1348a5d4cccfdf2cc.jpg"
  },
  "sp_6aeec6a1348a5d4cccfdf2ce": {
   "species": "Buck",
@@ -9557,8 +9557,8 @@
   "confidence": null,
   "moon": null,
   "id": "sp_6aeec6a1348a5d4cccfdf2ce",
-  "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeec6a1348a5d4cccfdf2ce.jpg",
-  "overlayRead": 2
+  "overlayRead": 2,
+  "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeec6a1348a5d4cccfdf2ce.jpg"
  },
  "sp_6aeec68cdd8bc41625907c57": {
   "species": "Animal",
@@ -9572,8 +9572,8 @@
   "confidence": null,
   "moon": null,
   "id": "sp_6aeec68cdd8bc41625907c57",
-  "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeec68cdd8bc41625907c57.jpg",
-  "overlayRead": 2
+  "overlayRead": 2,
+  "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeec68cdd8bc41625907c57.jpg"
  },
  "sp_6aeec68cdd8bc41625907c59": {
   "species": "Animal",
@@ -9587,7 +9587,7 @@
   "confidence": null,
   "moon": null,
   "id": "sp_6aeec68cdd8bc41625907c59",
-  "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeec68cdd8bc41625907c59.jpg",
-  "overlayRead": 2
+  "overlayRead": 2,
+  "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeec68cdd8bc41625907c59.jpg"
  }
 }
