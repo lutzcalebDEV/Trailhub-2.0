@@ -2,6 +2,90 @@
   {
     "fields": {
       "camera": "6a309e41bdc62e4448c0a370",
+      "date": "2026-11-07T17:41:49.687Z",
+      "id": "6aef62dd23623858eb7eb3c9",
+      "large": "<omitted>",
+      "medium": "<omitted>",
+      "originDate": "2026-11-07T12:41:31.000Z",
+      "originName": "PICT0461.JPG",
+      "originSize": 72684,
+      "preview": [],
+      "small": "<omitted>",
+      "tag": [
+        "day"
+      ]
+    },
+    "detected": [
+      "day"
+    ],
+    "normalized": "Animal"
+  },
+  {
+    "fields": {
+      "camera": "6a309e41bdc62e4448c0a370",
+      "date": "2026-11-07T17:41:49.687Z",
+      "id": "6aef62dd23623858eb7eb3cb",
+      "large": "<omitted>",
+      "medium": "<omitted>",
+      "originDate": "2026-11-07T12:41:30.000Z",
+      "originName": "PICT0460.JPG",
+      "originSize": 70944,
+      "preview": [],
+      "small": "<omitted>",
+      "tag": [
+        "day"
+      ]
+    },
+    "detected": [
+      "day"
+    ],
+    "normalized": "Animal"
+  },
+  {
+    "fields": {
+      "camera": "6a309e41bdc62e4448c0a370",
+      "date": "2026-11-07T17:41:15.238Z",
+      "id": "6aef62bb3392f0d9ebdd8ca9",
+      "large": "<omitted>",
+      "medium": "<omitted>",
+      "originDate": "2026-11-07T12:40:57.000Z",
+      "originName": "PICT0459.JPG",
+      "originSize": 73484,
+      "preview": [],
+      "small": "<omitted>",
+      "tag": [
+        "day"
+      ]
+    },
+    "detected": [
+      "day"
+    ],
+    "normalized": "Animal"
+  },
+  {
+    "fields": {
+      "camera": "6a309e41bdc62e4448c0a370",
+      "date": "2026-11-07T17:41:15.238Z",
+      "id": "6aef62bb3392f0d9ebdd8cab",
+      "large": "<omitted>",
+      "medium": "<omitted>",
+      "originDate": "2026-11-07T12:40:56.000Z",
+      "originName": "PICT0458.JPG",
+      "originSize": 71543,
+      "preview": [],
+      "small": "<omitted>",
+      "tag": [
+        "day"
+      ]
+    },
+    "detected": [
+      "day"
+    ],
+    "normalized": "Animal"
+  },
+  {
+    "fields": {
+      "camera": "6a309e41bdc62e4448c0a370",
       "date": "2026-11-07T17:40:44.577Z",
       "id": "6aef629c97d8ba44cf7c643d",
       "large": "<omitted>",
@@ -9,90 +93,6 @@
       "originDate": "2026-11-07T12:40:17.000Z",
       "originName": "PICT0457.JPG",
       "originSize": 72956,
-      "preview": [],
-      "small": "<omitted>",
-      "tag": [
-        "day"
-      ]
-    },
-    "detected": [
-      "day"
-    ],
-    "normalized": "Animal"
-  },
-  {
-    "fields": {
-      "camera": "6a309e41bdc62e4448c0a370",
-      "date": "2026-11-07T17:40:44.577Z",
-      "id": "6aef629c97d8ba44cf7c643f",
-      "large": "<omitted>",
-      "medium": "<omitted>",
-      "originDate": "2026-11-07T12:40:16.000Z",
-      "originName": "PICT0456.JPG",
-      "originSize": 70798,
-      "preview": [],
-      "small": "<omitted>",
-      "tag": [
-        "day"
-      ]
-    },
-    "detected": [
-      "day"
-    ],
-    "normalized": "Animal"
-  },
-  {
-    "fields": {
-      "camera": "6a309e41bdc62e4448c0a370",
-      "date": "2026-11-07T17:40:16.790Z",
-      "id": "6aef62808caa909074b70906",
-      "large": "<omitted>",
-      "medium": "<omitted>",
-      "originDate": "2026-11-07T12:39:54.000Z",
-      "originName": "PICT0455.JPG",
-      "originSize": 74673,
-      "preview": [],
-      "small": "<omitted>",
-      "tag": [
-        "day"
-      ]
-    },
-    "detected": [
-      "day"
-    ],
-    "normalized": "Animal"
-  },
-  {
-    "fields": {
-      "camera": "6a309e41bdc62e4448c0a370",
-      "date": "2026-11-07T17:40:16.790Z",
-      "id": "6aef62808caa909074b70908",
-      "large": "<omitted>",
-      "medium": "<omitted>",
-      "originDate": "2026-11-07T12:39:53.000Z",
-      "originName": "PICT0454.JPG",
-      "originSize": 68472,
-      "preview": [],
-      "small": "<omitted>",
-      "tag": [
-        "day"
-      ]
-    },
-    "detected": [
-      "day"
-    ],
-    "normalized": "Animal"
-  },
-  {
-    "fields": {
-      "camera": "6a309e41bdc62e4448c0a370",
-      "date": "2026-11-07T17:38:15.737Z",
-      "id": "6aef6207fbd3406692c3cc07",
-      "large": "<omitted>",
-      "medium": "<omitted>",
-      "originDate": "2026-11-07T12:37:58.000Z",
-      "originName": "PICT0453.JPG",
-      "originSize": 73554,
       "preview": [],
       "small": "<omitted>",
       "tag": [
