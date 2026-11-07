@@ -1,5 +1,5 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-11-07T14:01:21+00:00",
+  "generatedAt": "2026-11-07T14:06:15+00:00",
   "demo": false,
   "cameras": [
     {
@@ -211,7 +211,8 @@ window.TRAILHUB_DATA = {
         "pressure": 29.91,
         "trend": "Steady",
         "sky": "Dry"
-      }
+      },
+      "buck": "Big 8"
     },
     {
       "species": "Buck",
