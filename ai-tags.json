@@ -3613,5 +3613,15 @@
   "confidence": 0.99,
   "label": "Person",
   "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6aef88f8f83ef356519d82df": {
+  "confidence": 0.98,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6aef88f8f83ef356519d82e1": {
+  "confidence": 0.95,
+  "label": "Vehicle",
+  "model": "gemini-3.5-flash-lite"
  }
 }
