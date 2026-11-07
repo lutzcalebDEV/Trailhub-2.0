@@ -1,5 +1,5 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-11-07T07:06:21+00:00",
+  "generatedAt": "2026-11-07T07:11:29+00:00",
   "demo": false,
   "cameras": [
     {
@@ -19,6 +19,62 @@ window.TRAILHUB_DATA = {
   ],
   "captures": [
     {
+      "species": "Empty",
+      "camera": "Camera 6a309e41bdc62e4448c0a370",
+      "date": "2026-11-07T07:08:30+00:00",
+      "uploaded": "2026-11-07T07:08:52.492000+00:00",
+      "timeSource": "camera",
+      "isNight": true,
+      "todSource": "tag",
+      "temp": 52,
+      "confidence": 0.95,
+      "moon": null,
+      "id": "sp_6aeece840700890649e5a934",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeece840700890649e5a934.jpg",
+      "overlayRead": 2,
+      "tags": [
+        "Empty"
+      ],
+      "aiTagged": true,
+      "weather": {
+        "tempF": 54,
+        "wind": 6,
+        "windDir": "NE",
+        "windBand": "5\u201310 mph",
+        "pressure": 29.92,
+        "trend": "Steady",
+        "sky": "Dry"
+      }
+    },
+    {
+      "species": "Empty",
+      "camera": "Camera 6a309e41bdc62e4448c0a370",
+      "date": "2026-11-07T07:08:29+00:00",
+      "uploaded": "2026-11-07T07:08:52.492000+00:00",
+      "timeSource": "camera",
+      "isNight": true,
+      "todSource": "tag",
+      "temp": 52,
+      "confidence": 0.95,
+      "moon": null,
+      "id": "sp_6aeece840700890649e5a936",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeece840700890649e5a936.jpg",
+      "overlayRead": 2,
+      "tags": [
+        "Empty"
+      ],
+      "aiTagged": true,
+      "weather": {
+        "tempF": 54,
+        "wind": 6,
+        "windDir": "NE",
+        "windBand": "5\u201310 mph",
+        "pressure": 29.92,
+        "trend": "Steady",
+        "sky": "Dry"
+      }
+    },
+    {
       "species": "Buck",
       "camera": "Camera 6a309e41bdc62e4448c0a370",
       "date": "2026-11-07T07:03:12+00:00",
@@ -30,8 +86,8 @@ window.TRAILHUB_DATA = {
       "confidence": null,
       "moon": null,
       "id": "sp_6aeecd43e1baf82e6d9e1552",
-      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeecd43e1baf82e6d9e1552.jpg",
       "overlayRead": 2,
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeecd43e1baf82e6d9e1552.jpg",
       "tags": [
         "Buck"
       ],
@@ -57,8 +113,8 @@ window.TRAILHUB_DATA = {
       "confidence": null,
       "moon": null,
       "id": "sp_6aeecd43e1baf82e6d9e1554",
-      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeecd43e1baf82e6d9e1554.jpg",
       "overlayRead": 2,
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeecd43e1baf82e6d9e1554.jpg",
       "tags": [
         "Buck"
       ],
