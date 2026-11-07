@@ -1,5 +1,5 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-11-07T20:26:27+00:00",
+  "generatedAt": "2026-11-07T21:31:17+00:00",
   "demo": false,
   "cameras": [
     {
@@ -30,8 +30,8 @@ window.TRAILHUB_DATA = {
       "confidence": 0.98,
       "moon": null,
       "id": "sp_6aef88f8f83ef356519d82df",
-      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef88f8f83ef356519d82df.jpg",
       "overlayRead": 2,
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef88f8f83ef356519d82df.jpg",
       "tags": [
         "Vehicle"
       ],
@@ -58,8 +58,8 @@ window.TRAILHUB_DATA = {
       "confidence": 0.95,
       "moon": null,
       "id": "sp_6aef88f8f83ef356519d82e1",
-      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef88f8f83ef356519d82e1.jpg",
       "overlayRead": 2,
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef88f8f83ef356519d82e1.jpg",
       "tags": [
         "Vehicle"
       ],
