@@ -1,5 +1,5 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-11-07T18:26:32+00:00",
+  "generatedAt": "2026-11-07T19:28:54+00:00",
   "demo": false,
   "cameras": [
     {
@@ -30,8 +30,8 @@ window.TRAILHUB_DATA = {
       "confidence": 0.99,
       "moon": null,
       "id": "sp_6aef6c1f633028b59a4a0fb3",
-      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef6c1f633028b59a4a0fb3.jpg",
       "overlayRead": 2,
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef6c1f633028b59a4a0fb3.jpg",
       "tags": [
         "Person"
       ],
@@ -58,8 +58,8 @@ window.TRAILHUB_DATA = {
       "confidence": 0.99,
       "moon": null,
       "id": "sp_6aef6c1f633028b59a4a0fb5",
-      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef6c1f633028b59a4a0fb5.jpg",
       "overlayRead": 2,
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef6c1f633028b59a4a0fb5.jpg",
       "tags": [
         "Person"
       ],
