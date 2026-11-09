@@ -10099,5 +10099,35 @@
   "id": "sp_6af176c850e785db804bfdc5",
   "overlayRead": 2,
   "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af176c850e785db804bfdc5.jpg"
+ },
+ "sp_6af19e9289d688f70027884a": {
+  "species": "Buck",
+  "camera": "Camera 6a309e41bdc62e4448c0a370",
+  "date": "2026-11-09T10:20:45+00:00",
+  "uploaded": "2026-11-09T10:21:06.558000+00:00",
+  "timeSource": "camera",
+  "isNight": true,
+  "todSource": "tag",
+  "temp": 38,
+  "confidence": null,
+  "moon": null,
+  "id": "sp_6af19e9289d688f70027884a",
+  "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af19e9289d688f70027884a.jpg",
+  "overlayRead": 2
+ },
+ "sp_6af19e9289d688f70027884c": {
+  "species": "Buck",
+  "camera": "Camera 6a309e41bdc62e4448c0a370",
+  "date": "2026-11-09T10:20:44+00:00",
+  "uploaded": "2026-11-09T10:21:06.558000+00:00",
+  "timeSource": "camera",
+  "isNight": true,
+  "todSource": "tag",
+  "temp": 38,
+  "confidence": null,
+  "moon": null,
+  "id": "sp_6af19e9289d688f70027884c",
+  "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af19e9289d688f70027884c.jpg",
+  "overlayRead": 2
  }
 }

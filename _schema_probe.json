@@ -2,6 +2,52 @@
   {
     "fields": {
       "camera": "6a309e41bdc62e4448c0a370",
+      "date": "2026-11-09T10:21:06.558Z",
+      "id": "6af19e9289d688f70027884a",
+      "large": "<omitted>",
+      "medium": "<omitted>",
+      "originDate": "2026-11-09T05:20:45.000Z",
+      "originName": "PICT0471.JPG",
+      "originSize": 47133,
+      "preview": [],
+      "small": "<omitted>",
+      "tag": [
+        "buck",
+        "night"
+      ]
+    },
+    "detected": [
+      "buck",
+      "night"
+    ],
+    "normalized": "Buck"
+  },
+  {
+    "fields": {
+      "camera": "6a309e41bdc62e4448c0a370",
+      "date": "2026-11-09T10:21:06.558Z",
+      "id": "6af19e9289d688f70027884c",
+      "large": "<omitted>",
+      "medium": "<omitted>",
+      "originDate": "2026-11-09T05:20:44.000Z",
+      "originName": "PICT0470.JPG",
+      "originSize": 28637,
+      "preview": [],
+      "small": "<omitted>",
+      "tag": [
+        "buck",
+        "night"
+      ]
+    },
+    "detected": [
+      "buck",
+      "night"
+    ],
+    "normalized": "Buck"
+  },
+  {
+    "fields": {
+      "camera": "6a309e41bdc62e4448c0a370",
       "date": "2026-11-09T07:31:20.038Z",
       "id": "6af176c850e785db804bfdc3",
       "large": "<omitted>",
@@ -51,48 +97,6 @@
       "originDate": "2026-11-07T15:24:01.000Z",
       "originName": "PICT0467.JPG",
       "originSize": 75266,
-      "preview": [],
-      "small": "<omitted>",
-      "tag": [
-        "day"
-      ]
-    },
-    "detected": [
-      "day"
-    ],
-    "normalized": "Animal"
-  },
-  {
-    "fields": {
-      "camera": "6a309e41bdc62e4448c0a370",
-      "date": "2026-11-07T20:24:24.094Z",
-      "id": "6aef88f8f83ef356519d82e1",
-      "large": "<omitted>",
-      "medium": "<omitted>",
-      "originDate": "2026-11-07T15:24:00.000Z",
-      "originName": "PICT0466.JPG",
-      "originSize": 67441,
-      "preview": [],
-      "small": "<omitted>",
-      "tag": [
-        "day"
-      ]
-    },
-    "detected": [
-      "day"
-    ],
-    "normalized": "Animal"
-  },
-  {
-    "fields": {
-      "camera": "6a309e41bdc62e4448c0a370",
-      "date": "2026-11-07T18:21:19.228Z",
-      "id": "6aef6c1f633028b59a4a0fb3",
-      "large": "<omitted>",
-      "medium": "<omitted>",
-      "originDate": "2026-11-07T13:20:53.000Z",
-      "originName": "PICT0465.JPG",
-      "originSize": 75032,
       "preview": [],
       "small": "<omitted>",
       "tag": [
