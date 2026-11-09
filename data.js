@@ -1,5 +1,5 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-11-09T10:21:22+00:00",
+  "generatedAt": "2026-11-09T11:26:17+00:00",
   "demo": false,
   "cameras": [
     {
@@ -30,8 +30,8 @@ window.TRAILHUB_DATA = {
       "confidence": null,
       "moon": null,
       "id": "sp_6af19e9289d688f70027884a",
-      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af19e9289d688f70027884a.jpg",
       "overlayRead": 2,
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af19e9289d688f70027884a.jpg",
       "tags": [
         "Buck"
       ],
@@ -57,8 +57,8 @@ window.TRAILHUB_DATA = {
       "confidence": null,
       "moon": null,
       "id": "sp_6af19e9289d688f70027884c",
-      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af19e9289d688f70027884c.jpg",
       "overlayRead": 2,
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af19e9289d688f70027884c.jpg",
       "tags": [
         "Buck"
       ],
