@@ -1,5 +1,5 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-11-10T11:41:59+00:00",
+  "generatedAt": "2026-11-10T11:51:49+00:00",
   "demo": false,
   "cameras": [
     {
@@ -19,13 +19,70 @@ window.TRAILHUB_DATA = {
   ],
   "captures": [
     {
+      "species": "Doe",
+      "camera": "Camera 6a309e41bdc62e4448c0a370",
+      "date": "2026-11-10T11:46:15+00:00",
+      "uploaded": "2026-11-10T11:46:44.117000+00:00",
+      "timeSource": "camera",
+      "isNight": true,
+      "todSource": "tag",
+      "temp": 43,
+      "confidence": 0.85,
+      "moon": null,
+      "id": "sp_6af30424ee51ffbe2954f142",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af30424ee51ffbe2954f142.jpg",
+      "overlayRead": 2,
+      "tags": [
+        "Doe"
+      ],
+      "aiTagged": true,
+      "weather": {
+        "tempF": 43,
+        "wind": 6,
+        "windDir": "N",
+        "windBand": "5\u201310 mph",
+        "pressure": 30.09,
+        "trend": "Steady",
+        "sky": "Dry"
+      },
+      "tempEstimated": true
+    },
+    {
+      "species": "Doe",
+      "camera": "Camera 6a309e41bdc62e4448c0a370",
+      "date": "2026-11-10T11:46:14+00:00",
+      "uploaded": "2026-11-10T11:46:44.117000+00:00",
+      "timeSource": "camera",
+      "isNight": true,
+      "todSource": "tag",
+      "temp": 38,
+      "confidence": 0.85,
+      "moon": null,
+      "id": "sp_6af30424ee51ffbe2954f144",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af30424ee51ffbe2954f144.jpg",
+      "overlayRead": 2,
+      "tags": [
+        "Doe"
+      ],
+      "aiTagged": true,
+      "weather": {
+        "tempF": 43,
+        "wind": 6,
+        "windDir": "N",
+        "windBand": "5\u201310 mph",
+        "pressure": 30.09,
+        "trend": "Steady",
+        "sky": "Dry"
+      }
+    },
+    {
       "id": "up_e845cac1-ecf6-403b-b5c7-ae9bf4038aac",
       "species": "Animal",
       "camera": "Camera 6a309e41bdc62e4448c0a370",
       "date": "2026-11-10T04:37:35.345000+00:00",
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/up_e845cac1-ecf6-403b-b5c7-ae9bf4038aac.mp4",
       "isNight": true,
-      "temp": 50,
+      "temp": 49,
       "confidence": null,
       "moon": null,
       "uploadedBySite": true,
@@ -34,11 +91,11 @@ window.TRAILHUB_DATA = {
         "Animal"
       ],
       "weather": {
-        "tempF": 50,
-        "wind": 5,
-        "windDir": "N",
+        "tempF": 49,
+        "wind": 3,
+        "windDir": "NW",
         "windBand": "Under 5 mph",
-        "pressure": 30.06,
+        "pressure": 30.09,
         "trend": "Steady",
         "sky": "Dry"
       },
@@ -52,7 +109,7 @@ window.TRAILHUB_DATA = {
       "date": "2026-11-10T04:35:46.099000+00:00",
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/up_ffef9605-2c7b-40e7-8c57-4cffe6707237.mp4",
       "isNight": true,
-      "temp": 50,
+      "temp": 49,
       "confidence": null,
       "moon": null,
       "uploadedBySite": true,
@@ -61,11 +118,11 @@ window.TRAILHUB_DATA = {
         "Animal"
       ],
       "weather": {
-        "tempF": 50,
-        "wind": 5,
-        "windDir": "N",
+        "tempF": 49,
+        "wind": 3,
+        "windDir": "NW",
         "windBand": "Under 5 mph",
-        "pressure": 30.06,
+        "pressure": 30.09,
         "trend": "Steady",
         "sky": "Dry"
       },
@@ -90,11 +147,11 @@ window.TRAILHUB_DATA = {
         "Buck"
       ],
       "weather": {
-        "tempF": 50,
-        "wind": 5,
-        "windDir": "N",
+        "tempF": 49,
+        "wind": 3,
+        "windDir": "NW",
         "windBand": "Under 5 mph",
-        "pressure": 30.06,
+        "pressure": 30.09,
         "trend": "Steady",
         "sky": "Dry"
       }
@@ -117,11 +174,11 @@ window.TRAILHUB_DATA = {
         "Buck"
       ],
       "weather": {
-        "tempF": 50,
-        "wind": 5,
-        "windDir": "N",
+        "tempF": 49,
+        "wind": 3,
+        "windDir": "NW",
         "windBand": "Under 5 mph",
-        "pressure": 30.06,
+        "pressure": 30.09,
         "trend": "Steady",
         "sky": "Dry"
       }
@@ -143,10 +200,10 @@ window.TRAILHUB_DATA = {
       ],
       "weather": {
         "tempF": 51,
-        "wind": 4,
-        "windDir": "N",
+        "wind": 2,
+        "windDir": "NW",
         "windBand": "Under 5 mph",
-        "pressure": 30.05,
+        "pressure": 30.08,
         "trend": "Steady",
         "sky": "Dry"
       },
@@ -169,10 +226,10 @@ window.TRAILHUB_DATA = {
       ],
       "weather": {
         "tempF": 51,
-        "wind": 4,
-        "windDir": "N",
+        "wind": 2,
+        "windDir": "NW",
         "windBand": "Under 5 mph",
-        "pressure": 30.05,
+        "pressure": 30.08,
         "trend": "Steady",
         "sky": "Dry"
       },
@@ -196,10 +253,10 @@ window.TRAILHUB_DATA = {
       ],
       "weather": {
         "tempF": 51,
-        "wind": 4,
-        "windDir": "N",
+        "wind": 2,
+        "windDir": "NW",
         "windBand": "Under 5 mph",
-        "pressure": 30.05,
+        "pressure": 30.08,
         "trend": "Steady",
         "sky": "Dry"
       },
@@ -222,10 +279,10 @@ window.TRAILHUB_DATA = {
       ],
       "weather": {
         "tempF": 51,
-        "wind": 4,
-        "windDir": "N",
+        "wind": 2,
+        "windDir": "NW",
         "windBand": "Under 5 mph",
-        "pressure": 30.05,
+        "pressure": 30.08,
         "trend": "Steady",
         "sky": "Dry"
       },
@@ -248,10 +305,10 @@ window.TRAILHUB_DATA = {
       ],
       "weather": {
         "tempF": 51,
-        "wind": 4,
-        "windDir": "N",
+        "wind": 2,
+        "windDir": "NW",
         "windBand": "Under 5 mph",
-        "pressure": 30.05,
+        "pressure": 30.08,
         "trend": "Steady",
         "sky": "Dry"
       },
@@ -274,10 +331,10 @@ window.TRAILHUB_DATA = {
       ],
       "weather": {
         "tempF": 51,
-        "wind": 4,
-        "windDir": "N",
+        "wind": 2,
+        "windDir": "NW",
         "windBand": "Under 5 mph",
-        "pressure": 30.05,
+        "pressure": 30.08,
         "trend": "Steady",
         "sky": "Dry"
       },
@@ -300,10 +357,10 @@ window.TRAILHUB_DATA = {
       ],
       "weather": {
         "tempF": 51,
-        "wind": 4,
-        "windDir": "N",
+        "wind": 2,
+        "windDir": "NW",
         "windBand": "Under 5 mph",
-        "pressure": 30.05,
+        "pressure": 30.08,
         "trend": "Steady",
         "sky": "Dry"
       },
@@ -326,10 +383,10 @@ window.TRAILHUB_DATA = {
       ],
       "weather": {
         "tempF": 51,
-        "wind": 4,
-        "windDir": "N",
+        "wind": 2,
+        "windDir": "NW",
         "windBand": "Under 5 mph",
-        "pressure": 30.05,
+        "pressure": 30.08,
         "trend": "Steady",
         "sky": "Dry"
       },
@@ -353,10 +410,10 @@ window.TRAILHUB_DATA = {
       ],
       "weather": {
         "tempF": 51,
-        "wind": 4,
-        "windDir": "N",
+        "wind": 2,
+        "windDir": "NW",
         "windBand": "Under 5 mph",
-        "pressure": 30.05,
+        "pressure": 30.08,
         "trend": "Steady",
         "sky": "Dry"
       },
@@ -20446,18 +20503,18 @@ window.TRAILHUB_DATA = {
   ],
   "weatherHours": {
     "windBand": {
-      "5\u201310 mph": 1442,
+      "5\u201310 mph": 1444,
       "10\u201315 mph": 245,
-      "Under 5 mph": 1750,
+      "Under 5 mph": 1755,
       "15+ mph": 75
     },
     "trend": {
       "Falling": 697,
-      "Steady": 2099,
+      "Steady": 2106,
       "Rising": 716
     },
     "sky": {
-      "Dry": 2920,
+      "Dry": 2927,
       "Rain": 592
     }
   }
