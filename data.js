@@ -1,5 +1,5 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-11-10T03:41:24+00:00",
+  "generatedAt": "2026-11-10T04:01:15+00:00",
   "demo": false,
   "cameras": [
     {
@@ -25,7 +25,7 @@ window.TRAILHUB_DATA = {
       "date": "2026-11-10T04:37:35.345000+00:00",
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/up_e845cac1-ecf6-403b-b5c7-ae9bf4038aac.mp4",
       "isNight": true,
-      "temp": null,
+      "temp": 50,
       "confidence": null,
       "moon": null,
       "uploadedBySite": true,
@@ -33,6 +33,16 @@ window.TRAILHUB_DATA = {
       "tags": [
         "Animal"
       ],
+      "weather": {
+        "tempF": 50,
+        "wind": 5,
+        "windDir": "N",
+        "windBand": "Under 5 mph",
+        "pressure": 30.06,
+        "trend": "Steady",
+        "sky": "Dry"
+      },
+      "tempEstimated": true,
       "note": "Older video from July 13th. Creek trail in front of climbing stand."
     },
     {
@@ -42,7 +52,7 @@ window.TRAILHUB_DATA = {
       "date": "2026-11-10T04:35:46.099000+00:00",
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/up_ffef9605-2c7b-40e7-8c57-4cffe6707237.mp4",
       "isNight": true,
-      "temp": null,
+      "temp": 50,
       "confidence": null,
       "moon": null,
       "uploadedBySite": true,
@@ -50,6 +60,16 @@ window.TRAILHUB_DATA = {
       "tags": [
         "Animal"
       ],
+      "weather": {
+        "tempF": 50,
+        "wind": 5,
+        "windDir": "N",
+        "windBand": "Under 5 mph",
+        "pressure": 30.06,
+        "trend": "Steady",
+        "sky": "Dry"
+      },
+      "tempEstimated": true,
       "note": "From back in the spring, but a good video"
     },
     {
@@ -20374,16 +20394,16 @@ window.TRAILHUB_DATA = {
     "windBand": {
       "5\u201310 mph": 1442,
       "10\u201315 mph": 245,
-      "Under 5 mph": 1749,
+      "Under 5 mph": 1750,
       "15+ mph": 75
     },
     "trend": {
       "Falling": 697,
-      "Steady": 2098,
+      "Steady": 2099,
       "Rising": 716
     },
     "sky": {
-      "Dry": 2919,
+      "Dry": 2920,
       "Rain": 592
     }
   }
