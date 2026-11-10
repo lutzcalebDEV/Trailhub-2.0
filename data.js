@@ -1,5 +1,5 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-11-10T03:36:21+00:00",
+  "generatedAt": "2026-11-10T03:41:24+00:00",
   "demo": false,
   "cameras": [
     {
@@ -72,7 +72,7 @@ window.TRAILHUB_DATA = {
         "wind": 4,
         "windDir": "N",
         "windBand": "Under 5 mph",
-        "pressure": 30.06,
+        "pressure": 30.05,
         "trend": "Steady",
         "sky": "Dry"
       },
@@ -98,7 +98,7 @@ window.TRAILHUB_DATA = {
         "wind": 4,
         "windDir": "N",
         "windBand": "Under 5 mph",
-        "pressure": 30.06,
+        "pressure": 30.05,
         "trend": "Steady",
         "sky": "Dry"
       },
@@ -125,7 +125,7 @@ window.TRAILHUB_DATA = {
         "wind": 4,
         "windDir": "N",
         "windBand": "Under 5 mph",
-        "pressure": 30.06,
+        "pressure": 30.05,
         "trend": "Steady",
         "sky": "Dry"
       },
@@ -151,7 +151,7 @@ window.TRAILHUB_DATA = {
         "wind": 4,
         "windDir": "N",
         "windBand": "Under 5 mph",
-        "pressure": 30.06,
+        "pressure": 30.05,
         "trend": "Steady",
         "sky": "Dry"
       },
@@ -177,7 +177,7 @@ window.TRAILHUB_DATA = {
         "wind": 4,
         "windDir": "N",
         "windBand": "Under 5 mph",
-        "pressure": 30.06,
+        "pressure": 30.05,
         "trend": "Steady",
         "sky": "Dry"
       },
@@ -203,7 +203,7 @@ window.TRAILHUB_DATA = {
         "wind": 4,
         "windDir": "N",
         "windBand": "Under 5 mph",
-        "pressure": 30.06,
+        "pressure": 30.05,
         "trend": "Steady",
         "sky": "Dry"
       },
@@ -229,7 +229,7 @@ window.TRAILHUB_DATA = {
         "wind": 4,
         "windDir": "N",
         "windBand": "Under 5 mph",
-        "pressure": 30.06,
+        "pressure": 30.05,
         "trend": "Steady",
         "sky": "Dry"
       },
@@ -255,7 +255,7 @@ window.TRAILHUB_DATA = {
         "wind": 4,
         "windDir": "N",
         "windBand": "Under 5 mph",
-        "pressure": 30.06,
+        "pressure": 30.05,
         "trend": "Steady",
         "sky": "Dry"
       },
@@ -282,7 +282,7 @@ window.TRAILHUB_DATA = {
         "wind": 4,
         "windDir": "N",
         "windBand": "Under 5 mph",
-        "pressure": 30.06,
+        "pressure": 30.05,
         "trend": "Steady",
         "sky": "Dry"
       },
