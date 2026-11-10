@@ -2,6 +2,48 @@
   {
     "fields": {
       "camera": "6a309e41bdc62e4448c0a370",
+      "date": "2026-11-10T12:47:52.103Z",
+      "id": "6af31278415b45f7c6c94587",
+      "large": "<omitted>",
+      "medium": "<omitted>",
+      "originDate": "2026-11-10T07:47:31.000Z",
+      "originName": "PICT0477.JPG",
+      "originSize": 76698,
+      "preview": [],
+      "small": "<omitted>",
+      "tag": [
+        "day"
+      ]
+    },
+    "detected": [
+      "day"
+    ],
+    "normalized": "Animal"
+  },
+  {
+    "fields": {
+      "camera": "6a309e41bdc62e4448c0a370",
+      "date": "2026-11-10T12:47:52.103Z",
+      "id": "6af31278415b45f7c6c94589",
+      "large": "<omitted>",
+      "medium": "<omitted>",
+      "originDate": "2026-11-10T07:47:30.000Z",
+      "originName": "PICT0476.JPG",
+      "originSize": 68766,
+      "preview": [],
+      "small": "<omitted>",
+      "tag": [
+        "day"
+      ]
+    },
+    "detected": [
+      "day"
+    ],
+    "normalized": "Animal"
+  },
+  {
+    "fields": {
+      "camera": "6a309e41bdc62e4448c0a370",
       "date": "2026-11-10T11:46:44.117Z",
       "id": "6af30424ee51ffbe2954f142",
       "large": "<omitted>",
@@ -51,52 +93,6 @@
       "originDate": "2026-11-09T23:12:34.000Z",
       "originName": "PICT0473.JPG",
       "originSize": 47922,
-      "preview": [],
-      "small": "<omitted>",
-      "tag": [
-        "buck",
-        "night"
-      ]
-    },
-    "detected": [
-      "buck",
-      "night"
-    ],
-    "normalized": "Buck"
-  },
-  {
-    "fields": {
-      "camera": "6a309e41bdc62e4448c0a370",
-      "date": "2026-11-10T04:13:15.730Z",
-      "id": "6af299db289dec2441cd62db",
-      "large": "<omitted>",
-      "medium": "<omitted>",
-      "originDate": "2026-11-09T23:12:33.000Z",
-      "originName": "PICT0472.JPG",
-      "originSize": 29033,
-      "preview": [],
-      "small": "<omitted>",
-      "tag": [
-        "buck",
-        "night"
-      ]
-    },
-    "detected": [
-      "buck",
-      "night"
-    ],
-    "normalized": "Buck"
-  },
-  {
-    "fields": {
-      "camera": "6a309e41bdc62e4448c0a370",
-      "date": "2026-11-09T10:21:06.558Z",
-      "id": "6af19e9289d688f70027884a",
-      "large": "<omitted>",
-      "medium": "<omitted>",
-      "originDate": "2026-11-09T05:20:45.000Z",
-      "originName": "PICT0471.JPG",
-      "originSize": 47133,
       "preview": [],
       "small": "<omitted>",
       "tag": [

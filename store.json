@@ -10189,5 +10189,35 @@
   "id": "sp_6af30424ee51ffbe2954f144",
   "overlayRead": 2,
   "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af30424ee51ffbe2954f144.jpg"
+ },
+ "sp_6af31278415b45f7c6c94587": {
+  "species": "Animal",
+  "camera": "Camera 6a309e41bdc62e4448c0a370",
+  "date": "2026-11-10T12:47:31+00:00",
+  "uploaded": "2026-11-10T12:47:52.103000+00:00",
+  "timeSource": "camera",
+  "isNight": false,
+  "todSource": "tag",
+  "temp": 40,
+  "confidence": null,
+  "moon": null,
+  "id": "sp_6af31278415b45f7c6c94587",
+  "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af31278415b45f7c6c94587.jpg",
+  "overlayRead": 2
+ },
+ "sp_6af31278415b45f7c6c94589": {
+  "species": "Animal",
+  "camera": "Camera 6a309e41bdc62e4448c0a370",
+  "date": "2026-11-10T12:47:30+00:00",
+  "uploaded": "2026-11-10T12:47:52.103000+00:00",
+  "timeSource": "camera",
+  "isNight": false,
+  "todSource": "tag",
+  "temp": 40,
+  "confidence": null,
+  "moon": null,
+  "id": "sp_6af31278415b45f7c6c94589",
+  "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af31278415b45f7c6c94589.jpg",
+  "overlayRead": 2
  }
 }
