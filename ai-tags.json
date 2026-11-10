@@ -3664,6 +3664,11 @@
   "label": "Empty",
   "model": "gemini-3.5-flash-lite"
  },
+ "sp_6af39bacedb86b75e72d7d66": {
+  "confidence": 0.75,
+  "label": "Bear",
+  "model": "gemini-3.5-flash-lite"
+ },
  "sp_6af39bacedb86b75e72d7d68": {
   "confidence": 0.85,
   "label": "Deer",

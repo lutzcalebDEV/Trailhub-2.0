@@ -1,5 +1,5 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-11-10T22:37:29+00:00",
+  "generatedAt": "2026-11-10T22:41:24+00:00",
   "demo": false,
   "cameras": [
     {
@@ -19,7 +19,7 @@ window.TRAILHUB_DATA = {
   ],
   "captures": [
     {
-      "species": "Animal",
+      "species": "Bear",
       "camera": "Camera 6a309e41bdc62e4448c0a370",
       "date": "2026-11-10T22:32:54+00:00",
       "uploaded": "2026-11-10T22:33:16.397000+00:00",
@@ -27,14 +27,15 @@ window.TRAILHUB_DATA = {
       "isNight": true,
       "todSource": "tag",
       "temp": 64,
-      "confidence": null,
+      "confidence": 0.5,
       "moon": null,
       "id": "sp_6af39bacedb86b75e72d7d66",
-      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af39bacedb86b75e72d7d66.jpg",
       "overlayRead": 2,
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af39bacedb86b75e72d7d66.jpg",
       "tags": [
-        "Animal"
+        "Bear"
       ],
+      "aiTagged": true,
       "weather": {
         "tempF": 66,
         "wind": 5,
@@ -54,11 +55,11 @@ window.TRAILHUB_DATA = {
       "isNight": true,
       "todSource": "tag",
       "temp": 64,
-      "confidence": 0.85,
+      "confidence": 0.5,
       "moon": null,
       "id": "sp_6af39bacedb86b75e72d7d68",
-      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af39bacedb86b75e72d7d68.jpg",
       "overlayRead": 2,
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af39bacedb86b75e72d7d68.jpg",
       "tags": [
         "Deer"
       ],
