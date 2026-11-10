@@ -1,5 +1,5 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-11-10T01:39:47+00:00",
+  "generatedAt": "2026-11-10T01:46:20+00:00",
   "demo": false,
   "cameras": [
     {
@@ -32,7 +32,8 @@ window.TRAILHUB_DATA = {
       "media": "video",
       "tags": [
         "Animal"
-      ]
+      ],
+      "note": "Older video from July 13th. Creek trail in front of climbing stand."
     },
     {
       "id": "up_ffef9605-2c7b-40e7-8c57-4cffe6707237",
@@ -48,7 +49,8 @@ window.TRAILHUB_DATA = {
       "media": "video",
       "tags": [
         "Animal"
-      ]
+      ],
+      "note": "From back in the spring, but a good video"
     },
     {
       "id": "up_80400ae4-988b-4e04-b864-27c590b188ac",
