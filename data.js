@@ -1,5 +1,5 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-11-10T00:49:07+00:00",
+  "generatedAt": "2026-11-10T00:51:13+00:00",
   "demo": false,
   "cameras": [
     {
@@ -147,6 +147,22 @@ window.TRAILHUB_DATA = {
       ]
     },
     {
+      "id": "up_36214b84-13c1-46a0-b41a-963d6a6d0aab",
+      "species": "Animal",
+      "camera": "Camera 6a309e41bdc62e4448c0a370",
+      "date": "2026-11-10T03:23:11.163000+00:00",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/up_36214b84-13c1-46a0-b41a-963d6a6d0aab.mp4",
+      "isNight": true,
+      "temp": null,
+      "confidence": null,
+      "moon": null,
+      "uploadedBySite": true,
+      "media": "video",
+      "tags": [
+        "Animal"
+      ]
+    },
+    {
       "species": "Buck",
       "camera": "Camera 6a309e41bdc62e4448c0a370",
       "date": "2026-11-09T10:20:45+00:00",
@@ -255,6 +271,84 @@ window.TRAILHUB_DATA = {
         "trend": "Steady",
         "sky": "Dry"
       }
+    },
+    {
+      "id": "up_7d82dc25-e517-4609-8e18-b313b3bfc802",
+      "species": "Animal",
+      "camera": "Camera 6a309e41bdc62e4448c0a370",
+      "date": "2026-11-09T05:00:36+00:00",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/up_7d82dc25-e517-4609-8e18-b313b3bfc802.jpg",
+      "isNight": true,
+      "temp": 48,
+      "confidence": null,
+      "moon": null,
+      "uploadedBySite": true,
+      "media": "photo",
+      "tags": [
+        "Animal"
+      ],
+      "weather": {
+        "tempF": 48,
+        "wind": 7,
+        "windDir": "NW",
+        "windBand": "5\u201310 mph",
+        "pressure": 30.01,
+        "trend": "Steady",
+        "sky": "Dry"
+      },
+      "tempEstimated": true
+    },
+    {
+      "id": "up_0517000f-5db2-4d11-be97-402838f9683a",
+      "species": "Animal",
+      "camera": "Camera 6a309e41bdc62e4448c0a370",
+      "date": "2026-11-09T05:00:36+00:00",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/up_0517000f-5db2-4d11-be97-402838f9683a.jpg",
+      "isNight": true,
+      "temp": 48,
+      "confidence": null,
+      "moon": null,
+      "uploadedBySite": true,
+      "media": "photo",
+      "tags": [
+        "Animal"
+      ],
+      "weather": {
+        "tempF": 48,
+        "wind": 7,
+        "windDir": "NW",
+        "windBand": "5\u201310 mph",
+        "pressure": 30.01,
+        "trend": "Steady",
+        "sky": "Dry"
+      },
+      "tempEstimated": true
+    },
+    {
+      "id": "up_b9714254-5701-4201-934f-15d101361e17",
+      "species": "Animal",
+      "camera": "Camera 6a309e41bdc62e4448c0a370",
+      "date": "2026-11-09T05:00:34+00:00",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/up_b9714254-5701-4201-934f-15d101361e17.jpg",
+      "isNight": true,
+      "temp": 48,
+      "confidence": null,
+      "moon": null,
+      "uploadedBySite": true,
+      "media": "photo",
+      "tags": [
+        "Animal"
+      ],
+      "weather": {
+        "tempF": 48,
+        "wind": 7,
+        "windDir": "NW",
+        "windBand": "5\u201310 mph",
+        "pressure": 30.01,
+        "trend": "Steady",
+        "sky": "Dry"
+      },
+      "tempEstimated": true
     },
     {
       "species": "Vehicle",
@@ -2586,6 +2680,84 @@ window.TRAILHUB_DATA = {
         "trend": "Steady",
         "sky": "Dry"
       }
+    },
+    {
+      "id": "up_55f3a461-3022-4e4c-8adf-80756253d0ef",
+      "species": "Animal",
+      "camera": "Camera 6a309e41bdc62e4448c0a370",
+      "date": "2026-10-30T17:49:18+00:00",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/up_55f3a461-3022-4e4c-8adf-80756253d0ef.jpg",
+      "isNight": false,
+      "temp": 76,
+      "confidence": null,
+      "moon": null,
+      "uploadedBySite": true,
+      "media": "photo",
+      "tags": [
+        "Animal"
+      ],
+      "weather": {
+        "tempF": 76,
+        "wind": 3,
+        "windDir": "N",
+        "windBand": "Under 5 mph",
+        "pressure": 30.2,
+        "trend": "Steady",
+        "sky": "Dry"
+      },
+      "tempEstimated": true
+    },
+    {
+      "id": "up_1c9b6bce-ffcb-4c06-8f90-2d157827ff3b",
+      "species": "Animal",
+      "camera": "Camera 6a309e41bdc62e4448c0a370",
+      "date": "2026-10-30T13:20:48+00:00",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/up_1c9b6bce-ffcb-4c06-8f90-2d157827ff3b.jpg",
+      "isNight": false,
+      "temp": 54,
+      "confidence": null,
+      "moon": null,
+      "uploadedBySite": true,
+      "media": "photo",
+      "tags": [
+        "Animal"
+      ],
+      "weather": {
+        "tempF": 54,
+        "wind": 5,
+        "windDir": "N",
+        "windBand": "5\u201310 mph",
+        "pressure": 30.22,
+        "trend": "Rising",
+        "sky": "Dry"
+      },
+      "tempEstimated": true
+    },
+    {
+      "id": "up_e4da592d-bad9-47fb-a825-3c2b8cbe1a33",
+      "species": "Animal",
+      "camera": "Camera 6a309e41bdc62e4448c0a370",
+      "date": "2026-10-30T13:20:46+00:00",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/up_e4da592d-bad9-47fb-a825-3c2b8cbe1a33.jpg",
+      "isNight": false,
+      "temp": 54,
+      "confidence": null,
+      "moon": null,
+      "uploadedBySite": true,
+      "media": "photo",
+      "tags": [
+        "Animal"
+      ],
+      "weather": {
+        "tempF": 54,
+        "wind": 5,
+        "windDir": "N",
+        "windBand": "5\u201310 mph",
+        "pressure": 30.22,
+        "trend": "Rising",
+        "sky": "Dry"
+      },
+      "tempEstimated": true
     },
     {
       "species": "Deer",
