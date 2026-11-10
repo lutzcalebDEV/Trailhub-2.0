@@ -1,5 +1,5 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-11-10T00:41:28+00:00",
+  "generatedAt": "2026-11-10T00:45:17+00:00",
   "demo": false,
   "cameras": [
     {
@@ -56,6 +56,22 @@ window.TRAILHUB_DATA = {
       "camera": "Camera 6a309e41bdc62e4448c0a370",
       "date": "2026-11-10T03:33:39.162000+00:00",
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/up_f048f16b-8c8f-4ba6-bb32-a3fa23d8ad52.mp4",
+      "isNight": true,
+      "temp": null,
+      "confidence": null,
+      "moon": null,
+      "uploadedBySite": true,
+      "media": "video",
+      "tags": [
+        "Animal"
+      ]
+    },
+    {
+      "id": "up_5137e2ec-56c0-49d6-9f89-2b59aec6fb17",
+      "species": "Animal",
+      "camera": "Camera 6a309e41bdc62e4448c0a370",
+      "date": "2026-11-10T03:29:42.263000+00:00",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/up_5137e2ec-56c0-49d6-9f89-2b59aec6fb17.mp4",
       "isNight": true,
       "temp": null,
       "confidence": null,
@@ -19984,9 +20000,9 @@ window.TRAILHUB_DATA = {
   ],
   "weatherHours": {
     "windBand": {
-      "5\u201310 mph": 1443,
+      "5\u201310 mph": 1442,
       "10\u201315 mph": 245,
-      "Under 5 mph": 1745,
+      "Under 5 mph": 1746,
       "15+ mph": 75
     },
     "trend": {
