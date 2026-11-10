@@ -1,5 +1,5 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-11-10T00:41:01+00:00",
+  "generatedAt": "2026-11-10T00:41:28+00:00",
   "demo": false,
   "cameras": [
     {
@@ -19984,9 +19984,9 @@ window.TRAILHUB_DATA = {
   ],
   "weatherHours": {
     "windBand": {
-      "5\u201310 mph": 1442,
+      "5\u201310 mph": 1443,
       "10\u201315 mph": 245,
-      "Under 5 mph": 1746,
+      "Under 5 mph": 1745,
       "15+ mph": 75
     },
     "trend": {
