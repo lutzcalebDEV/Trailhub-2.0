@@ -1,5 +1,5 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-11-10T01:01:22+00:00",
+  "generatedAt": "2026-11-10T01:06:25+00:00",
   "demo": false,
   "cameras": [
     {
@@ -48,7 +48,8 @@ window.TRAILHUB_DATA = {
       "media": "video",
       "tags": [
         "Animal"
-      ]
+      ],
+      "note": "Watch till end. He turns and walks back into view."
     },
     {
       "id": "up_8c901d43-e193-4b41-b545-0538ef961201",
