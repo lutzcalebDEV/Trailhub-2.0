@@ -1,5 +1,5 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-11-10T13:52:35+00:00",
+  "generatedAt": "2026-11-10T14:31:48+00:00",
   "demo": false,
   "cameras": [
     {
@@ -18,6 +18,62 @@ window.TRAILHUB_DATA = {
     }
   ],
   "captures": [
+    {
+      "species": "Empty",
+      "camera": "Camera 6a309e41bdc62e4448c0a370",
+      "date": "2026-11-10T14:27:50+00:00",
+      "uploaded": "2026-11-10T14:28:16.196000+00:00",
+      "timeSource": "camera",
+      "isNight": false,
+      "todSource": "tag",
+      "temp": 52,
+      "confidence": 0.98,
+      "moon": null,
+      "id": "sp_6af32a005ac24fe3d6dd0d28",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af32a005ac24fe3d6dd0d28.jpg",
+      "overlayRead": 2,
+      "tags": [
+        "Empty"
+      ],
+      "aiTagged": true,
+      "weather": {
+        "tempF": 52,
+        "wind": 5,
+        "windDir": "N",
+        "windBand": "Under 5 mph",
+        "pressure": 30.1,
+        "trend": "Steady",
+        "sky": "Dry"
+      }
+    },
+    {
+      "species": "Empty",
+      "camera": "Camera 6a309e41bdc62e4448c0a370",
+      "date": "2026-11-10T14:27:49+00:00",
+      "uploaded": "2026-11-10T14:28:16.196000+00:00",
+      "timeSource": "camera",
+      "isNight": false,
+      "todSource": "tag",
+      "temp": 52,
+      "confidence": 0.95,
+      "moon": null,
+      "id": "sp_6af32a005ac24fe3d6dd0d2a",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af32a005ac24fe3d6dd0d2a.jpg",
+      "overlayRead": 2,
+      "tags": [
+        "Empty"
+      ],
+      "aiTagged": true,
+      "weather": {
+        "tempF": 52,
+        "wind": 5,
+        "windDir": "N",
+        "windBand": "Under 5 mph",
+        "pressure": 30.1,
+        "trend": "Steady",
+        "sky": "Dry"
+      }
+    },
     {
       "species": "Doe",
       "camera": "Camera 6a309e41bdc62e4448c0a370",
@@ -38,10 +94,10 @@ window.TRAILHUB_DATA = {
       "aiTagged": true,
       "weather": {
         "tempF": 43,
-        "wind": 5,
+        "wind": 3,
         "windDir": "N",
-        "windBand": "5\u201310 mph",
-        "pressure": 30.1,
+        "windBand": "Under 5 mph",
+        "pressure": 30.12,
         "trend": "Steady",
         "sky": "Dry"
       }
@@ -66,10 +122,10 @@ window.TRAILHUB_DATA = {
       "aiTagged": true,
       "weather": {
         "tempF": 43,
-        "wind": 5,
+        "wind": 3,
         "windDir": "N",
-        "windBand": "5\u201310 mph",
-        "pressure": 30.1,
+        "windBand": "Under 5 mph",
+        "pressure": 30.12,
         "trend": "Steady",
         "sky": "Dry"
       }
@@ -82,7 +138,7 @@ window.TRAILHUB_DATA = {
       "timeSource": "camera",
       "isNight": true,
       "todSource": "tag",
-      "temp": 43,
+      "temp": 45,
       "confidence": 0.85,
       "moon": null,
       "id": "sp_6af30424ee51ffbe2954f142",
@@ -93,11 +149,11 @@ window.TRAILHUB_DATA = {
       ],
       "aiTagged": true,
       "weather": {
-        "tempF": 43,
-        "wind": 6,
+        "tempF": 45,
+        "wind": 4,
         "windDir": "N",
-        "windBand": "5\u201310 mph",
-        "pressure": 30.09,
+        "windBand": "Under 5 mph",
+        "pressure": 30.11,
         "trend": "Steady",
         "sky": "Dry"
       },
@@ -122,11 +178,11 @@ window.TRAILHUB_DATA = {
       ],
       "aiTagged": true,
       "weather": {
-        "tempF": 43,
-        "wind": 6,
+        "tempF": 45,
+        "wind": 4,
         "windDir": "N",
-        "windBand": "5\u201310 mph",
-        "pressure": 30.09,
+        "windBand": "Under 5 mph",
+        "pressure": 30.11,
         "trend": "Steady",
         "sky": "Dry"
       }
@@ -20559,18 +20615,18 @@ window.TRAILHUB_DATA = {
   ],
   "weatherHours": {
     "windBand": {
-      "5\u201310 mph": 1445,
+      "5\u201310 mph": 1443,
       "10\u201315 mph": 245,
-      "Under 5 mph": 1755,
+      "Under 5 mph": 1759,
       "15+ mph": 75
     },
     "trend": {
       "Falling": 697,
-      "Steady": 2107,
+      "Steady": 2109,
       "Rising": 716
     },
     "sky": {
-      "Dry": 2928,
+      "Dry": 2930,
       "Rain": 592
     }
   }
