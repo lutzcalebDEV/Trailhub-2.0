@@ -1,5 +1,5 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-11-10T00:16:21+00:00",
+  "generatedAt": "2026-11-10T00:39:07+00:00",
   "demo": false,
   "cameras": [
     {
@@ -19,6 +19,22 @@ window.TRAILHUB_DATA = {
   ],
   "captures": [
     {
+      "id": "up_6aabc69e-1812-4239-aa1e-0a242c8188a3",
+      "species": "Animal",
+      "camera": "Camera 6a309e41bdc62e4448c0a370",
+      "date": "2026-11-10T03:34:59.542000+00:00",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/up_6aabc69e-1812-4239-aa1e-0a242c8188a3.mp4",
+      "isNight": true,
+      "temp": null,
+      "confidence": null,
+      "moon": null,
+      "uploadedBySite": true,
+      "media": "video",
+      "tags": [
+        "Animal"
+      ]
+    },
+    {
       "species": "Buck",
       "camera": "Camera 6a309e41bdc62e4448c0a370",
       "date": "2026-11-09T10:20:45+00:00",
@@ -36,10 +52,10 @@ window.TRAILHUB_DATA = {
         "Buck"
       ],
       "weather": {
-        "tempF": 46,
-        "wind": 3,
-        "windDir": "N",
-        "windBand": "Under 5 mph",
+        "tempF": 45,
+        "wind": 5,
+        "windDir": "SW",
+        "windBand": "5\u201310 mph",
         "pressure": 30.02,
         "trend": "Steady",
         "sky": "Dry"
@@ -63,10 +79,10 @@ window.TRAILHUB_DATA = {
         "Buck"
       ],
       "weather": {
-        "tempF": 46,
-        "wind": 3,
-        "windDir": "N",
-        "windBand": "Under 5 mph",
+        "tempF": 45,
+        "wind": 5,
+        "windDir": "SW",
+        "windBand": "5\u201310 mph",
         "pressure": 30.02,
         "trend": "Steady",
         "sky": "Dry"
@@ -19920,18 +19936,18 @@ window.TRAILHUB_DATA = {
   ],
   "weatherHours": {
     "windBand": {
-      "5\u201310 mph": 1436,
+      "5\u201310 mph": 1443,
       "10\u201315 mph": 245,
-      "Under 5 mph": 1738,
+      "Under 5 mph": 1745,
       "15+ mph": 75
     },
     "trend": {
-      "Falling": 695,
-      "Steady": 2087,
-      "Rising": 712
+      "Falling": 697,
+      "Steady": 2096,
+      "Rising": 715
     },
     "sky": {
-      "Dry": 2902,
+      "Dry": 2916,
       "Rain": 592
     }
   }
