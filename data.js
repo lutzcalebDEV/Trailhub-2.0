@@ -1,5 +1,5 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-11-10T00:48:24+00:00",
+  "generatedAt": "2026-11-10T00:49:07+00:00",
   "demo": false,
   "cameras": [
     {
@@ -24,6 +24,22 @@ window.TRAILHUB_DATA = {
       "camera": "Camera 6a309e41bdc62e4448c0a370",
       "date": "2026-11-10T03:39:54.525000+00:00",
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/up_80400ae4-988b-4e04-b864-27c590b188ac.mp4",
+      "isNight": true,
+      "temp": null,
+      "confidence": null,
+      "moon": null,
+      "uploadedBySite": true,
+      "media": "video",
+      "tags": [
+        "Animal"
+      ]
+    },
+    {
+      "id": "up_aa084881-74f5-4523-9a07-6c381d179636",
+      "species": "Animal",
+      "camera": "Camera 6a309e41bdc62e4448c0a370",
+      "date": "2026-11-10T03:38:23.322000+00:00",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/up_aa084881-74f5-4523-9a07-6c381d179636.mp4",
       "isNight": true,
       "temp": null,
       "confidence": null,
