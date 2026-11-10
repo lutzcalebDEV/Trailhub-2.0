@@ -1,5 +1,5 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-11-10T00:54:52+00:00",
+  "generatedAt": "2026-11-10T01:01:22+00:00",
   "demo": false,
   "cameras": [
     {
@@ -144,7 +144,8 @@ window.TRAILHUB_DATA = {
       "media": "video",
       "tags": [
         "Animal"
-      ]
+      ],
+      "note": "Trail to right as you enter, on farm side of property"
     },
     {
       "id": "up_36214b84-13c1-46a0-b41a-963d6a6d0aab",
@@ -20246,18 +20247,18 @@ window.TRAILHUB_DATA = {
   ],
   "weatherHours": {
     "windBand": {
-      "5\u201310 mph": 1442,
+      "5\u201310 mph": 1443,
       "10\u201315 mph": 245,
       "Under 5 mph": 1746,
       "15+ mph": 75
     },
     "trend": {
       "Falling": 697,
-      "Steady": 2096,
+      "Steady": 2097,
       "Rising": 715
     },
     "sky": {
-      "Dry": 2916,
+      "Dry": 2917,
       "Rain": 592
     }
   }
