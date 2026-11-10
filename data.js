@@ -1,5 +1,5 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-11-10T04:01:15+00:00",
+  "generatedAt": "2026-11-10T04:16:18+00:00",
   "demo": false,
   "cameras": [
     {
@@ -71,6 +71,60 @@ window.TRAILHUB_DATA = {
       },
       "tempEstimated": true,
       "note": "From back in the spring, but a good video"
+    },
+    {
+      "species": "Buck",
+      "camera": "Camera 6a309e41bdc62e4448c0a370",
+      "date": "2026-11-10T04:12:34+00:00",
+      "uploaded": "2026-11-10T04:13:15.730000+00:00",
+      "timeSource": "camera",
+      "isNight": true,
+      "todSource": "tag",
+      "temp": 45,
+      "confidence": null,
+      "moon": null,
+      "id": "sp_6af299db289dec2441cd62d9",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af299db289dec2441cd62d9.jpg",
+      "overlayRead": 2,
+      "tags": [
+        "Buck"
+      ],
+      "weather": {
+        "tempF": 50,
+        "wind": 5,
+        "windDir": "N",
+        "windBand": "Under 5 mph",
+        "pressure": 30.06,
+        "trend": "Steady",
+        "sky": "Dry"
+      }
+    },
+    {
+      "species": "Buck",
+      "camera": "Camera 6a309e41bdc62e4448c0a370",
+      "date": "2026-11-10T04:12:33+00:00",
+      "uploaded": "2026-11-10T04:13:15.730000+00:00",
+      "timeSource": "camera",
+      "isNight": true,
+      "todSource": "tag",
+      "temp": 45,
+      "confidence": null,
+      "moon": null,
+      "id": "sp_6af299db289dec2441cd62db",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af299db289dec2441cd62db.jpg",
+      "overlayRead": 2,
+      "tags": [
+        "Buck"
+      ],
+      "weather": {
+        "tempF": 50,
+        "wind": 5,
+        "windDir": "N",
+        "windBand": "Under 5 mph",
+        "pressure": 30.06,
+        "trend": "Steady",
+        "sky": "Dry"
+      }
     },
     {
       "id": "up_80400ae4-988b-4e04-b864-27c590b188ac",

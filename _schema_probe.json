@@ -2,6 +2,52 @@
   {
     "fields": {
       "camera": "6a309e41bdc62e4448c0a370",
+      "date": "2026-11-10T04:13:15.730Z",
+      "id": "6af299db289dec2441cd62d9",
+      "large": "<omitted>",
+      "medium": "<omitted>",
+      "originDate": "2026-11-09T23:12:34.000Z",
+      "originName": "PICT0473.JPG",
+      "originSize": 47922,
+      "preview": [],
+      "small": "<omitted>",
+      "tag": [
+        "buck",
+        "night"
+      ]
+    },
+    "detected": [
+      "buck",
+      "night"
+    ],
+    "normalized": "Buck"
+  },
+  {
+    "fields": {
+      "camera": "6a309e41bdc62e4448c0a370",
+      "date": "2026-11-10T04:13:15.730Z",
+      "id": "6af299db289dec2441cd62db",
+      "large": "<omitted>",
+      "medium": "<omitted>",
+      "originDate": "2026-11-09T23:12:33.000Z",
+      "originName": "PICT0472.JPG",
+      "originSize": 29033,
+      "preview": [],
+      "small": "<omitted>",
+      "tag": [
+        "buck",
+        "night"
+      ]
+    },
+    "detected": [
+      "buck",
+      "night"
+    ],
+    "normalized": "Buck"
+  },
+  {
+    "fields": {
+      "camera": "6a309e41bdc62e4448c0a370",
       "date": "2026-11-09T10:21:06.558Z",
       "id": "6af19e9289d688f70027884a",
       "large": "<omitted>",
@@ -63,48 +109,6 @@
     },
     "detected": [
       "night"
-    ],
-    "normalized": "Animal"
-  },
-  {
-    "fields": {
-      "camera": "6a309e41bdc62e4448c0a370",
-      "date": "2026-11-09T07:31:20.038Z",
-      "id": "6af176c850e785db804bfdc5",
-      "large": "<omitted>",
-      "medium": "<omitted>",
-      "originDate": "2026-11-09T02:30:52.000Z",
-      "originName": "PICT0468.JPG",
-      "originSize": 28419,
-      "preview": [],
-      "small": "<omitted>",
-      "tag": [
-        "night"
-      ]
-    },
-    "detected": [
-      "night"
-    ],
-    "normalized": "Animal"
-  },
-  {
-    "fields": {
-      "camera": "6a309e41bdc62e4448c0a370",
-      "date": "2026-11-07T20:24:24.094Z",
-      "id": "6aef88f8f83ef356519d82df",
-      "large": "<omitted>",
-      "medium": "<omitted>",
-      "originDate": "2026-11-07T15:24:01.000Z",
-      "originName": "PICT0467.JPG",
-      "originSize": 75266,
-      "preview": [],
-      "small": "<omitted>",
-      "tag": [
-        "day"
-      ]
-    },
-    "detected": [
-      "day"
     ],
     "normalized": "Animal"
   }
