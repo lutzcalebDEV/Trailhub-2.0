@@ -3693,5 +3693,15 @@
   "confidence": 0.8,
   "label": "Deer",
   "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6af4226329617027b78e5dcb": {
+  "confidence": 0.99,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6af4226329617027b78e5dce": {
+  "confidence": 0.8,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
  }
 }
