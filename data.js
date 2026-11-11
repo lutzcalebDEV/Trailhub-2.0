@@ -1,5 +1,5 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-11-11T08:11:34+00:00",
+  "generatedAt": "2026-11-11T09:16:20+00:00",
   "demo": false,
   "cameras": [
     {
@@ -30,8 +30,8 @@ window.TRAILHUB_DATA = {
       "confidence": 0.99,
       "moon": null,
       "id": "sp_6af4226329617027b78e5dcb",
-      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af4226329617027b78e5dcb.jpg",
       "overlayRead": 2,
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af4226329617027b78e5dcb.jpg",
       "tags": [
         "Empty"
       ],
@@ -59,8 +59,8 @@ window.TRAILHUB_DATA = {
       "confidence": 0.8,
       "moon": null,
       "id": "sp_6af4226329617027b78e5dce",
-      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af4226329617027b78e5dce.jpg",
       "overlayRead": 2,
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af4226329617027b78e5dce.jpg",
       "tags": [
         "Empty"
       ],
