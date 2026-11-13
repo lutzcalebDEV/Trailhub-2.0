@@ -1,5 +1,5 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-11-13T20:46:16+00:00",
+  "generatedAt": "2026-11-13T21:41:22+00:00",
   "demo": false,
   "cameras": [
     {
@@ -13118,7 +13118,7 @@ window.TRAILHUB_DATA = {
       "date": "2026-08-08T19:24:20.820000+00:00",
       "isNight": false,
       "temp": 83,
-      "confidence": 0.5,
+      "confidence": 0.98,
       "moon": null,
       "id": "sp_6a778264da80eec62c2a20ff",
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6a778264da80eec62c2a20ff.jpg",
@@ -13169,7 +13169,7 @@ window.TRAILHUB_DATA = {
       "date": "2026-08-08T19:24:20.820000+00:00",
       "isNight": false,
       "temp": 84,
-      "confidence": 0.5,
+      "confidence": 0.99,
       "moon": null,
       "id": "sp_6a778264da80eec62c2a2103",
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6a778264da80eec62c2a2103.jpg",
@@ -13270,7 +13270,7 @@ window.TRAILHUB_DATA = {
       "date": "2026-08-08T18:21:22.498000+00:00",
       "isNight": false,
       "temp": 85,
-      "confidence": 0.5,
+      "confidence": 0.99,
       "moon": null,
       "id": "sp_6a7773a289d29f3c7974c60d",
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6a7773a289d29f3c7974c60d.jpg",
