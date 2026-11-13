@@ -89,7 +89,7 @@ export function collapseBursts(captures, limit = Infinity, gapMs = 120000) {
 
 // Where and when to sit: the camera and 3-hour window with the most recent activity.
 // Sightings fade by half each week, so a pattern from last week beats an old one.
-const NOT_GAME = new Set(["Person", "Vehicle", "Empty"]);
+export const NOT_GAME = new Set(["Person", "Vehicle", "Empty"]);
 const MIN_SIGHTINGS = 8;
 export function bestSit(captures, ov, now = Date.now(), days = 21) {
   const recent = captures.filter((c) =>
@@ -169,6 +169,9 @@ export function weatherRates(captures, hours) {
 
 // False triggers aren't activity, so charts and summaries leave them out.
 export const withoutEmpty = (captures, ov) => captures.filter((c) => effectiveSpecies(c, ov) !== "Empty");
+
+// Charts describe wildlife, so people, vehicles and false triggers don't count.
+export const animalActivity = (captures, ov) => captures.filter((c) => !NOT_GAME.has(effectiveSpecies(c, ov)));
 
 export function speciesList(captures, ov) {
   return speciesCounts(captures, ov).map((x) => x.species);

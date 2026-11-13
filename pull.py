@@ -1033,6 +1033,7 @@ def prune_store(store):
 BURST_SECONDS = 120
 LOW_CONFIDENCE = 0.5  # below the site's 0.7 line, so the photo goes to Identify
 _DEER_LABELS = {"Buck", "Doe", "Deer"}
+_PEOPLE_LABELS = {"Person", "Vehicle"}  # someone on a mower can fairly be either
 
 
 def flag_burst_conflicts(captures):
@@ -1043,7 +1044,9 @@ def flag_burst_conflicts(captures):
     """
     def kind(c):
         species = c.get("species")
-        return "Deer" if species in _DEER_LABELS else species
+        if species in _DEER_LABELS:
+            return "Deer"
+        return "People" if species in _PEOPLE_LABELS else species
 
     last_by_camera = {}
     burst_by_camera = {}

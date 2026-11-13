@@ -5,7 +5,7 @@ import { Stat, Panel, Histogram, HourStrip, Bars, SplitBar, CalHeat, Empty } fro
 import { Icon } from "../icons.js";
 import { labelHour } from "../core.js";
 import {
-  filterCaptures, weatherRates, withoutEmpty, hourHistogram, dayNightSplit, daylightPct, peakHour,
+  filterCaptures, weatherRates, animalActivity, NOT_GAME, hourHistogram, dayNightSplit, daylightPct, peakHour,
   weekdayCounts, speciesByDayNight, speciesActivity, peakWindow,
   tempBuckets, moonCounts, cameraCounts, isoDayCounts,
 } from "../analytics.js";
@@ -14,8 +14,8 @@ export const windowLabel = (p) => (p ? labelHour(p.start) + "–" + labelHour(p.
 
 export function Insights(app) {
   const { captures, filters, setFilter, spList, data, ov, camName } = app;
-  // Asking for Empty on purpose still shows it; otherwise it isn't activity.
-  const filtered = filters.species === "Empty" ? app.filtered : withoutEmpty(app.filtered, ov);
+  // Choosing Person, Vehicle or Empty on purpose still charts them.
+  const filtered = NOT_GAME.has(filters.species) ? app.filtered : animalActivity(app.filtered, ov);
 
   const filterBar = html`<${FilterBar} filters=${filters} set=${setFilter}
     cameras=${data.cameras} speciesList=${spList} count=${filtered.length} camName=${camName} />`;
