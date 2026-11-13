@@ -1,5 +1,5 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-11-13T18:46:20+00:00",
+  "generatedAt": "2026-11-13T19:37:03+00:00",
   "demo": false,
   "cameras": [
     {
@@ -18,6 +18,44 @@ window.TRAILHUB_DATA = {
     }
   ],
   "captures": [
+    {
+      "species": "Person",
+      "camera": "Camera 6a30af992e5969f7ed9fdc5c",
+      "date": "2026-11-13T19:33:15+00:00",
+      "uploaded": "2026-11-13T19:33:36.516000+00:00",
+      "timeSource": "camera",
+      "isNight": false,
+      "todSource": "tag",
+      "temp": 52,
+      "confidence": 0.99,
+      "moon": null,
+      "id": "sp_6af76610ab9b7b3022ea0f01",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af76610ab9b7b3022ea0f01.jpg",
+      "overlayRead": 2,
+      "tags": [
+        "Person"
+      ],
+      "aiTagged": true
+    },
+    {
+      "species": "Person",
+      "camera": "Camera 6a30af992e5969f7ed9fdc5c",
+      "date": "2026-11-13T19:33:14+00:00",
+      "uploaded": "2026-11-13T19:33:36.516000+00:00",
+      "timeSource": "camera",
+      "isNight": false,
+      "todSource": "tag",
+      "temp": 52,
+      "confidence": 0.99,
+      "moon": null,
+      "id": "sp_6af76610ab9b7b3022ea0f03",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af76610ab9b7b3022ea0f03.jpg",
+      "overlayRead": 2,
+      "tags": [
+        "Person"
+      ],
+      "aiTagged": true
+    },
     {
       "species": "Empty",
       "camera": "Camera 6a309e41bdc62e4448c0a370",
