@@ -348,12 +348,218 @@ export function LightboxEdit({ capture, species, meta, onMeta, onToggleFavorite,
   </div>`;
 }
 
+/* -------------------------------- Zoom ---------------------------------- */
+const MAX_ZOOM = 5;
+const ZOOM_STEP = 1.6;
+const TAP_ZOOM = 2.5;
+const DOUBLE_TAP_MS = 300;
+const HINT_KEY = "trailhub-zoom-hint";
+const HINT_TIMES = 3;
+
+const formatZoom = (s) => (Math.round(s * 10) / 10).toString().replace(/\.0$/, "") + "×";
+
+// A photo you can pinch, double-tap, scroll or drag to zoom and pan. The frame keeps
+// its size and clips the enlarged photo, so zooming never covers the details panel.
+// `controls` receives zoomIn / zoomOut / reset for keyboard shortcuts.
+export function ZoomImage({ capture, alt, onZoomChange, controls }) {
+  const frame = useRef(null);
+  const [view, setView] = useState({ s: 1, x: 0, y: 0 });
+  const [moving, setMoving] = useState(false);
+  const [hint, setHint] = useState(null);
+  const viewRef = useRef(view);
+  viewRef.current = view;
+  const pointers = useRef(new Map());
+  const gesture = useRef(null);
+  const lastTap = useRef(null);
+  const lastTouchEnd = useRef(0);
+
+  // Keep the photo covering the frame: no empty gaps at the edges while zoomed.
+  const clamp = (s, x, y) => {
+    const el = frame.current;
+    const scale = Math.min(MAX_ZOOM, Math.max(1, s));
+    if (!el || scale === 1) return { s: 1, x: 0, y: 0 };
+    const w = el.clientWidth;
+    const h = el.clientHeight;
+    return {
+      s: scale,
+      x: Math.min(0, Math.max(w - w * scale, x)),
+      y: Math.min(0, Math.max(h - h * scale, y)),
+    };
+  };
+  // Zoom so the point under (fx, fy) stays put, as pinch and scroll zoom feel natural.
+  const zoomAt = (s, fx, fy, from = viewRef.current) => {
+    const target = Math.min(MAX_ZOOM, Math.max(1, s));
+    const k = target / from.s;
+    setView(clamp(target, fx - (fx - from.x) * k, fy - (fy - from.y) * k));
+  };
+  const local = (e) => {
+    const r = frame.current.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+  };
+  const middle = () => ({ x: frame.current.clientWidth / 2, y: frame.current.clientHeight / 2 });
+  const zoomIn = () => { const m = middle(); zoomAt(viewRef.current.s * ZOOM_STEP, m.x, m.y); };
+  const zoomOut = () => { const m = middle(); zoomAt(viewRef.current.s / ZOOM_STEP, m.x, m.y); };
+  const reset = () => setView({ s: 1, x: 0, y: 0 });
+  const toggleAt = (p) => (viewRef.current.s > 1 ? reset() : zoomAt(TAP_ZOOM, p.x, p.y));
+  if (controls) controls.current = { zoomIn, zoomOut, reset };
+
+  const zoomed = view.s > 1;
+  useEffect(() => { if (onZoomChange) onZoomChange(zoomed); }, [zoomed]);
+  useEffect(() => () => { if (onZoomChange) onZoomChange(false); }, []);
+
+  // Scroll wheel and trackpad pinch, plus Safari's own pinch gesture, need listeners
+  // that can cancel the page's default zoom and scroll.
+  useEffect(() => {
+    const el = frame.current;
+    const onWheel = (e) => {
+      e.preventDefault();
+      const p = local(e);
+      const speed = e.ctrlKey ? 0.01 : 0.0015;
+      zoomAt(viewRef.current.s * Math.exp(-e.deltaY * speed), p.x, p.y);
+    };
+    const stopPageZoom = (e) => e.preventDefault();
+    el.addEventListener("wheel", onWheel, { passive: false });
+    el.addEventListener("gesturestart", stopPageZoom);
+    el.addEventListener("gesturechange", stopPageZoom);
+    // Rotating the phone changes the frame, so start over. Other resize events, like
+    // Safari's toolbar sliding in and out, leave the zoom alone.
+    let size = `${el.clientWidth}x${el.clientHeight}`;
+    const onResize = () => {
+      requestAnimationFrame(() => {
+        const now = `${el.clientWidth}x${el.clientHeight}`;
+        if (now === size) return;
+        size = now;
+        setView({ s: 1, x: 0, y: 0 });
+      });
+    };
+    window.addEventListener("resize", onResize);
+    window.addEventListener("orientationchange", onResize);
+    return () => {
+      el.removeEventListener("wheel", onWheel);
+      el.removeEventListener("gesturestart", stopPageZoom);
+      el.removeEventListener("gesturechange", stopPageZoom);
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("orientationchange", onResize);
+    };
+  }, []);
+
+  // A short how-to, shown the first few times on each device.
+  useEffect(() => {
+    let shown = 0;
+    try { shown = Number(localStorage.getItem(HINT_KEY)) || 0; } catch (e) {}
+    if (shown >= HINT_TIMES) return;
+    try { localStorage.setItem(HINT_KEY, String(shown + 1)); } catch (e) {}
+    const touch = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+    setHint(touch ? "Pinch or double-tap to zoom" : "Scroll or double-click to zoom");
+    const t = setTimeout(() => setHint(null), 3200);
+    return () => clearTimeout(t);
+  }, []);
+
+  const startGesture = () => {
+    const pts = [...pointers.current.values()];
+    if (pts.length >= 2) {
+      const [a, b] = pts;
+      gesture.current = {
+        kind: "pinch", view: viewRef.current,
+        dist: Math.hypot(a.x - b.x, a.y - b.y) || 1,
+        mid: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 },
+      };
+    } else if (pts.length === 1) {
+      gesture.current = { kind: "pan", view: viewRef.current, from: pts[0], moved: false };
+    } else {
+      gesture.current = null;
+    }
+  };
+
+  const onPointerDown = (e) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    frame.current.setPointerCapture(e.pointerId);
+    pointers.current.set(e.pointerId, local(e));
+    startGesture();
+    if (pointers.current.size >= 2) setHint(null);
+  };
+
+  const onPointerMove = (e) => {
+    if (!pointers.current.has(e.pointerId) || !gesture.current) return;
+    const p = local(e);
+    pointers.current.set(e.pointerId, p);
+    const g = gesture.current;
+    if (g.kind === "pinch" && pointers.current.size >= 2) {
+      const [a, b] = [...pointers.current.values()];
+      const dist = Math.hypot(a.x - b.x, a.y - b.y);
+      const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+      const s = Math.min(MAX_ZOOM, Math.max(1, g.view.s * (dist / g.dist)));
+      const k = s / g.view.s;
+      setMoving(true);
+      setView(clamp(s,
+        g.mid.x - (g.mid.x - g.view.x) * k + (mid.x - g.mid.x),
+        g.mid.y - (g.mid.y - g.view.y) * k + (mid.y - g.mid.y)));
+    } else if (g.kind === "pan") {
+      const dx = p.x - g.from.x;
+      const dy = p.y - g.from.y;
+      if (Math.hypot(dx, dy) > 6) g.moved = true;
+      if (g.view.s > 1 && g.moved) {
+        setMoving(true);
+        setView(clamp(g.view.s, g.view.x + dx, g.view.y + dy));
+      }
+    }
+  };
+
+  const onPointerEnd = (e) => {
+    if (!pointers.current.has(e.pointerId)) return;
+    const wasTap = gesture.current && gesture.current.kind === "pan" && !gesture.current.moved;
+    pointers.current.delete(e.pointerId);
+    setMoving(false);
+    startGesture(); // a pinch that drops to one finger carries on as a pan
+    if (e.pointerType === "mouse" || e.type !== "pointerup") return;
+    lastTouchEnd.current = e.timeStamp;
+    if (!wasTap || pointers.current.size) { lastTap.current = null; return; }
+    const p = local(e);
+    const prev = lastTap.current;
+    if (prev && e.timeStamp - prev.t < DOUBLE_TAP_MS && Math.hypot(p.x - prev.x, p.y - prev.y) < 40) {
+      lastTap.current = null;
+      setHint(null);
+      toggleAt(p);
+    } else {
+      lastTap.current = { t: e.timeStamp, x: p.x, y: p.y };
+    }
+  };
+
+  const onDoubleClick = (e) => {
+    // Phones can also send a double-click after a double-tap; that one is handled.
+    if (e.timeStamp - lastTouchEnd.current < 700) return;
+    setHint(null);
+    toggleAt(local(e));
+  };
+
+  const stop = (e) => e.stopPropagation();
+  return html`<div ref=${frame} className=${cx("lb__zoom", zoomed && "is-zoomed", moving && "is-moving")}
+      onPointerDown=${onPointerDown} onPointerMove=${onPointerMove}
+      onPointerUp=${onPointerEnd} onPointerCancel=${onPointerEnd} onDoubleClick=${onDoubleClick}>
+    <img className="lb__img" src=${capture.image} alt=${alt} draggable=${false}
+      style=${{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.s})` }} />
+    ${hint && html`<span className="lb__zoomhint" role="status">${hint}</span>`}
+    <div className="lb__zoombar" onPointerDown=${stop} onDoubleClick=${stop}>
+      <button type="button" onClick=${zoomOut} disabled=${!zoomed} aria-label="Zoom out" title="Zoom out (−)">−</button>
+      <span className="lb__zoomlevel" aria-live="polite">${formatZoom(view.s)}</span>
+      <button type="button" onClick=${zoomIn} disabled=${view.s >= MAX_ZOOM} aria-label="Zoom in" title="Zoom in (+)">+</button>
+      ${zoomed && html`<button type="button" className="lb__zoomreset" onClick=${reset} title="Reset zoom (0)">Reset</button>`}
+    </div>
+  </div>`;
+}
+
 export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggleFavorite, onTag, buckNames, comments, onClose, onPrev, onNext, hasPrev, hasNext }) {
+  const zoomControls = useRef(null);
+  const [zoomed, setZoomed] = useState(false);
   useEffect(() => {
     const onKey = (e) => {
       // Arrow keys belong to the field or video being used, not photo navigation.
       if (e.key !== "Escape" && /^(INPUT|TEXTAREA|SELECT|VIDEO)$/.test(e.target.tagName)) return;
+      const zoom = zoomControls.current;
       if (e.key === "Escape") onClose();
+      else if ((e.key === "+" || e.key === "=") && zoom) zoom.zoomIn();
+      else if ((e.key === "-" || e.key === "_") && zoom) zoom.zoomOut();
+      else if (e.key === "0" && zoom) zoom.reset();
       else if (e.key === "ArrowLeft" && hasPrev) onPrev();
       else if (e.key === "ArrowRight" && hasNext) onNext();
     };
@@ -374,12 +580,14 @@ export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggle
   useEffect(() => { if (stage.current) stage.current.scrollTop = 0; }, [photoId]);
 
   // Swipe on a photo to move between photos. Videos are left out because dragging
-  // there belongs to the player's seek bar.
+  // there belongs to the player's seek bar, and a zoomed photo uses drags to pan.
   const swipe = useRef(null);
   const onTouchStart = (e) => {
     const t = e.touches[0];
-    swipe.current = e.target.tagName === "IMG" && e.touches.length === 1 ? { x: t.clientX, y: t.clientY } : null;
+    swipe.current = !zoomed && e.target.tagName === "IMG" && e.touches.length === 1
+      ? { x: t.clientX, y: t.clientY } : null;
   };
+  const onTouchMove = (e) => { if (e.touches.length > 1) swipe.current = null; };
   const onTouchEnd = (e) => {
     if (!swipe.current) return;
     const t = e.changedTouches[0];
@@ -395,9 +603,12 @@ export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggle
   const c = capture;
   return html`<div className="lb" onClick=${onClose}>
     <div className="lb__stage" ref=${stage} onClick=${(e) => e.stopPropagation()}
-      onTouchStart=${onTouchStart} onTouchEnd=${onTouchEnd}>
-      ${c.image
+      onTouchStart=${onTouchStart} onTouchMove=${onTouchMove} onTouchEnd=${onTouchEnd}>
+      ${c.image && c.media === "video"
         ? html`<${Media} key=${c.id} className="lb__img" capture=${c} alt=${species} playable />`
+        : c.image
+        ? html`<${ZoomImage} key=${c.id} capture=${c} alt=${species}
+            onZoomChange=${setZoomed} controls=${zoomControls} />`
         : html`<div className="shot__noimg" style=${{ width: "60vw", height: "60vh" }}>No image available</div>`}
       <div className="lb__close"><${IconBtn} icon="x" onClick=${onClose} aria-label="Close" /></div>
       ${hasPrev && html`<button className="lb__nav prev" onClick=${onPrev} aria-label="Previous"><${Icon} name="chevronLeft" size=${22} /></button>`}
