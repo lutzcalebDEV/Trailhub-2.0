@@ -1,5 +1,5 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-11-14T23:27:31+00:00",
+  "generatedAt": "2026-11-14T23:51:33+00:00",
   "demo": false,
   "cameras": [
     {
@@ -18,6 +18,64 @@ window.TRAILHUB_DATA = {
     }
   ],
   "captures": [
+    {
+      "species": "Empty",
+      "camera": "Camera 6a309e41bdc62e4448c0a370",
+      "date": "2026-11-14T23:46:39+00:00",
+      "uploaded": "2026-11-14T23:47:03.681000+00:00",
+      "timeSource": "camera",
+      "isNight": true,
+      "todSource": "tag",
+      "temp": 39,
+      "confidence": 0.95,
+      "moon": null,
+      "id": "sp_6af8f2f7728ff08a6b28dcc2",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8f2f7728ff08a6b28dcc2.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8f2f7728ff08a6b28dcc2_t.jpg",
+      "overlayRead": 2,
+      "tags": [
+        "Empty"
+      ],
+      "aiTagged": true,
+      "weather": {
+        "tempF": 42,
+        "wind": 8,
+        "windDir": "N",
+        "windBand": "5\u201310 mph",
+        "pressure": 30.16,
+        "trend": "Rising",
+        "sky": "Dry"
+      }
+    },
+    {
+      "species": "Empty",
+      "camera": "Camera 6a309e41bdc62e4448c0a370",
+      "date": "2026-11-14T23:46:38+00:00",
+      "uploaded": "2026-11-14T23:47:03.681000+00:00",
+      "timeSource": "camera",
+      "isNight": true,
+      "todSource": "tag",
+      "temp": 39,
+      "confidence": 0.95,
+      "moon": null,
+      "id": "sp_6af8f2f7728ff08a6b28dcc4",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8f2f7728ff08a6b28dcc4.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8f2f7728ff08a6b28dcc4_t.jpg",
+      "overlayRead": 2,
+      "tags": [
+        "Empty"
+      ],
+      "aiTagged": true,
+      "weather": {
+        "tempF": 42,
+        "wind": 8,
+        "windDir": "N",
+        "windBand": "5\u201310 mph",
+        "pressure": 30.16,
+        "trend": "Rising",
+        "sky": "Dry"
+      }
+    },
     {
       "species": "Doe",
       "camera": "Camera 6a309e41bdc62e4448c0a370",
