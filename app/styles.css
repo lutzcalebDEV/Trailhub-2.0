@@ -164,6 +164,7 @@ h1,h2,h3,h4 { line-height: 1.18; letter-spacing: -0.015em; font-weight: 700; }
   grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
   min-height: 100vh;
 }
+.app--sidebar-collapsed { --sidebar-w: 72px; }
 
 /* ------------------------------- Sidebar -------------------------------- */
 .sidebar {
@@ -174,6 +175,13 @@ h1,h2,h3,h4 { line-height: 1.18; letter-spacing: -0.015em; font-weight: 700; }
   padding: 18px 14px;
   z-index: 40;
 }
+.sidebar__toggle {
+  position: absolute; top: 50%; right: -14px; transform: translateY(-50%); z-index: 1;
+  width: 28px; height: 48px; display: grid; place-items: center;
+  border: 1px solid var(--border-strong); border-left: 0; border-radius: 0 var(--r-md) var(--r-md) 0;
+  background: var(--surface); color: var(--text-muted);
+}
+.sidebar__toggle:hover { background: var(--surface-3); color: var(--text); }
 .brand { display: flex; align-items: center; gap: 11px; padding: 6px 8px 4px; }
 .brand__mark {
   width: 38px; height: 38px; border-radius: 11px; flex: none;
@@ -217,6 +225,14 @@ h1,h2,h3,h4 { line-height: 1.18; letter-spacing: -0.015em; font-weight: 700; }
 .datastat__dot.is-demo { background: var(--warn); box-shadow: 0 0 0 4px var(--day-soft); }
 .datastat small { display: block; font-size: 11px; color: var(--text-faint); }
 .datastat b { font-size: 12.5px; font-weight: 600; }
+.sidebar.is-collapsed { padding-inline: 8px; }
+.sidebar.is-collapsed .brand { justify-content: center; padding-inline: 0; }
+.sidebar.is-collapsed .brand__name,
+.sidebar.is-collapsed .sidebar__label,
+.sidebar.is-collapsed .datastat > div { display: none; }
+.sidebar.is-collapsed .nav__item { justify-content: center; padding-inline: 0; }
+.sidebar.is-collapsed .nav__badge { position: absolute; top: 0; right: 0; margin: 0; min-width: 16px; height: 16px; padding: 0 4px; font-size: 9px; }
+.sidebar.is-collapsed .datastat { justify-content: center; padding: 10px 0; }
 
 /* ------------------------------- Main col ------------------------------- */
 .main { min-width: 0; display: flex; flex-direction: column; }
@@ -659,6 +675,7 @@ h1,h2,h3,h4 { line-height: 1.18; letter-spacing: -0.015em; font-weight: 700; }
 @media (max-width: 900px) {
   .app { grid-template-columns: 1fr; }
   .sidebar { display: none; }
+  .sidebar__toggle { display: none; }
 
   .mobile-top {
     display: flex; align-items: center; gap: 12px;

@@ -41,6 +41,7 @@ function loadUploadEdits() {
 function App() {
   const { data, refresh, refreshing } = useData();
   const [theme, setTheme] = usePersistent(LS.theme, "dark");
+  const [sidebarCollapsed, setSidebarCollapsed] = usePersistent(LS.sidebarCollapsed, "false");
   // Active tab + filters are remembered across refreshes so the page comes back
   // exactly where you left it (validated against the known views / filter keys).
   const [view, setView] = useState(() => {
@@ -442,8 +443,9 @@ function App() {
   };
 
   return html`<${Fragment}>
-    <div className="app">
-      <${Sidebar} view=${view} setView=${setView} counts=${counts} status=${status} />
+    <div className=${sidebarCollapsed === "true" ? "app app--sidebar-collapsed" : "app"}>
+      <${Sidebar} view=${view} setView=${setView} counts=${counts} status=${status}
+        collapsed=${sidebarCollapsed === "true"} onToggleCollapsed=${() => setSidebarCollapsed(sidebarCollapsed === "true" ? "false" : "true")} />
       <main className="main">
         <${MobileTopbar} ...${chrome} />
         <${Topbar} title=${meta.label} ...${chrome} />

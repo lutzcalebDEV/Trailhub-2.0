@@ -474,6 +474,7 @@ export const LS = {
   commentName: "trailhub-comment-name",
   filters: "trailhub-filters",
   uploadEdits: "trailhub-upload-edits",
+  sidebarCollapsed: "trailhub-sidebar-collapsed",
 };
 
 // Local date helpers for the date-range filter and the upload date field.

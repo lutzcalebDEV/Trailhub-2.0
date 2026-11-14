@@ -21,8 +21,13 @@ const badgeCount = (n) => (n > 99 ? "99+" : n);
 const feedTitle = (s) => (s.demo ? "Demo data" : s.stale ? "Sync delayed" : "Auto-sync on");
 
 /* ------------------------------- Sidebar -------------------------------- */
-export function Sidebar({ view, setView, counts, status }) {
-  return html`<aside className="sidebar">
+export function Sidebar({ view, setView, counts, status, collapsed, onToggleCollapsed }) {
+  return html`<aside className=${cx("sidebar", collapsed && "is-collapsed")}>
+    <button className="sidebar__toggle" type="button" onClick=${onToggleCollapsed}
+      aria-label=${collapsed ? "Expand sidebar" : "Collapse sidebar"} aria-expanded=${!collapsed}
+      title=${collapsed ? "Expand sidebar" : "Collapse sidebar"}>
+      <${Icon} name=${collapsed ? "chevronRight" : "chevronLeft"} size=${18} />
+    </button>
     <div className="brand">
       <${BrandMark} size=${38} />
       <div className="brand__name">Vale Trails</div>
@@ -31,9 +36,10 @@ export function Sidebar({ view, setView, counts, status }) {
     <nav className="nav">
       ${VIEWS.map((v) => html`<a key=${v.id} role="button" tabindex="0"
         className=${cx("nav__item", view === v.id && "is-active")}
+        aria-label=${v.label} title=${collapsed ? v.label : undefined}
         onClick=${() => setView(v.id)}
         onKeyDown=${(e) => (e.key === "Enter" || e.key === " ") && setView(v.id)}>
-        <${Icon} name=${v.icon} size=${18} />${v.label}
+        <${Icon} name=${v.icon} size=${18} /><span className="sidebar__label">${v.label}</span>
         ${v.id === "review" && counts.review > 0 && html`<span className="nav__badge">${badgeCount(counts.review)}</span>`}
       </a>`)}
     </nav>
