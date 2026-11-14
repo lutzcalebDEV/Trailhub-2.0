@@ -1309,6 +1309,61 @@ def best_photo_url(photo):
     raise ValueError("no large, medium or small image on this photo")
 
 
+HD_PROBE_FILE = HERE / "_hd_probe.json"
+
+
+def _jpeg_size(data: bytes):
+    """(width, height) from a JPEG's header, or None."""
+    i = 2
+    while i + 9 < len(data):
+        if data[i] != 0xFF:
+            i += 1
+            continue
+        marker = data[i + 1]
+        if 0xC0 <= marker <= 0xC3:
+            return int.from_bytes(data[i + 7:i + 9], "big"), int.from_bytes(data[i + 5:i + 7], "big")
+        i += 2 + int.from_bytes(data[i + 2:i + 4], "big")
+    return None
+
+
+def probe_hd(client, cameras, limit=10):
+    """TEMP DIAGNOSTIC: does asking SPYPOINT for HD return bigger photos?
+
+    Runs once (until _hd_probe.json exists) and records only sizes and field names.
+    Image URLs are signed links, so they're never written down. Never fails a pull.
+    """
+    if HD_PROBE_FILE.exists():
+        return
+    import urllib.request
+    result = {"checkedAt": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")}
+    try:
+        photos = list(client.photos(cameras, limit=limit, hd=True))
+        result["returned"] = len(photos)
+        rows = []
+        for p in photos[:limit]:
+            raw = _raw(p)
+            row = {"id": str(raw.get("id", ""))[-6:], "fields": sorted(raw.keys()), "sizes": {}}
+            for size in ("hd", "large", "medium", "small"):
+                section = getattr(p, size, None)
+                if not (getattr(section, "host", "") and getattr(section, "path", "")):
+                    row["sizes"][size] = "missing"
+                    continue
+                try:
+                    req = urllib.request.Request(p.url(size), headers={"User-Agent": "TrailHub/1.0"})
+                    with urllib.request.urlopen(req, timeout=30) as response:
+                        data = response.read()
+                    dims = _jpeg_size(data)
+                    row["sizes"][size] = {"bytes": len(data), "px": f"{dims[0]}x{dims[1]}" if dims else None}
+                except Exception as e:
+                    row["sizes"][size] = f"error: {type(e).__name__}"
+            rows.append(row)
+        result["photos"] = rows
+    except Exception as e:
+        result["error"] = f"{type(e).__name__}: {str(e)[:200]}"
+    atomic_write_text(HD_PROBE_FILE, json.dumps(result, indent=1))
+    print(f"Wrote {HD_PROBE_FILE.name} (one-time HD check).")
+
+
 def report_skip(message):
     """Print a skipped photo, flagged so it shows on the Actions run page."""
     print(f"  [skip] {message}")
@@ -1332,6 +1387,7 @@ def run_pull(limit, inspect):
     photos = client.photos(cameras, limit=limit)
     photos = list(photos)
     print(f"Retrieved {len(photos)} photo record(s).")
+    probe_hd(client, cameras)
 
     # --- TEMP DIAGNOSTIC (remove once the real species field is confirmed) ---
     # Writes a sanitized snapshot of the first few photos so we can see SPYPOINT's
