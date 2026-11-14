@@ -1,5 +1,5 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-11-14T02:32:01+00:00",
+  "generatedAt": "2026-11-14T02:41:18+00:00",
   "demo": false,
   "cameras": [
     {
@@ -30,12 +30,21 @@ window.TRAILHUB_DATA = {
       "confidence": 0.95,
       "moon": null,
       "id": "sp_6af7c791a1fee9bf74580a0a",
-      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af7c791a1fee9bf74580a0a.jpg",
       "overlayRead": 2,
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af7c791a1fee9bf74580a0a.jpg",
       "tags": [
         "Raccoon"
       ],
-      "aiTagged": true
+      "aiTagged": true,
+      "weather": {
+        "tempF": 43,
+        "wind": 10,
+        "windDir": "NW",
+        "windBand": "5\u201310 mph",
+        "pressure": 29.88,
+        "trend": "Rising",
+        "sky": "Dry"
+      }
     },
     {
       "species": "Raccoon",
@@ -49,12 +58,21 @@ window.TRAILHUB_DATA = {
       "confidence": 0.95,
       "moon": null,
       "id": "sp_6af7c791a1fee9bf74580a0c",
-      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af7c791a1fee9bf74580a0c.jpg",
       "overlayRead": 2,
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af7c791a1fee9bf74580a0c.jpg",
       "tags": [
         "Raccoon"
       ],
-      "aiTagged": true
+      "aiTagged": true,
+      "weather": {
+        "tempF": 43,
+        "wind": 10,
+        "windDir": "NW",
+        "windBand": "5\u201310 mph",
+        "pressure": 29.88,
+        "trend": "Rising",
+        "sky": "Dry"
+      }
     },
     {
       "species": "Person",
@@ -76,10 +94,10 @@ window.TRAILHUB_DATA = {
       "aiTagged": true,
       "weather": {
         "tempF": 53,
-        "wind": 11,
+        "wind": 12,
         "windDir": "NW",
         "windBand": "10\u201315 mph",
-        "pressure": 29.79,
+        "pressure": 29.78,
         "trend": "Steady",
         "sky": "Dry"
       }
@@ -104,10 +122,10 @@ window.TRAILHUB_DATA = {
       "aiTagged": true,
       "weather": {
         "tempF": 53,
-        "wind": 11,
+        "wind": 12,
         "windDir": "NW",
         "windBand": "10\u201315 mph",
-        "pressure": 29.79,
+        "pressure": 29.78,
         "trend": "Steady",
         "sky": "Dry"
       }
@@ -20883,18 +20901,18 @@ window.TRAILHUB_DATA = {
   ],
   "weatherHours": {
     "windBand": {
-      "5\u201310 mph": 1472,
-      "10\u201315 mph": 255,
+      "5\u201310 mph": 1478,
+      "10\u201315 mph": 256,
       "Under 5 mph": 1793,
       "15+ mph": 79
     },
     "trend": {
       "Falling": 718,
-      "Steady": 2153,
-      "Rising": 728
+      "Steady": 2155,
+      "Rising": 733
     },
     "sky": {
-      "Dry": 3007,
+      "Dry": 3014,
       "Rain": 592
     }
   }
