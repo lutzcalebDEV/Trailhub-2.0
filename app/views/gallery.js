@@ -1,6 +1,6 @@
 // Vale Trails — Photos: every photo, grouped by day, one tile per trigger.
 import { html, useState, useMemo, useEffect, Fragment } from "../react.js";
-import { FilterBar } from "../shell.js";
+import { FilterBar, defaultFilters } from "../shell.js";
 import { Segmented, Select, Shot, Empty, Btn } from "../ui.js";
 import { effectiveSpecies, TAG_OPTIONS, fmtDateLong, fmtTime, isoDay } from "../core.js";
 import { collapseBursts } from "../analytics.js";
@@ -100,7 +100,7 @@ export function Gallery(app) {
     ${sorted.length === 0
       ? html`<${Empty} icon="search" title="No matching photos"
           message="Try removing a filter to see more."
-          action=${html`<${Btn} variant="primary" sm onClick=${() => setFilter({ species: "All", camera: "All", tod: "all", bucksOnly: false })}>Clear filters</${Btn}>`} />`
+          action=${html`<${Btn} variant="primary" sm onClick=${() => setFilter(defaultFilters())}>Clear filters</${Btn}>`} />`
       : html`<${Fragment}>
           ${groups.map((g) => html`<section key=${g.key} className="dayblock">
             <h2 className="dayblock__head">${g.label}</h2>

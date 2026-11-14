@@ -2,7 +2,7 @@
 // Every function respects user/shared tag overrides via effectiveSpecies/Tags.
 import {
   effectiveSpecies, effectiveTags, isKnownSpecies, reviewReason,
-  isoDay, fmtDate, WEEKDAYS, speciesColor,
+  isoDay, fmtDate, WEEKDAYS, speciesColor, parseIsoDay,
 } from "./core.js";
 
 export const eff = (c, ov) => ({
@@ -12,8 +12,59 @@ export const eff = (c, ov) => ({
 });
 
 /* ------------------------------- Filtering ------------------------------ */
+// Date-range presets. "Season" is the deer season, September through February,
+// so in January it still reaches back to last September.
+export const RANGE_OPTIONS = [
+  { value: "all", label: "All time" },
+  { value: "7d", label: "Last 7 days" },
+  { value: "14d", label: "Last 14 days" },
+  { value: "30d", label: "Last 30 days" },
+  { value: "season", label: "This season" },
+  { value: "custom", label: "Custom dates" },
+];
+
+// [start, end) for the current range filter, either side null when open.
+export function rangeBounds(filters, now = new Date()) {
+  const days = { "7d": 7, "14d": 14, "30d": 30 }[filters.range];
+  if (days) {
+    const start = new Date(now);
+    start.setHours(0, 0, 0, 0);
+    start.setDate(start.getDate() - (days - 1));
+    return { start, end: null };
+  }
+  if (filters.range === "season") {
+    const year = now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1;
+    return { start: new Date(year, 8, 1), end: new Date(year + 1, 2, 1) };
+  }
+  if (filters.range === "custom") {
+    const start = parseIsoDay(filters.from);
+    const to = parseIsoDay(filters.to);
+    const end = to ? new Date(to.getFullYear(), to.getMonth(), to.getDate() + 1) : null;
+    return { start, end };
+  }
+  return { start: null, end: null };
+}
+
+export function rangeLabel(filters) {
+  if (filters.range === "custom") {
+    const a = parseIsoDay(filters.from);
+    const b = parseIsoDay(filters.to);
+    if (a && b && filters.from === filters.to) return fmtDate(a);
+    if (a && b) return `${fmtDate(a)} – ${fmtDate(b)}`;
+    if (a) return `From ${fmtDate(a)}`;
+    if (b) return `Until ${fmtDate(b)}`;
+    return "Custom dates";
+  }
+  const opt = RANGE_OPTIONS.find((o) => o.value === filters.range);
+  return opt ? opt.label : "";
+}
+
+export const WEEKDAY_PLURAL = ["Sundays", "Mondays", "Tuesdays", "Wednesdays", "Thursdays", "Fridays", "Saturdays"];
+
 export function filterCaptures(captures, filters, ov) {
-  const q = (filters.q || "").trim().toLowerCase();
+  const { start, end } = rangeBounds(filters);
+  const hour = Number.isInteger(filters.hour) && filters.hour >= 0 ? filters.hour : -1;
+  const wday = Number.isInteger(filters.wday) && filters.wday >= 0 ? filters.wday : -1;
   return captures.filter((c) => {
     const species = effectiveSpecies(c, ov);
     const tags = effectiveTags(c, ov);
@@ -22,7 +73,10 @@ export function filterCaptures(captures, filters, ov) {
     if (filters.tod === "day" && c.isNight) return false;
     if (filters.tod === "night" && !c.isNight) return false;
     if (filters.bucksOnly && !tags.includes("Buck")) return false;
-    if (q && !(`${species} ${c.camera}`.toLowerCase().includes(q))) return false;
+    if (start && c.date < start) return false;
+    if (end && c.date >= end) return false;
+    if (hour >= 0 && c.date.getHours() !== hour) return false;
+    if (wday >= 0 && c.date.getDay() !== wday) return false;
     return true;
   });
 }

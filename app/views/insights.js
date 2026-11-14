@@ -1,4 +1,6 @@
 // Vale Trails — Insights: movement patterns, timing, species mix and calendar.
+// Every bar and cell is a link: tapping it opens those photos in Photos with the
+// matching filter applied.
 import { html, Fragment } from "../react.js";
 import { FilterBar } from "../shell.js";
 import { Stat, Panel, Histogram, HourStrip, Bars, SplitBar, CalHeat, Empty } from "../ui.js";
@@ -13,9 +15,11 @@ import {
 export const windowLabel = (p) => (p ? labelHour(p.start) + "–" + labelHour(p.end) : "—");
 
 export function Insights(app) {
-  const { captures, filters, setFilter, spList, data, ov, camName } = app;
+  const { captures, filters, setFilter, setView, spList, data, ov, camName } = app;
   // Choosing Person, Vehicle or Empty on purpose still charts them.
   const filtered = NOT_GAME.has(filters.species) ? app.filtered : animalActivity(app.filtered, ov);
+  // Open Photos with an extra filter layered on the current ones.
+  const go = (patch) => { setFilter(patch); setView("gallery"); };
 
   const filterBar = html`<${FilterBar} filters=${filters} set=${setFilter}
     cameras=${data.cameras} speciesList=${spList} count=${filtered.length} camName=${camName} />`;
@@ -58,11 +62,13 @@ export function Insights(app) {
     </${Panel}>`;
   } else {
     secondary = html`<${Panel} title="Camera">
-      <${Bars} data=${cams.slice(0, 7).map((c) => ({ label: camName(c.camera), value: c.value }))} />
+      <${Bars} data=${cams.slice(0, 7).map((c) => ({ label: camName(c.camera), value: c.value, camera: c.camera }))}
+        onSelect=${(d) => go({ camera: d.camera })} />
     </${Panel}>`;
   }
 
   const weather = weatherRates(filtered, data.weatherHours);
+  const tapHint = html`<span className="faint" style=${{ fontSize: 12 }}>Tap a bar to see those photos</span>`;
 
   return html`<div className="col" style=${{ gap: 18 }}>
     ${filterBar}
@@ -85,8 +91,8 @@ export function Insights(app) {
       </div>
     </div>`}
 
-    <${Panel} title="Time of day">
-      <${Histogram} hours=${hourHistogram(filtered)} />
+    <${Panel} title="Time of day" actions=${tapHint}>
+      <${Histogram} hours=${hourHistogram(filtered)} onSelect=${(h) => go({ hour: h })} />
     </${Panel}>
 
     <${Panel} title="Time of day by species"
@@ -96,11 +102,15 @@ export function Insights(app) {
             <div className="actclock">
               ${activity.map((r) => html`<div key=${r.species} className=${"actrow" + (r.species === sel ? " is-sel" : "")}>
                 <div className="actrow__head">
-                  <span className="actrow__name"><span className="sdot" style=${{ background: r.color }} />${r.species}</span>
+                  <button className="actrow__name" title=${`Only ${r.species}`}
+                    onClick=${() => setFilter({ species: r.species === sel ? "All" : r.species })}>
+                    <span className="sdot" style=${{ background: r.color }} />${r.species}
+                  </button>
                   ${r.peak && html`<span className="actrow__peak">Peak ${windowLabel(r.peak)} · ${dielLabel(r.dayPct)}</span>`}
                   <span className="actrow__total tnum">${r.total}</span>
                 </div>
-                <${HourStrip} hours=${r.hours} color=${r.color} peak=${r.peak} />
+                <${HourStrip} hours=${r.hours} color=${r.color} peak=${r.peak}
+                  onSelect=${(h) => go({ species: r.species, hour: h })} />
               </div>`)}
             </div>
             <div className="actclock__axis"><span>12a</span><span>6a</span><span>12p</span><span>6p</span><span>11p</span></div>
@@ -117,15 +127,15 @@ export function Insights(app) {
               <span className="faint" style=${{ fontSize: 12 }}>${r.day} day · ${r.night} night</span>
             </div>
             <${SplitBar} segments=${[
-              { value: r.day, color: "var(--day)", title: "Day" },
-              { value: r.night, color: "var(--night)", title: "Night" },
-            ]} />
+              { value: r.day, color: "var(--day)", title: `${r.species}, daytime`, tod: "day" },
+              { value: r.night, color: "var(--night)", title: `${r.species}, night`, tod: "night" },
+            ]} onSelect=${(s) => go({ species: r.species, tod: s.tod })} />
           </div>`)}
         </div>
       </${Panel}>
 
       <${Panel} title="Day of the week">
-        <${Bars} data=${wk} max=${Math.max(1, ...wk.map((w) => w.value))} />
+        <${Bars} data=${wk} max=${Math.max(1, ...wk.map((w) => w.value))} onSelect=${(d, i) => go({ wday: i })} />
       </${Panel}>
     </div>
 
@@ -142,8 +152,9 @@ export function Insights(app) {
     ${secondary}
 
     <${Panel} title="Calendar"
-      actions=${html`<span className="faint" style=${{ fontSize: 12 }}>Last 6 months</span>`}>
-      <div className="scroll-x"><${CalHeat} counts=${isoDayCounts(filtered)} weeks=${26} /></div>
+      actions=${html`<span className="faint" style=${{ fontSize: 12 }}>Last 6 months · tap a day</span>`}>
+      <div className="scroll-x"><${CalHeat} counts=${isoDayCounts(filtered)} weeks=${26}
+        onSelect=${(key) => go({ range: "custom", from: key, to: key })} /></div>
     </${Panel}>
   </div>`;
 }

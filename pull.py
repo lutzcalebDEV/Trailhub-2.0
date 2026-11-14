@@ -49,6 +49,8 @@ UPLOADS_FILE = HERE / "uploads.json"  # photos added through the site, written b
 MAX_PUBLISHED = 1500   # cap captures written to data.js so the site stays light
 MAX_KEEP = 3000        # cap stored photos+images so the repo doesn't grow forever
 MAX_IMG_PX = 1600      # downscale long edge if Pillow is available
+THUMB_PX = 400         # long edge of the small copy that photo grids load
+THUMBS_PER_RUN = 150   # older photos get a small copy a batch at a time
 DOWNLOAD_RETRIES = 3
 HEARTBEAT_SECONDS = 3600  # rewrite data.js at least this often, even with no new photos
 
@@ -303,8 +305,95 @@ def delete_hosted_copies(store):
             for path in PHOTOS_DIR.glob(f"{c.get('id')}.*"):
                 path.unlink(missing_ok=True)
                 removed += 1
+        if str(c.get("thumb", "")).startswith("http"):
+            for path in PHOTOS_DIR.glob(f"{c.get('id')}_t.*"):
+                path.unlink(missing_ok=True)
+                removed += 1
     if removed:
         print(f"Removed {removed} local copies now hosted on R2.")
+
+
+# ---- small copies for photo grids ------------------------------------------
+# The site shows up to 120 tiles at a time. Loading the full 1600px photo into a
+# 150px tile costs phones tens of megabytes, so each photo also gets a ~400px copy
+# (<id>_t.jpg) next to it, on R2 or under photos/. The site falls back to the full
+# photo for any capture without one.
+def thumb_key(sid):
+    return f"{sid}_t.jpg"
+
+
+def make_thumb(src: Path, dst: Path) -> bool:
+    """Write the small JPEG copy of src to dst. False if Pillow is missing or it fails."""
+    try:
+        from PIL import Image, ImageOps
+    except ImportError:
+        return False
+    try:
+        with Image.open(src) as im:
+            im = ImageOps.exif_transpose(im)
+            im.thumbnail((THUMB_PX, THUMB_PX))
+            if im.mode != "RGB":
+                im = im.convert("RGB")
+            im.save(dst, "JPEG", quality=78, optimize=True)
+        return True
+    except Exception:
+        dst.unlink(missing_ok=True)
+        return False
+
+
+def attach_thumb(meta, image_path: Path, r2) -> bool:
+    """Make the small copy of one photo and record where it lives (R2 or photos/)."""
+    local = PHOTOS_DIR / thumb_key(meta["id"])
+    if not make_thumb(image_path, local):
+        return False
+    if r2 is not None and r2.has_room(local):
+        try:
+            meta["thumb"] = r2.upload(local, local.name)
+            local.unlink(missing_ok=True)
+            return True
+        except Exception as e:
+            print(f"  [thumb] upload failed for {meta['id']}: {e}")
+    meta["thumb"] = f"photos/{local.name}"
+    return True
+
+
+def backfill_thumbs(store, r2, limit=THUMBS_PER_RUN):
+    """Give photos from before this feature a small copy too, newest first.
+
+    Photos already on R2 are fetched back through their public URL, shrunk, and
+    the copy uploaded beside them. Never fails a pull.
+    """
+    try:
+        import PIL  # noqa: F401
+    except ImportError:
+        return 0
+    pending = [c for c in store.values() if c.get("image") and not c.get("thumb")]
+    pending.sort(key=lambda c: c.get("date", ""), reverse=True)
+    done = 0
+    for c in pending[:limit]:
+        image = str(c["image"])
+        if image.startswith("http"):
+            if r2 is None:
+                continue  # nowhere to put the copy
+            src = PHOTOS_DIR / f"{c['id']}_src.tmp"
+            try:
+                download_with_retry(image, src)
+                if not r2.has_room(src):
+                    break
+                ok = attach_thumb(c, src, r2)
+            except Exception as e:
+                print(f"  [thumb] skipped {c['id']}: {e}")
+                ok = False
+            finally:
+                src.unlink(missing_ok=True)
+        else:
+            src = HERE / image
+            ok = src.exists() and attach_thumb(c, src, r2)
+        if ok:
+            done += 1
+    if done or pending:
+        print(f"Small copies: made {done}, {len(pending) - done} photo(s) still without one.")
+    return done
 
 
 def make_r2_uploader():
@@ -812,7 +901,7 @@ def load_tags():
 
 # Fields owned by other pipelines (tags, camera names) or by the capture's own
 # structure -- metadata must never override these when baked into data.js.
-_META_RESERVED = {"id", "image", "date", "camera", "tags", "species"}
+_META_RESERVED = {"id", "image", "thumb", "date", "camera", "tags", "species"}
 
 
 def load_metadata():
@@ -999,12 +1088,14 @@ def load_uploads():
             continue
         if not image.startswith("https://"):
             continue
+        thumb = str(item.get("thumb") or "")
         out.append({
             "id": str(item["id"]),
             "species": str(item.get("species") or "Animal"),
             "camera": str(item.get("camera") or "Other camera"),
             "date": when.isoformat(),
             "image": image,
+            "thumb": thumb if thumb.startswith("https://") else None,
             "isNight": sun_is_down(when),
             "temp": None,
             "confidence": None,
@@ -1021,12 +1112,13 @@ def prune_store(store):
     if len(items) <= MAX_KEEP:
         return store
     for c in items[MAX_KEEP:]:
-        img = c.get("image", "")
-        if img.startswith("photos/"):
-            try:
-                (HERE / img).unlink(missing_ok=True)
-            except OSError:
-                pass
+        for key in ("image", "thumb"):
+            img = str(c.get(key) or "")
+            if img.startswith("photos/"):
+                try:
+                    (HERE / img).unlink(missing_ok=True)
+                except OSError:
+                    pass
     return {c["id"]: c for c in items[:MAX_KEEP]}
 
 
@@ -1494,12 +1586,15 @@ def run_pull(limit, inspect):
             prev_img = str((store.get(sid) or {}).get("image", ""))
             if prev_img.startswith("http"):
                 meta["image"] = prev_img
+                if prev.get("thumb"):
+                    meta["thumb"] = prev["thumb"]
             else:
                 try:
                     if not dest.exists():
                         download_with_retry(url, dest)
                     # Over the limit, the photo stays in the repo so it isn't lost.
                     meta["image"] = r2.upload(dest, fname) if r2.has_room(dest) else f"photos/{fname}"
+                    attach_thumb(meta, dest, r2)
                     new_count += 1
                     print(f"  [new] {meta['species']:<10} {meta['camera']}")
                 except Exception as e:
@@ -1508,14 +1603,19 @@ def run_pull(limit, inspect):
                     continue
         elif str(prev.get("image", "")).startswith("http"):
             meta["image"] = prev["image"]  # already hosted; never point back at the repo
+            if prev.get("thumb"):
+                meta["thumb"] = prev["thumb"]
         else:
             # Legacy: keep the image in the repo under photos/.
             already = sid in store and dest.exists()
             meta["image"] = f"photos/{fname}"
+            if prev.get("thumb"):
+                meta["thumb"] = prev["thumb"]
             if not already:
                 try:
                     if not dest.exists():
                         download_with_retry(url, dest)
+                    attach_thumb(meta, dest, None)
                     new_count += 1
                     print(f"  [new] {meta['species']:<10} {meta['camera']}")
                 except Exception as e:
@@ -1527,6 +1627,8 @@ def run_pull(limit, inspect):
     backfill_overlays(store)
     if r2 is not None:
         move_photos_to_r2(store, r2)
+    backfill_thumbs(store, r2)
+    if r2 is not None:
         delete_hosted_copies(store)
     store = prune_store(store)
     save_store(store)
@@ -1559,6 +1661,20 @@ def run_ocr_temps():
     print(f"Read {done} photo(s). data.js rebuilt.")
 
 
+def run_thumbs():
+    """Make the small copy for every photo that lacks one, then rebuild data.js."""
+    store = load_store()
+    if not store:
+        sys.exit("No store.json yet. Run `python pull.py` first.")
+    r2 = make_r2_uploader()
+    done = backfill_thumbs(store, r2, limit=len(store))
+    if r2 is not None:
+        delete_hosted_copies(store)
+    save_store(store)
+    write_data_js(list(store.values()), cameras=load_cameras(), demo=False, tags_map=load_tags(), meta_map=load_metadata())
+    print(f"Made {done} small cop{'y' if done == 1 else 'ies'}. data.js rebuilt.")
+
+
 def main():
     ap = argparse.ArgumentParser(description="Pull SPYPOINT photos and build TrailHub data.")
     ap.add_argument("--limit", type=int, default=100, help="max photos per camera (default 100)")
@@ -1566,6 +1682,7 @@ def main():
     ap.add_argument("--demo", action="store_true", help="write sample data, no login needed")
     ap.add_argument("--rebuild", action="store_true", help="regenerate data.js from the local store, no network")
     ap.add_argument("--ocr-temps", action="store_true", help="OCR temperatures from existing photos, then rebuild data.js")
+    ap.add_argument("--thumbs", action="store_true", help="make small copies for every photo missing one, then rebuild data.js")
     args = ap.parse_args()
     if args.demo:
         run_demo()
@@ -1573,6 +1690,8 @@ def main():
         run_rebuild()
     elif args.ocr_temps:
         run_ocr_temps()
+    elif args.thumbs:
+        run_thumbs()
     else:
         run_pull(args.limit, args.inspect)
 

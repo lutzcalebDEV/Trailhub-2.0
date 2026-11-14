@@ -1,10 +1,10 @@
 // Vale Trails — reusable UI primitives, chart widgets, photo tile and lightbox.
 // Pure presentation: all data shaping happens in the views. Components map 1:1
 // to the classes defined in styles.css.
-import { html, useEffect, useRef, useState } from "./react.js";
+import { html, useEffect, useRef, useState, Fragment } from "./react.js";
 import { Icon } from "./icons.js";
 import {
-  speciesColor, fmtDate, fmtDateTime, timeAgo, labelHour, isoDay, TAG_OPTIONS,
+  speciesColor, fmtDate, fmtDateTime, timeAgo, labelHour, isoDay, TAG_OPTIONS, toLocalInput,
 } from "./core.js";
 
 const cx = (...xs) => xs.filter(Boolean).join(" ");
@@ -113,10 +113,14 @@ export function SpeciesDot({ species, size = 9 }) {
 }
 
 /* ------------------------------- Charts --------------------------------- */
-export function Bars({ data, max, fmt }) {
+// Every chart takes an optional `onSelect`. With it, bars become buttons that open
+// the matching photos; without it they stay plain marks.
+export function Bars({ data, max, fmt, onSelect }) {
   const m = max || Math.max(1, ...data.map((d) => d.value));
+  const Row = onSelect ? "button" : "div";
   return html`<div className="bars">
-    ${data.map((d, i) => html`<div className="bar" key=${(d.label || "") + i}>
+    ${data.map((d, i) => html`<${Row} className=${cx("bar", onSelect && "bar--btn")} key=${(d.label || "") + i}
+      onClick=${onSelect ? () => onSelect(d, i) : undefined} title=${onSelect ? `Show ${d.label} photos` : undefined}>
       <span className="bar__label">
         ${d.color && html`<span className="sdot" style=${{ background: d.color }} />`}
         <span>${d.label}</span>
@@ -125,29 +129,34 @@ export function Bars({ data, max, fmt }) {
         <span className="bar__fill" style=${{ width: (d.value / m) * 100 + "%", background: d.color || "var(--accent)" }} />
       </span>
       <span className="bar__val">${fmt ? fmt(d.value) : d.value}</span>
-    </div>`)}
+    </${Row}>`)}
   </div>`;
 }
 
-export function SplitBar({ segments }) {
+export function SplitBar({ segments, onSelect }) {
   const total = segments.reduce((s, x) => s + x.value, 0) || 1;
+  const Seg = onSelect ? "button" : "i";
   return html`<div className="splitbar">
-    ${segments.map((s, i) => s.value > 0 && html`<i key=${i}
+    ${segments.map((s, i) => s.value > 0 && html`<${Seg} key=${i} type=${onSelect ? "button" : undefined}
+      onClick=${onSelect ? () => onSelect(s, i) : undefined}
       style=${{ width: (s.value / total) * 100 + "%", background: s.color }} title=${s.title || ""} />`)}
   </div>`;
 }
 
-export function Histogram({ hours }) {
+export function Histogram({ hours, onSelect }) {
   const max = Math.max(1, ...hours);
   const peak = hours.indexOf(Math.max(...hours));
+  const Col = onSelect ? "button" : "div";
   return html`<div className="histwrap">
     <div className="hist">
       ${hours.map((v, h) => {
         const pct = (v / max) * 100;
         const cls = v === 0 ? "hist__bar dim" : (h === peak ? "hist__bar peak" : "hist__bar");
-        return html`<div className="hist__col" key=${h} title=${`${labelHour(h)} · ${v} photo${v === 1 ? "" : "s"}`}>
+        return html`<${Col} className=${cx("hist__col", onSelect && "is-btn")} key=${h}
+          onClick=${onSelect ? () => onSelect(h) : undefined}
+          title=${`${labelHour(h)} · ${v} photo${v === 1 ? "" : "s"}`}>
           <div className=${cls} style=${{ height: Math.max(pct, v > 0 ? 6 : 2) + "%" }} />
-        </div>`;
+        </${Col}>`;
       })}
     </div>
     <div className="axis"><span>12a</span><span>6a</span><span>12p</span><span>6p</span><span>11p</span></div>
@@ -156,31 +165,35 @@ export function Histogram({ hours }) {
 
 // Compact 24-hour activity strip (one bar per hour), highlighting a peak window.
 // Each strip is normalized to its own max so a species' shape is always readable.
-export function HourStrip({ hours, color = "var(--accent)", peak }) {
+export function HourStrip({ hours, color = "var(--accent)", peak, onSelect }) {
   const max = Math.max(1, ...hours);
   const inPeak = (h) => {
     if (!peak) return false;
     const { start, end } = peak;
     return start <= end ? h >= start && h < end : h >= start || h < end;
   };
-  return html`<div className="hourstrip" role="img" aria-label="Activity by hour">
-    ${hours.map((v, h) => html`<span key=${h} className=${cx("hourstrip__c", inPeak(h) && "is-peak")}
+  const Cell = onSelect ? "button" : "span";
+  return html`<div className="hourstrip" role=${onSelect ? undefined : "img"} aria-label="Activity by hour">
+    ${hours.map((v, h) => html`<${Cell} key=${h} className=${cx("hourstrip__c", inPeak(h) && "is-peak", onSelect && "is-btn")}
+      onClick=${onSelect ? () => onSelect(h) : undefined}
       title=${`${labelHour(h)} · ${v} capture${v === 1 ? "" : "s"}`}>
       <i style=${{ height: Math.max((v / max) * 100, v > 0 ? 14 : 0) + "%", background: color }} />
-    </span>`)}
+    </${Cell}>`)}
   </div>`;
 }
 
-export function Sparkbars({ data }) {
+export function Sparkbars({ data, onSelect }) {
   const max = Math.max(1, ...data.map((d) => d.value));
+  const Bar = onSelect ? "button" : "div";
   return html`<div className="spark">
-    ${data.map((d, i) => html`<div className="spark__b" key=${i}
+    ${data.map((d, i) => html`<${Bar} className=${cx("spark__b", onSelect && "is-btn")} key=${i}
+      onClick=${onSelect ? () => onSelect(d, i) : undefined}
       style=${{ height: Math.max((d.value / max) * 100, d.value > 0 ? 8 : 3) + "%" }}
-      title=${(d.label ? d.label + " · " : "") + d.value}><i /></div>`)}
+      title=${(d.label ? d.label + " · " : "") + d.value}><i /></${Bar}>`)}
   </div>`;
 }
 
-export function CalHeat({ counts, weeks = 26 }) {
+export function CalHeat({ counts, weeks = 26, onSelect }) {
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const start = new Date(today);
   start.setDate(start.getDate() - (weeks * 7 - 1));
@@ -195,9 +208,11 @@ export function CalHeat({ counts, weeks = 26 }) {
   const shade = (n) => n === 0
     ? "var(--surface-3)"
     : `color-mix(in srgb, var(--accent) ${20 + Math.ceil((n / max) * 4) * 18}%, var(--surface-3))`;
+  const Cell = onSelect ? "button" : "div";
   return html`<div>
     <div className="cal">
-      ${cells.map((c) => html`<div key=${c.key} className="cal__cell"
+      ${cells.map((c) => html`<${Cell} key=${c.key} className=${cx("cal__cell", onSelect && "is-btn")}
+        onClick=${onSelect ? () => onSelect(c.key, c.date) : undefined}
         style=${{ background: shade(c.n) }}
         title=${`${fmtDate(c.date)} · ${c.n} capture${c.n === 1 ? "" : "s"}`} />`)}
     </div>
@@ -211,11 +226,28 @@ export function CalHeat({ counts, weeks = 26 }) {
 }
 
 /* -------------------------------- Media --------------------------------- */
-// A photo or video. Tiles show a video's opening frame; `playable` adds controls.
-export function Media({ capture, alt, className, playable }) {
+// A photo or video. Tiles use the small copy (`thumb`, about 400px) when one exists
+// and let the browser pick the full photo only for large or high-density tiles.
+// `playable` is the full view: full-size photo, or the video with controls.
+const TILE_SIZES = "(max-width: 560px) 50vw, 260px";
+export function Media({ capture, alt, className, playable, sizes }) {
+  const thumb = playable ? "" : capture.thumb;
   if (capture.media === "video") {
+    if (thumb) return html`<img className=${className} src=${thumb} alt=${alt} loading="lazy" />`;
     return html`<video className=${className} src=${playable ? capture.image : capture.image + "#t=0.1"}
       controls=${!!playable} muted=${!playable} playsInline preload="metadata" aria-label=${alt} />`;
+  }
+  if (thumb) {
+    // If the small copy is missing, fall back to the full photo rather than a broken tile.
+    const fallback = (e) => {
+      const img = e.target;
+      if (img.dataset.fell) return;
+      img.dataset.fell = "1";
+      img.removeAttribute("srcset");
+      img.src = capture.image;
+    };
+    return html`<img className=${className} src=${thumb} srcset=${`${thumb} 400w, ${capture.image} 1600w`}
+      sizes=${sizes || TILE_SIZES} alt=${alt} loading="lazy" onError=${fallback} />`;
   }
   return html`<img className=${className} src=${capture.image} alt=${alt} loading=${playable ? "eager" : "lazy"} />`;
 }
@@ -272,7 +304,7 @@ export function Shot({ capture, species, onClick, cameraLabel, selectable, selec
 // Editable per-photo metadata: favorite flag, a free-text note, and manual
 // corrections to temp / moon. Remounts per photo (keyed by id) so the draft
 // resets cleanly. Notes/temp save on blur; the star toggles immediately.
-export function LightboxEdit({ capture, species, meta, onMeta, onToggleFavorite, onTag, buckNames }) {
+export function LightboxEdit({ capture, species, meta, onMeta, onToggleFavorite, onTag, buckNames, signedIn, onSignIn }) {
   const c = capture;
   const m = meta || {};
   const [note, setNote] = useState(m.note || "");
@@ -308,6 +340,9 @@ export function LightboxEdit({ capture, species, meta, onMeta, onToggleFavorite,
   return html`<div className="lb__edit">
     <div className="lb__edit-head">
       <span className="lb__edit-title"><${Icon} name="note" size=${14} />Details</span>
+      ${!signedIn && html`<button className="lb__link" onClick=${onSignIn} title="Without signing in, edits stay on this device">
+        Sign in to share
+      </button>`}
       <button className=${cx("favbtn", isFav && "is-on")} onClick=${onToggleFavorite}
         title=${isFav ? "Remove from favorites" : "Add to favorites"} aria-pressed=${isFav}>
         <${Icon} name="star" size=${15} />
@@ -345,6 +380,59 @@ export function LightboxEdit({ capture, species, meta, onMeta, onToggleFavorite,
           onKeyDown=${(e) => e.key === "Enter" && e.target.blur()} placeholder="\u2014" maxLength=${40} />
       </label>
     </div>
+  </div>`;
+}
+
+// Fix or remove a photo someone added with the Upload button. The login is shared,
+// so anyone signed in can edit any upload; the Animal field above handles species.
+const OTHER_CAMERA = "Other camera";
+export function UploadEdit({ capture, cameras, camName, auth, onSignIn, onEdit, onDelete }) {
+  const c = capture;
+  const [camera, setCamera] = useState(c.camera);
+  const [when, setWhen] = useState(toLocalInput(c.date));
+  const [busy, setBusy] = useState(false);
+  const dirty = camera !== c.camera || when !== toLocalInput(c.date);
+  const options = (cameras || []).map((cam) => ({ value: cam.name, label: camName ? camName(cam.name) : cam.name }));
+  if (!options.some((o) => o.value === OTHER_CAMERA)) options.push({ value: OTHER_CAMERA, label: "Phone or other camera" });
+  if (!options.some((o) => o.value === c.camera)) options.unshift({ value: c.camera, label: camName ? camName(c.camera) : c.camera });
+
+  const save = async () => {
+    const d = new Date(when);
+    setBusy(true);
+    await onEdit({ camera, date: isNaN(d.getTime()) ? c.date.toISOString() : d.toISOString() });
+    setBusy(false);
+  };
+  const remove = async () => {
+    if (!window.confirm("Delete this upload for everyone? Its comments and notes go with it. This can't be undone.")) return;
+    setBusy(true);
+    await onDelete();
+    setBusy(false);
+  };
+
+  return html`<div className="lb__edit lb__upload">
+    <div className="lb__edit-head">
+      <span className="lb__edit-title"><${Icon} name="upload" size=${14} />Upload</span>
+      ${!auth && html`<button className="lb__link" onClick=${onSignIn}>Sign in to edit or delete</button>`}
+    </div>
+    ${auth && html`<${Fragment}>
+      <div className="lb__corrections">
+        <label className="lb__field">
+          <span><${Icon} name="camera" size=${13} />Camera</span>
+          <select value=${camera} onChange=${(e) => setCamera(e.target.value)}>
+            ${options.map((o) => html`<option key=${o.value} value=${o.value}>${o.label}</option>`)}
+          </select>
+        </label>
+        <label className="lb__field">
+          <span><${Icon} name="clock" size=${13} />Taken</span>
+          <input type="datetime-local" value=${when} onInput=${(e) => setWhen(e.target.value)} />
+        </label>
+      </div>
+      <div className="row" style=${{ gap: 8 }}>
+        <${Btn} sm variant="primary" disabled=${!dirty || busy} onClick=${save}>${busy ? "Saving…" : "Save"}</${Btn}>
+        <div className="spacer" />
+        <${Btn} sm className="lb__danger" icon="trash" disabled=${busy} onClick=${remove}>Delete</${Btn}>
+      </div>
+    </${Fragment}>`}
   </div>`;
 }
 
@@ -548,7 +636,7 @@ export function ZoomImage({ capture, alt, onZoomChange, controls }) {
   </div>`;
 }
 
-export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggleFavorite, onTag, buckNames, comments, onClose, onPrev, onNext, hasPrev, hasNext }) {
+export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggleFavorite, onTag, buckNames, comments, upload, signedIn, onSignIn, onClose, onPrev, onNext, hasPrev, hasNext }) {
   const zoomControls = useRef(null);
   const [zoomed, setZoomed] = useState(false);
   useEffect(() => {
@@ -631,7 +719,9 @@ export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggle
           </div>
         </div>
         ${onMeta && html`<${LightboxEdit} key=${c.id} capture=${c} species=${species} meta=${meta}
-          onMeta=${onMeta} onToggleFavorite=${onToggleFavorite} onTag=${onTag} buckNames=${buckNames} />`}
+          onMeta=${onMeta} onToggleFavorite=${onToggleFavorite} onTag=${onTag} buckNames=${buckNames}
+          signedIn=${signedIn} onSignIn=${onSignIn} />`}
+        ${upload && html`<${UploadEdit} key=${"up-" + c.id} capture=${c} ...${upload} />`}
         ${comments}
         <div className="lb__actions">
           ${c.image && html`<a className="btn btn--sm" href=${c.image} download target="_blank" rel="noopener">
@@ -655,8 +745,9 @@ export function Empty({ icon = "inbox", title, message, action }) {
   </div>`;
 }
 
-export function Toast({ kind = "ok", icon, children }) {
-  return html`<div className=${cx("toast", kind)}>
+export function Toast({ kind = "ok", icon, action, children }) {
+  return html`<div className=${cx("toast", kind)} role="status">
     <${Icon} name=${icon || (kind === "ok" ? "checkCircle" : "info")} size=${16} />${children}
+    ${action && html`<button className="toast__act" onClick=${action.onClick}>${action.label}</button>`}
   </div>`;
 }

@@ -8,6 +8,16 @@
   <meta name="theme-color" content="#f6f7f6" media="(prefers-color-scheme: light)" />
   <title>Vale Trails</title>
 
+  <!-- Installable app: manifest + icons. iOS reads the apple-* tags, everything else the manifest. -->
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+  <link rel="icon" href="icons/icon-192.png" type="image/png" sizes="192x192" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Vale Trails" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
   <!-- Set theme before paint to avoid a flash of the wrong palette. -->
   <script>
     try {
@@ -24,9 +34,8 @@
   <!-- Design system -->
   <link rel="stylesheet" href="app/styles.css" />
 
-  <!-- Leaflet (map tiles require the network regardless) -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <!-- Leaflet 1.9.4, vendored like React (map tiles still need the network). -->
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css" />
 </head>
 <body>
   <div id="root">
@@ -53,10 +62,18 @@
   <script src="vendor/htm.umd.js"></script>
 
   <!-- Leaflet runtime -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="vendor/leaflet/leaflet.js"></script>
 
   <!-- Application (ES modules) -->
   <script type="module" src="app/main.js"></script>
+
+  <!-- Offline shell + "Add to Home Screen". Skipped when opened from a file. -->
+  <script>
+    if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)) {
+      window.addEventListener("load", function () {
+        navigator.serviceWorker.register("sw.js").catch(function () {});
+      });
+    }
+  </script>
 </body>
 </html>

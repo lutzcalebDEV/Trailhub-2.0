@@ -117,6 +117,7 @@ function normalizePayload(d) {
         camera: c.camera || "Camera",
         date,
         image: c.image || "",
+        thumb: c.thumb || "",
         isNight: !!c.isNight,
         confidence: c.confidence == null ? null : c.confidence,
         aiTagged: !!c.aiTagged,
@@ -212,37 +213,45 @@ export async function remoteLoadTags() {
   return null;
 }
 
-export async function remoteSaveTags(id, tags) {
-  if (!TAGS_API) return { ok: false, reason: "no-endpoint" };
-  const r = await fetch(TAGS_API, {
+// Every write to the Worker carries the family login. Without one, the Worker
+// answers 401 and the edit stays on this device (see NotSignedIn).
+export class NotSignedIn extends Error {}
+export class TooManyAttempts extends Error {}
+
+const basicAuth = ({ user, password }) => {
+  const bytes = new TextEncoder().encode(`${user}:${password}`);
+  return "Basic " + btoa(String.fromCharCode(...bytes));
+};
+
+async function postJSON(url, body, auth) {
+  if (!auth) throw new NotSignedIn("Sign in to save for everyone");
+  const r = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ id: String(id), tags }),
+    headers: { "Content-Type": "application/json", Authorization: basicAuth(auth) },
+    body: JSON.stringify(body),
   });
-  if (!r.ok) throw new Error("Tag save failed (" + r.status + ")");
+  if (r.status === 401) throw new NotSignedIn("Sign in to save for everyone");
+  if (r.status === 429) throw new TooManyAttempts("Too many attempts");
+  if (!r.ok) throw new Error("Save failed (" + r.status + ")");
+  return r.json().catch(() => ({}));
+}
+
+export async function remoteSaveTags(id, tags, auth) {
+  if (!TAGS_API) return { ok: false, reason: "no-endpoint" };
+  await postJSON(TAGS_API, { id: String(id), tags }, auth);
   return { ok: true };
 }
 
 // Save many photos in one request (and one commit). `items` is {id: [tags]}.
-export async function remoteSaveTagsBatch(items) {
+export async function remoteSaveTagsBatch(items, auth) {
   if (!TAGS_API) return { ok: false, reason: "no-endpoint" };
-  const r = await fetch(TAGS_API, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ items }),
-  });
-  if (!r.ok) throw new Error("Tag save failed (" + r.status + ")");
+  await postJSON(TAGS_API, { items }, auth);
   return { ok: true };
 }
 
 /* ---------------------------- Photo uploads ----------------------------- */
 export const hasUploads = !!TAGS_API;
 export class StorageFull extends Error {}
-
-const basicAuth = ({ user, password }) => {
-  const bytes = new TextEncoder().encode(`${user}:${password}`);
-  return "Basic " + btoa(String.fromCharCode(...bytes));
-};
 
 // Returns "ok", "denied" or "error".
 export async function uploadLogin(user, password) {
@@ -251,26 +260,56 @@ export async function uploadLogin(user, password) {
       method: "POST",
       headers: { Authorization: basicAuth({ user, password }) },
     });
-    return r.ok ? "ok" : r.status === 401 ? "denied" : "error";
+    return r.ok ? "ok" : r.status === 401 ? "denied" : r.status === 429 ? "limited" : "error";
   } catch (e) {
     return "error";
   }
 }
 
 export const MAX_VIDEO_BYTES = 80 * 1024 * 1024;
+export const newUploadId = () => "up_" + crypto.randomUUID();
 
-export async function uploadPhoto(blob, { date, camera, species, comment, author }, auth) {
-  const query = new URLSearchParams({ date, camera, species, comment: comment || "", author: author || "" });
-  const r = await fetch(`${TAGS_API}/upload?${query}`, {
-    method: "POST",
-    headers: { Authorization: basicAuth(auth), "Content-Type": blob.type || "application/octet-stream" },
-    body: blob,
+// Send one file with upload progress (fetch can't report progress, XHR can).
+// Resolves with the Worker's JSON reply; rejects with its error message.
+function sendFile(url, blob, auth, onProgress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", url);
+    xhr.setRequestHeader("Authorization", basicAuth(auth));
+    xhr.setRequestHeader("Content-Type", blob.type || "application/octet-stream");
+    if (onProgress) {
+      xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress(e.loaded / e.total); };
+    }
+    xhr.onerror = () => reject(new Error("Couldn't reach the server"));
+    xhr.onload = () => {
+      let body = {};
+      try { body = JSON.parse(xhr.responseText || "{}"); } catch (e) {}
+      if (xhr.status === 507) return reject(new StorageFull());
+      if (xhr.status === 401) return reject(new NotSignedIn("Sign in to upload"));
+      if (xhr.status === 429) return reject(new TooManyAttempts("Too many attempts. Wait a minute."));
+      if (xhr.status < 200 || xhr.status >= 300) return reject(new Error(body.error || "The upload failed (" + xhr.status + ")"));
+      resolve(body);
+    };
+    xhr.send(blob);
   });
-  if (r.status === 507) throw new StorageFull();
-  if (!r.ok) {
-    const body = await r.json().catch(() => ({}));
-    throw new Error(body.error || "The upload failed (" + r.status + ")");
-  }
+}
+
+// A small JPEG preview for the grid, stored before the file itself under the same id.
+export async function uploadThumb(blob, id, auth) {
+  await sendFile(`${TAGS_API}/thumb?id=${encodeURIComponent(id)}`, blob, auth);
+}
+
+export async function uploadPhoto(blob, { id, date, camera, species, comment, author, buck, thumb }, auth, onProgress) {
+  const query = new URLSearchParams({
+    id: id || "", date, camera, species,
+    comment: comment || "", author: author || "", buck: buck || "", thumb: thumb ? "1" : "",
+  });
+  return sendFile(`${TAGS_API}/upload?${query}`, blob, auth, onProgress);
+}
+
+// Edit an upload's camera / date / animal, or remove it entirely ({ id, remove: true }).
+export async function updateUpload(patch, auth) {
+  return postJSON(`${TAGS_API}/uploads`, patch, auth);
 }
 
 /* ------------------------------ Comments -------------------------------- */
@@ -290,13 +329,7 @@ export async function remoteLoadComments() {
 
 // `body` is { photo, text, author } or { photo, remove }. Returns that photo's comments.
 export async function saveComment(body, auth) {
-  const r = await fetch(TAGS_API + "/comments", {
-    method: "POST",
-    headers: { Authorization: basicAuth(auth), "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!r.ok) throw new Error("Comment failed (" + r.status + ")");
-  return (await r.json()).comments;
+  return (await postJSON(TAGS_API + "/comments", body, auth)).comments;
 }
 
 /* ------------------- Shared camera names (optional) --------------------- */
@@ -326,14 +359,9 @@ export async function remoteLoadCameraNames() {
   return null;
 }
 
-export async function remoteSaveCameraName(id, name) {
+export async function remoteSaveCameraName(id, name, auth) {
   if (!CAMERAS_API) return { ok: false, reason: "no-endpoint" };
-  const r = await fetch(CAMERAS_API, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ id: String(id), name: String(name || "") }),
-  });
-  if (!r.ok) throw new Error("Camera name save failed (" + r.status + ")");
+  await postJSON(CAMERAS_API, { id: String(id), name: String(name || "") }, auth);
   return { ok: true };
 }
 
@@ -365,7 +393,7 @@ export function cameraLabels(cameras) {
 // then shared for everyone. Structural fields below are reserved so metadata can
 // never clobber the tags / camera / image pipelines.
 const META_API = TAGS_API ? TAGS_API + "/meta" : "";
-const META_RESERVED = new Set(["id", "image", "date", "camera", "tags", "species"]);
+const META_RESERVED = new Set(["id", "image", "thumb", "date", "camera", "tags", "species"]);
 
 // Sanitize an incoming metadata entry into a plain, bounded object.
 function cleanMetaEntry(raw) {
@@ -409,14 +437,9 @@ export async function remoteLoadMetadata() {
 
 // Save a metadata patch for one photo. Keys set to null are removed server-side;
 // an empty patch object clears the whole entry.
-export async function remoteSaveMetadata(id, patch) {
+export async function remoteSaveMetadata(id, patch, auth) {
   if (!META_API) return { ok: false, reason: "no-endpoint" };
-  const r = await fetch(META_API, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ id: String(id), meta: patch || {} }),
-  });
-  if (!r.ok) throw new Error("Metadata save failed (" + r.status + ")");
+  await postJSON(META_API, { id: String(id), meta: patch || {} }, auth);
   return { ok: true };
 }
 
@@ -450,6 +473,19 @@ export const LS = {
   view: "trailhub-view",
   commentName: "trailhub-comment-name",
   filters: "trailhub-filters",
+  uploadEdits: "trailhub-upload-edits",
+};
+
+// Local date helpers for the date-range filter and the upload date field.
+export const parseIsoDay = (s) => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s || ""));
+  return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : null;
+};
+// "YYYY-MM-DDTHH:mm" in local time, for <input type="datetime-local">.
+export const toLocalInput = (d) => {
+  if (!(d instanceof Date) || isNaN(d.getTime())) return "";
+  const p = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
 };
 
 function readJSON(key, fallback) {

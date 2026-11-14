@@ -19,10 +19,13 @@ just static files — no server, no AI, no credentials in the cloud.
 
 The site has seven pages: **Home** (camera status, the best bet for a sit, and the
 latest photos), **Photos** (everything from the cameras, grouped by day), **Uploads**
-(photos and videos people added, kept out of the camera stats), **Bucks** (a history for each
+(photos and videos people added), **Bucks** (a history for each
 deer you name), **Patterns** (when animals move, including by weather), **Map**, and
 **Identify** (put a name to untagged photos). Filters carry across Photos, Patterns
-and Map, so you can ask "when does this buck move at this camera?"
+and Map, so you can ask "when does this buck move at this camera?" The filter bar
+has a date range (last 7, 14 or 30 days, this season, or any two dates), and every
+bar on the Patterns and Home charts is a link: tap an hour, a weekday, a camera or a
+calendar day to see exactly those photos.
 
 ## 1. Preview it right now (no setup)
 
@@ -190,11 +193,18 @@ only set this up once.
    `npx wrangler deploy` — `wrangler.toml` is already included.
 
 Notes:
-- This intentionally lets **any visitor** edit tags (no login), matching a shared
-  family/camp dashboard. Anyone with the Worker URL can write tags, so keep it to
-  people you'd share the site with.
+- **Reading is public, writing needs the family login.** Tags, camera names, notes,
+  favorites, comments and uploads all go through the same username and password
+  (section 7). Anyone can still browse. Someone who isn't signed in can still tag
+  and take notes, but those edits stay on their device and a toast says so with a
+  **Sign in** button; the moment they sign in, everything saved on that device is
+  shared for everyone. Sign in from the person icon in the top bar.
+- Sign-in attempts are **rate limited per IP** (5 a minute on the login route, 20 every
+  10 seconds on other writes) by the two Rate Limiting bindings in `wrangler.toml`.
+  Use a long passphrase anyway: the limit slows a guesser down, it doesn't stop one.
 - No Worker yet? Everything still works — tags just stay on each device until you
   finish the setup.
+- After changing `tag-worker.js` or `wrangler.toml`, redeploy with `npx wrangler deploy`.
 
 ## 6. AI tagging (optional, free)
 
@@ -243,8 +253,35 @@ Videos (MP4, MOV or WebM, up to 80 MB) are stored as recorded, so they keep any
 location data the phone added. Some iPhone videos only play in Safari. Comments on
 photos and videos are public to read and need the upload login to post or remove.
 
+The upload form reads the real capture time from inside each file (EXIF for photos,
+the movie header for videos) and shows it next to a preview so it can be corrected
+before sending; the file's own modified time is only the fallback. You can drop files
+onto the form, name a buck as you upload, and watch each file's progress. Uploads
+filed under a real camera (an SD-card pull) count in Patterns and the camera's stats;
+"Phone or other camera" uploads stay in the Uploads tab. Anyone signed in can open an
+upload and change its camera or date, or delete it, from the full view.
+
+**Small copies.** Photo grids load a ~400px copy of each photo (`<id>_t.jpg`) instead
+of the full one, which is most of the difference on a phone. The browser makes the
+copy for uploads; `pull.py` makes it for camera photos with Pillow and gives older
+photos theirs 150 per run (or all at once with `python pull.py --thumbs`). A photo
+with no copy yet simply loads the full image.
+
 The next runs move existing photos to R2 and remove them from the repo. Older copies
 stay in git history until that history is rewritten.
+
+## 8. Install it like an app
+
+The site is a Progressive Web App: `manifest.webmanifest` names it and gives it icons,
+and `sw.js` is a small service worker that keeps the app files and the latest
+`data.js` in the browser's cache. On a phone, **Share → Add to Home Screen** (iOS) or
+**Install app** (Android/Chrome) puts a Vale Trails icon on the home screen that opens
+full-screen without the browser bar. Opening it with no signal still shows the last
+photos it saw; map tiles and the photos themselves still need a connection.
+
+The worker always tries the network first and only uses its cache when that fails,
+so a new deploy shows up on the next open and the app never mixes old and new files.
+There's nothing to maintain; the icons live in `icons/`.
 
 ## Useful flags
 
@@ -252,6 +289,7 @@ stay in git history until that history is rewritten.
 python pull.py --limit 200    # pull more photos per camera (default 100)
 python pull.py --rebuild      # rebuild data.js from the local store (no network)
 python pull.py --ocr-temps    # read °F off existing photos' overlays, then rebuild
+python pull.py --thumbs       # make the small grid copy for every photo missing one
 python pull.py --demo         # regenerate sample data (no login/network)
 python pull.py --inspect      # print the raw shape of one photo, then exit
 ```

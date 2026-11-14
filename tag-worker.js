@@ -1,23 +1,30 @@
-// TrailHub tag-sync Worker (Cloudflare Workers, free tier).
+// TrailHub sync Worker (Cloudflare Workers, free tier).
 // ---------------------------------------------------------------------------
 // PURPOSE
-//   Lets anyone who visits TrailHub add/remove photo tags and have them show up
-//   for EVERYONE, on every machine. It does this by saving tags into tags.json
-//   in your GitHub repo. pull.py then bakes tags.json into data.js on the next
-//   scheduled run, and the site also reads the live tags right away.
+//   Saves the family's edits (tags, camera names, notes, comments, uploads) into
+//   JSON files in the GitHub repo so they show up for EVERYONE, on every device.
+//   pull.py bakes those files into data.js on the next scheduled run, and the site
+//   also reads them live right away.
 //
 // WHY YOU NEED IT
-//   GitHub Pages can only SERVE files, it can't SAVE them. This tiny Worker is
-//   the piece that does the saving. It holds your GitHub token server-side so
-//   the token is never exposed in the website.
+//   GitHub Pages can only SERVE files, it can't SAVE them. This Worker is the piece
+//   that does the saving. It holds your GitHub token server-side so the token is
+//   never exposed in the website.
 //
 // SETUP (one time, ~5 minutes) — see the README "Shared tags" section.
 //   Required Worker variables (Settings -> Variables and Secrets):
-//     GITHUB_TOKEN   (secret)  fine-grained PAT, repo scoped, Contents: Read+Write
-//     GITHUB_OWNER             e.g. lutzcalebDEV
-//     GITHUB_REPO              e.g. Trailhub-2.0
-//     GITHUB_BRANCH  (opt.)    defaults to "main"
+//     GITHUB_TOKEN     (secret)  fine-grained PAT, repo scoped, Contents: Read+Write
+//     GITHUB_OWNER               e.g. lutzcalebDEV
+//     GITHUB_REPO                e.g. Trailhub-2.0
+//     GITHUB_BRANCH    (opt.)    defaults to "main"
+//     UPLOAD_USER                the shared username (wrangler.toml [vars])
+//     UPLOAD_PASSWORD  (secret)  the shared password
 //   Then copy the Worker URL into config.js:  window.TRAILHUB_TAGS_API = "https://...workers.dev";
+//
+// ACCESS
+//   Reading is public. EVERY write needs the upload login (HTTP Basic auth), so a
+//   stranger who finds this URL can't wipe tags or rename cameras. Sign-in attempts
+//   are rate limited per IP (LOGIN_LIMITER / WRITE_LIMITER in wrangler.toml).
 //
 // API
 //   GET  /            -> { "<photoId>": ["Deer","Turkey"], ... }   (all photo tags)
@@ -30,12 +37,15 @@
 //                     (merges the given keys into that photo; send a key as null to
 //                      remove it, or an empty meta object to clear the whole entry.)
 //   (POST an empty tags array or empty name to clear an entry.)
-//   POST /login       checks the upload username and password (Basic auth)
-//   POST /upload      stores one JPEG or video in R2 and lists it in uploads.json
-//                     (Basic auth); body is the file; query has date, camera, species,
-//                     and optionally comment and author
+//   POST /login       checks the upload username and password
+//   POST /thumb       ?id=up_<uuid>  body: a small JPEG preview, stored as <id>_t.jpg
+//   POST /upload      stores one JPEG or video in R2 and lists it in uploads.json;
+//                     body is the file; query has id (optional, from /thumb), date,
+//                     camera, species, and optionally comment, author, buck, thumb=1
+//   POST /uploads     with { "id": "up_...", "camera": "...", "date": "...", "species": "..." }
+//                     to edit an upload, or { "id": "up_...", "remove": true } to delete it
 //   GET  /comments    -> { "<photoId>": [{ id, text, author, at }], ... }
-//   POST /comments    with { "photo": "...", "text": "...", "author": "..." } (Basic auth)
+//   POST /comments    with { "photo": "...", "text": "...", "author": "..." }
 //                     or { "photo": "...", "remove": "<commentId>" }
 // ---------------------------------------------------------------------------
 
@@ -49,9 +59,11 @@ const BATCH_MAX = 2000; // above the site's 1,500-photo cap
 const UPLOADS_FILE = "uploads.json";
 const COMMENTS_FILE = "comments.json";
 const MAX_IMAGE_BYTES = 6 * 1024 * 1024;
+const MAX_THUMB_BYTES = 400 * 1024;
 const MAX_VIDEO_BYTES = 80 * 1024 * 1024; // Workers hold the body in memory (128 MB)
 const MAX_COMMENTS = 200; // per photo
 const R2_STOP_BYTES = 7e9; // stop at 70% of R2's 10 GB free tier, well before any charge
+const UPLOAD_ID = /^up_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -101,11 +113,11 @@ function cleanName(value) {
     .slice(0, 60);
 }
 
-// Per-photo metadata sanitizing. This endpoint is intentionally auth-less (a shared
-// family dashboard), so we bound what a single entry can hold to keep the committed
-// metadata.json small and safe to render. Structural fields owned by other pipelines
-// (tags, camera names) are reserved so metadata can't clobber them.
-const META_RESERVED = new Set(["id", "image", "date", "camera", "tags", "species"]);
+// Per-photo metadata sanitizing. Writes need the login, but the entries are still
+// bounded so the committed metadata.json stays small and safe to render.
+// Structural fields owned by other pipelines (tags, camera names) are reserved so
+// metadata can't clobber them.
+const META_RESERVED = new Set(["id", "image", "thumb", "date", "camera", "tags", "species"]);
 const META_MAX_KEYS = 24;
 const META_MAX_STR = 500;
 
@@ -187,11 +199,12 @@ async function writeFile(env, path, data, sha, message) {
 }
 
 // Read-modify-write with retries to survive concurrent edits (GitHub returns 409
-// when the sha is stale). `mutate(data)` edits the map in place.
+// when the sha is stale). `mutate(data)` edits the map in place; returning false
+// from it means "nothing to change", which skips the commit.
 async function saveEntry(env, path, mutate, message) {
   for (let attempt = 0; attempt < 3; attempt++) {
     const { data, sha } = await readFile(env, path);
-    mutate(data);
+    if (mutate(data) === false) return { ok: true, data, unchanged: true };
     const res = await writeFile(env, path, data, sha, message);
     if (res.ok) return { ok: true, data };
     if (res.status !== 409) {
@@ -238,6 +251,23 @@ async function isAuthorized(request, env) {
   return userOk && passwordOk;
 }
 
+// Per-IP rate limiting through a Workers Rate Limiting binding (wrangler.toml).
+// The password has to be checked before we know whether a request was a guess, so
+// every request to a signed-in route counts. The login route gets the tight limit;
+// the other writes get a looser one so a quick Identify session isn't throttled.
+// Without the binding (local dev, older deploy) nothing is limited.
+async function overLimit(env, name, request) {
+  const limiter = env[name];
+  if (!limiter || typeof limiter.limit !== "function") return false;
+  const key = request.headers.get("CF-Connecting-IP") || "unknown";
+  try {
+    const { success } = await limiter.limit({ key });
+    return !success;
+  } catch (_) {
+    return false;
+  }
+}
+
 async function bucketBytes(env) {
   let used = 0;
   let cursor;
@@ -269,6 +299,13 @@ function sniffMedia(bytes) {
 
 const cleanComment = (value, max) => String(value || "").replace(/\s+/g, " ").trim().slice(0, max);
 
+// A capture date the client claims: must parse and not sit in the future.
+function cleanDate(value, fallback = Date.now()) {
+  const now = Date.now();
+  const taken = Date.parse(value || "");
+  return new Date(Number.isNaN(taken) || taken > now + 86400000 ? fallback : taken).toISOString();
+}
+
 function addComment(data, photo, text, author) {
   const list = Array.isArray(data[photo]) ? data[photo] : [];
   list.push({ id: crypto.randomUUID(), text, author: author || "", at: new Date().toISOString() });
@@ -292,6 +329,24 @@ async function handleComment(request, env) {
   return result.ok ? json({ ok: true, comments: result.data[photo] || [] }) : json({ error: result.error }, result.status);
 }
 
+// A small preview the site shows in photo grids. The browser makes it (a Worker has
+// no image library) and sends it first, under an id it generated, so the upload
+// that follows can list the preview in the same commit.
+async function handleThumb(request, env) {
+  if (!env.PHOTOS || !env.R2_PUBLIC_BASE_URL) return json({ error: "Photo storage isn't set up." }, 503);
+  const id = new URL(request.url).searchParams.get("id") || "";
+  if (!UPLOAD_ID.test(id)) return json({ error: "Bad id." }, 400);
+  const bytes = new Uint8Array(await request.arrayBuffer());
+  const kind = sniffMedia(bytes);
+  if (!kind || kind.media !== "photo") return json({ error: "Previews must be JPEG." }, 415);
+  if (bytes.length > MAX_THUMB_BYTES) return json({ error: "Preview too large." }, 413);
+  if ((await bucketBytes(env)) + bytes.length > R2_STOP_BYTES) return json({ error: "Photo storage is full." }, 507);
+  await env.PHOTOS.put(`${id}_t.jpg`, bytes, {
+    httpMetadata: { contentType: "image/jpeg", cacheControl: "public, max-age=31536000, immutable" },
+  });
+  return json({ ok: true, id });
+}
+
 async function handleUpload(request, env) {
   if (!env.PHOTOS || !env.R2_PUBLIC_BASE_URL) return json({ error: "Photo storage isn't set up." }, 503);
   const bytes = new Uint8Array(await request.arrayBuffer());
@@ -305,21 +360,27 @@ async function handleUpload(request, env) {
     return json({ error: "Photo storage is full." }, 507);
   }
   const query = new URL(request.url).searchParams;
-  const now = Date.now();
-  const taken = Date.parse(query.get("date") || "");
-  const date = new Date(Number.isNaN(taken) || taken > now + 86400000 ? now : taken).toISOString();
-  const id = `up_${crypto.randomUUID()}`;
+  const base = env.R2_PUBLIC_BASE_URL.replace(/\/$/, "");
+  const wanted = query.get("id") || "";
+  const id = UPLOAD_ID.test(wanted) ? wanted : `up_${crypto.randomUUID()}`;
   const key = `${id}.${kind.ext}`;
+  if (await env.PHOTOS.head(key)) return json({ error: "That id is already used." }, 409);
   await env.PHOTOS.put(key, bytes, {
     httpMetadata: { contentType: kind.type, cacheControl: "public, max-age=31536000, immutable" },
   });
+  const buck = cleanName(query.get("buck")).slice(0, 40);
   const record = {
-    id, date,
+    id,
+    date: cleanDate(query.get("date")),
     media: kind.media,
-    image: `${env.R2_PUBLIC_BASE_URL.replace(/\/$/, "")}/${key}`,
+    image: `${base}/${key}`,
     camera: cleanName(query.get("camera")) || "Other camera",
-    species: cleanTags([query.get("species")])[0] || "Animal",
+    species: buck ? "Buck" : cleanTags([query.get("species")])[0] || "Animal",
   };
+  // Only list a preview that really exists, so a tile can never point at nothing.
+  if (query.get("thumb") === "1" && (await env.PHOTOS.head(`${id}_t.jpg`))) {
+    record.thumb = `${base}/${id}_t.jpg`;
+  }
   const result = await saveEntry(env, UPLOADS_FILE, (data) => { data[id] = record; }, `Add uploaded photo ${id}`);
   if (!result.ok) {
     await env.PHOTOS.delete(key);
@@ -330,9 +391,56 @@ async function handleUpload(request, env) {
     const author = cleanComment(query.get("author"), 40);
     await saveEntry(env, COMMENTS_FILE, (data) => addComment(data, id, comment, author), `Comment on ${id}`);
   }
+  if (buck) {
+    await saveEntry(env, META_FILE, (data) => { data[id] = applyMetaPatch(data[id], { buck }); }, `Name buck on ${id}`);
+  }
   // Publish right away. If this fails, the next scheduled run picks the photo up.
   await dispatchUpdate(env).catch(() => {});
-  return json({ ok: true, id, image: record.image });
+  return json({ ok: true, id, image: record.image, thumb: record.thumb || null });
+}
+
+// Fix an upload's camera, date or animal, or remove it (file, preview, and every
+// note, tag and comment attached to it). The login is shared, so anyone signed in
+// can edit any upload.
+async function handleUploadEdit(request, env) {
+  const payload = await request.json().catch(() => null);
+  const id = payload && String(payload.id || "");
+  if (!UPLOAD_ID.test(id)) return json({ error: "Missing id." }, 400);
+
+  if (payload.remove) {
+    let record = null;
+    const result = await saveEntry(env, UPLOADS_FILE, (data) => {
+      record = data[id] || null;
+      if (!record) return false;
+      delete data[id];
+    }, `Remove uploaded photo ${id}`);
+    if (!result.ok) return json({ error: result.error }, result.status);
+    if (record && env.PHOTOS) {
+      const keys = [`${id}_t.jpg`];
+      try { keys.push(decodeURIComponent(new URL(record.image).pathname.slice(1))); } catch (_) {}
+      await Promise.all(keys.map((k) => env.PHOTOS.delete(k).catch(() => {})));
+    }
+    const drop = (data) => { if (!(id in data)) return false; delete data[id]; };
+    await saveEntry(env, COMMENTS_FILE, drop, `Remove comments on ${id}`);
+    await saveEntry(env, TAGS_FILE, drop, `Remove tags on ${id}`);
+    await saveEntry(env, META_FILE, drop, `Remove metadata on ${id}`);
+    await dispatchUpdate(env).catch(() => {});
+    return json({ ok: true, id, removed: true });
+  }
+
+  let record = null;
+  const result = await saveEntry(env, UPLOADS_FILE, (data) => {
+    const cur = data[id];
+    if (!cur) return false;
+    if (payload.camera != null) cur.camera = cleanName(payload.camera) || "Other camera";
+    if (payload.date != null) cur.date = cleanDate(payload.date, Date.parse(cur.date) || Date.now());
+    if (payload.species != null) cur.species = cleanTags([payload.species])[0] || "Animal";
+    record = cur;
+  }, `Edit uploaded photo ${id}`);
+  if (!result.ok) return json({ error: result.error }, result.status);
+  if (!record) return json({ error: "No such upload." }, 404);
+  await dispatchUpdate(env).catch(() => {});
+  return json({ ok: true, upload: record });
 }
 
 export default {
@@ -355,68 +463,72 @@ export default {
     const isMeta = path === "/meta" || path === "/metadata";
 
     try {
-      if (request.method === "POST" && ["/login", "/upload", "/comments"].includes(path)) {
-        if (!(await isAuthorized(request, env))) return json({ error: "Not authorized." }, 401);
-        if (path === "/login") return json({ ok: true });
-        return path === "/upload" ? await handleUpload(request, env) : await handleComment(request, env);
-      }
-
       if (request.method === "GET") {
         const file = path === "/comments" ? COMMENTS_FILE : isCameras ? CAMERA_FILE : isMeta ? META_FILE : TAGS_FILE;
         const { data } = await readFile(env, file);
         return json(data);
       }
 
-      if (request.method === "POST") {
-        const payload = await request.json().catch(() => null);
+      if (request.method !== "POST") return json({ error: "Method not allowed." }, 405);
 
-        // Bulk tagging is one commit: separate saves would all race for the same file.
-        if (!isCameras && !isMeta && payload && payload.items && typeof payload.items === "object") {
-          const entries = Object.entries(payload.items);
-          if (!entries.length) return json({ error: "No items." }, 400);
-          if (entries.length > BATCH_MAX) return json({ error: "Too many items." }, 413);
-          const result = await saveEntry(env, TAGS_FILE,
-            (data) => {
-              for (const [id, tags] of entries) {
-                const clean = cleanTags(tags);
-                if (clean.length) data[id] = clean; else delete data[id];
-              }
-            },
-            `Update tags for ${entries.length} photos`);
-          return result.ok ? json({ ok: true, tags: result.data }) : json({ error: result.error }, result.status);
-        }
+      // Every write is signed in. Reads above stay public.
+      if (await overLimit(env, path === "/login" ? "LOGIN_LIMITER" : "WRITE_LIMITER", request)) {
+        return json({ error: "Too many attempts. Wait a minute and try again." }, 429);
+      }
+      if (!(await isAuthorized(request, env))) return json({ error: "Sign in to save changes." }, 401);
 
-        if (!payload || !payload.id) return json({ error: "Missing id." }, 400);
-        const id = String(payload.id);
+      if (path === "/login") return json({ ok: true });
+      if (path === "/thumb") return await handleThumb(request, env);
+      if (path === "/upload") return await handleUpload(request, env);
+      if (path === "/uploads") return await handleUploadEdit(request, env);
+      if (path === "/comments") return await handleComment(request, env);
 
-        if (isCameras) {
-          const name = cleanName(payload.name);
-          const result = await saveEntry(env, CAMERA_FILE,
-            (data) => { if (name) data[id] = name; else delete data[id]; },
-            `Rename camera ${id}`);
-          return result.ok ? json({ ok: true, names: result.data }) : json({ error: result.error }, result.status);
-        }
+      const payload = await request.json().catch(() => null);
 
-        if (isMeta) {
-          const patch = payload.meta && typeof payload.meta === "object" ? payload.meta : {};
-          const result = await saveEntry(env, META_FILE,
-            (data) => {
-              const entry = applyMetaPatch(data[id], patch);
-              if (Object.keys(entry).length) data[id] = entry;
-              else delete data[id];
-            },
-            `Update metadata for ${id}`);
-          return result.ok ? json({ ok: true, meta: result.data }) : json({ error: result.error }, result.status);
-        }
-
-        const newTags = cleanTags(payload.tags);
+      // Bulk tagging is one commit: separate saves would all race for the same file.
+      if (!isCameras && !isMeta && payload && payload.items && typeof payload.items === "object") {
+        const entries = Object.entries(payload.items);
+        if (!entries.length) return json({ error: "No items." }, 400);
+        if (entries.length > BATCH_MAX) return json({ error: "Too many items." }, 413);
         const result = await saveEntry(env, TAGS_FILE,
-          (data) => { if (newTags.length) data[id] = newTags; else delete data[id]; },
-          `Update tags for ${id}`);
+          (data) => {
+            for (const [id, tags] of entries) {
+              const clean = cleanTags(tags);
+              if (clean.length) data[id] = clean; else delete data[id];
+            }
+          },
+          `Update tags for ${entries.length} photos`);
         return result.ok ? json({ ok: true, tags: result.data }) : json({ error: result.error }, result.status);
       }
 
-      return json({ error: "Method not allowed." }, 405);
+      if (!payload || !payload.id) return json({ error: "Missing id." }, 400);
+      const id = String(payload.id);
+
+      if (isCameras) {
+        const name = cleanName(payload.name);
+        const result = await saveEntry(env, CAMERA_FILE,
+          (data) => { if (name) data[id] = name; else delete data[id]; },
+          `Rename camera ${id}`);
+        return result.ok ? json({ ok: true, names: result.data }) : json({ error: result.error }, result.status);
+      }
+
+      if (isMeta) {
+        const patch = payload.meta && typeof payload.meta === "object" ? payload.meta : {};
+        const result = await saveEntry(env, META_FILE,
+          (data) => {
+            const entry = applyMetaPatch(data[id], patch);
+            if (Object.keys(entry).length) data[id] = entry;
+            else delete data[id];
+          },
+          `Update metadata for ${id}`);
+        return result.ok ? json({ ok: true, meta: result.data }) : json({ error: result.error }, result.status);
+      }
+
+      const newTags = cleanTags(payload.tags);
+      const result = await saveEntry(env, TAGS_FILE,
+        (data) => { if (newTags.length) data[id] = newTags; else delete data[id]; },
+        `Update tags for ${id}`);
+      return result.ok ? json({ ok: true, tags: result.data }) : json({ error: result.error }, result.status);
     } catch (err) {
       return json({ error: String((err && err.message) || err) }, 500);
     }

@@ -26,6 +26,7 @@ export function Overview(app) {
   const cams = cameraStatus(captures, data.cameras);
   const sit = bestSit(captures, ov);
   const showCamera = (camera) => { setFilter({ camera }); setView("gallery"); };
+  const go = (patch) => { setFilter(patch); setView("gallery"); };
   const seeAll = (label) => html`<${Btn} sm variant="ghost" iconRight="arrowRight"
     onClick=${() => setView("gallery")}>${label}</${Btn}>`;
 
@@ -72,7 +73,8 @@ export function Overview(app) {
 
     <div className="grid grid--2">
       <${Panel} title="Last 14 days">
-        <${Sparkbars} data=${daily.map((d) => ({ value: d.value, label: d.label }))} />
+        <${Sparkbars} data=${daily.map((d) => ({ value: d.value, label: d.label, key: d.key }))}
+          onSelect=${(d) => go({ range: "custom", from: d.key, to: d.key })} />
         <div className="row" style=${{ justifyContent: "space-between", marginTop: 10 }}>
           <span className="faint" style=${{ fontSize: 12 }}>${daily[0].label}</span>
           <span className="muted" style=${{ fontSize: 12 }}>
@@ -82,7 +84,7 @@ export function Overview(app) {
         </div>
       </${Panel}>
       <${Panel} title="Time of day">
-        <${Histogram} hours=${hourHistogram(seen)} />
+        <${Histogram} hours=${hourHistogram(seen)} onSelect=${(h) => go({ hour: h })} />
       </${Panel}>
     </div>
   </div>`;
