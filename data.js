@@ -1,5 +1,5 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-11-14T13:11:38+00:00",
+  "generatedAt": "2026-11-14T13:41:58+00:00",
   "demo": false,
   "cameras": [
     {
@@ -19,6 +19,64 @@ window.TRAILHUB_DATA = {
   ],
   "captures": [
     {
+      "species": "Squirrel",
+      "camera": "Camera 6a30af992e5969f7ed9fdc5c",
+      "date": "2026-11-14T13:39:04+00:00",
+      "uploaded": "2026-11-14T13:39:24.663000+00:00",
+      "timeSource": "camera",
+      "isNight": false,
+      "todSource": "tag",
+      "temp": 32,
+      "confidence": 0.95,
+      "moon": null,
+      "id": "sp_6af8648ccb2a4e208b20e3ed",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8648ccb2a4e208b20e3ed.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8648ccb2a4e208b20e3ed_t.jpg",
+      "overlayRead": 2,
+      "tags": [
+        "Squirrel"
+      ],
+      "aiTagged": true,
+      "weather": {
+        "tempF": 36,
+        "wind": 4,
+        "windDir": "W",
+        "windBand": "Under 5 mph",
+        "pressure": 30.08,
+        "trend": "Rising",
+        "sky": "Dry"
+      }
+    },
+    {
+      "species": "Squirrel",
+      "camera": "Camera 6a30af992e5969f7ed9fdc5c",
+      "date": "2026-11-14T13:39:03+00:00",
+      "uploaded": "2026-11-14T13:39:24.663000+00:00",
+      "timeSource": "camera",
+      "isNight": false,
+      "todSource": "tag",
+      "temp": 32,
+      "confidence": 0.95,
+      "moon": null,
+      "id": "sp_6af8648ccb2a4e208b20e3ef",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8648ccb2a4e208b20e3ef.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8648ccb2a4e208b20e3ef_t.jpg",
+      "overlayRead": 2,
+      "tags": [
+        "Squirrel"
+      ],
+      "aiTagged": true,
+      "weather": {
+        "tempF": 36,
+        "wind": 4,
+        "windDir": "W",
+        "windBand": "Under 5 mph",
+        "pressure": 30.08,
+        "trend": "Rising",
+        "sky": "Dry"
+      }
+    },
+    {
       "species": "Buck",
       "camera": "Camera 6a309e41bdc62e4448c0a370",
       "date": "2026-11-14T13:02:47+00:00",
@@ -30,9 +88,9 @@ window.TRAILHUB_DATA = {
       "confidence": 0.95,
       "moon": null,
       "id": "sp_6af85c221ca0c9c018d44436",
+      "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af85c221ca0c9c018d44436.jpg",
       "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af85c221ca0c9c018d44436_t.jpg",
-      "overlayRead": 2,
       "tags": [
         "Buck"
       ],
@@ -59,9 +117,9 @@ window.TRAILHUB_DATA = {
       "confidence": 0.95,
       "moon": null,
       "id": "sp_6af85c221ca0c9c018d44438",
+      "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af85c221ca0c9c018d44438.jpg",
       "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af85c221ca0c9c018d44438_t.jpg",
-      "overlayRead": 2,
       "tags": [
         "Buck"
       ],
