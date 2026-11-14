@@ -1,5 +1,5 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-11-14T21:47:57+00:00",
+  "generatedAt": "2026-11-14T21:51:27+00:00",
   "demo": false,
   "cameras": [
     {
@@ -21,6 +21,64 @@ window.TRAILHUB_DATA = {
     {
       "species": "Person",
       "camera": "Camera 6a309e41bdc62e4448c0a370",
+      "date": "2026-11-14T21:46:54+00:00",
+      "uploaded": "2026-11-14T21:47:13.981000+00:00",
+      "timeSource": "camera",
+      "isNight": false,
+      "todSource": "tag",
+      "temp": 46,
+      "confidence": 0.99,
+      "moon": null,
+      "id": "sp_6af8d6e13071c0b1a02908a3",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8d6e13071c0b1a02908a3.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8d6e13071c0b1a02908a3_t.jpg",
+      "overlayRead": 2,
+      "tags": [
+        "Person"
+      ],
+      "aiTagged": true,
+      "weather": {
+        "tempF": 48,
+        "wind": 10,
+        "windDir": "NW",
+        "windBand": "10\u201315 mph",
+        "pressure": 30.12,
+        "trend": "Steady",
+        "sky": "Dry"
+      }
+    },
+    {
+      "species": "Person",
+      "camera": "Camera 6a309e41bdc62e4448c0a370",
+      "date": "2026-11-14T21:46:53+00:00",
+      "uploaded": "2026-11-14T21:47:13.981000+00:00",
+      "timeSource": "camera",
+      "isNight": false,
+      "todSource": "tag",
+      "temp": 46,
+      "confidence": 1.0,
+      "moon": null,
+      "id": "sp_6af8d6e13071c0b1a02908a5",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8d6e13071c0b1a02908a5.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8d6e13071c0b1a02908a5_t.jpg",
+      "overlayRead": 2,
+      "tags": [
+        "Person"
+      ],
+      "aiTagged": true,
+      "weather": {
+        "tempF": 48,
+        "wind": 10,
+        "windDir": "NW",
+        "windBand": "10\u201315 mph",
+        "pressure": 30.12,
+        "trend": "Steady",
+        "sky": "Dry"
+      }
+    },
+    {
+      "species": "Person",
+      "camera": "Camera 6a309e41bdc62e4448c0a370",
       "date": "2026-11-14T21:45:43+00:00",
       "uploaded": "2026-11-14T21:46:00.388000+00:00",
       "timeSource": "camera",
@@ -30,13 +88,22 @@ window.TRAILHUB_DATA = {
       "confidence": 0.99,
       "moon": null,
       "id": "sp_6af8d6982be2a35e89485198",
+      "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8d6982be2a35e89485198.jpg",
       "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8d6982be2a35e89485198_t.jpg",
-      "overlayRead": 2,
       "tags": [
         "Person"
       ],
-      "aiTagged": true
+      "aiTagged": true,
+      "weather": {
+        "tempF": 48,
+        "wind": 10,
+        "windDir": "NW",
+        "windBand": "10\u201315 mph",
+        "pressure": 30.12,
+        "trend": "Steady",
+        "sky": "Dry"
+      }
     },
     {
       "species": "Person",
@@ -50,13 +117,22 @@ window.TRAILHUB_DATA = {
       "confidence": 0.99,
       "moon": null,
       "id": "sp_6af8d6982be2a35e8948519a",
+      "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8d6982be2a35e8948519a.jpg",
       "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8d6982be2a35e8948519a_t.jpg",
-      "overlayRead": 2,
       "tags": [
         "Person"
       ],
-      "aiTagged": true
+      "aiTagged": true,
+      "weather": {
+        "tempF": 48,
+        "wind": 10,
+        "windDir": "NW",
+        "windBand": "10\u201315 mph",
+        "pressure": 30.12,
+        "trend": "Steady",
+        "sky": "Dry"
+      }
     },
     {
       "species": "Person",
@@ -70,13 +146,22 @@ window.TRAILHUB_DATA = {
       "confidence": 0.99,
       "moon": null,
       "id": "sp_6af8d67fea09fa894cfaf060",
+      "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8d67fea09fa894cfaf060.jpg",
       "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8d67fea09fa894cfaf060_t.jpg",
-      "overlayRead": 2,
       "tags": [
         "Person"
       ],
-      "aiTagged": true
+      "aiTagged": true,
+      "weather": {
+        "tempF": 48,
+        "wind": 10,
+        "windDir": "NW",
+        "windBand": "10\u201315 mph",
+        "pressure": 30.12,
+        "trend": "Steady",
+        "sky": "Dry"
+      }
     },
     {
       "species": "Person",
@@ -90,13 +175,22 @@ window.TRAILHUB_DATA = {
       "confidence": 1.0,
       "moon": null,
       "id": "sp_6af8d67fea09fa894cfaf062",
+      "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8d67fea09fa894cfaf062.jpg",
       "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8d67fea09fa894cfaf062_t.jpg",
-      "overlayRead": 2,
       "tags": [
         "Person"
       ],
-      "aiTagged": true
+      "aiTagged": true,
+      "weather": {
+        "tempF": 48,
+        "wind": 10,
+        "windDir": "NW",
+        "windBand": "10\u201315 mph",
+        "pressure": 30.12,
+        "trend": "Steady",
+        "sky": "Dry"
+      }
     },
     {
       "species": "Person",
@@ -110,13 +204,22 @@ window.TRAILHUB_DATA = {
       "confidence": 0.99,
       "moon": null,
       "id": "sp_6af8d663728ff08a6b25f915",
+      "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8d663728ff08a6b25f915.jpg",
       "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8d663728ff08a6b25f915_t.jpg",
-      "overlayRead": 2,
       "tags": [
         "Person"
       ],
-      "aiTagged": true
+      "aiTagged": true,
+      "weather": {
+        "tempF": 48,
+        "wind": 10,
+        "windDir": "NW",
+        "windBand": "10\u201315 mph",
+        "pressure": 30.12,
+        "trend": "Steady",
+        "sky": "Dry"
+      }
     },
     {
       "species": "Person",
@@ -130,13 +233,22 @@ window.TRAILHUB_DATA = {
       "confidence": 0.99,
       "moon": null,
       "id": "sp_6af8d663728ff08a6b25f918",
+      "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8d663728ff08a6b25f918.jpg",
       "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8d663728ff08a6b25f918_t.jpg",
-      "overlayRead": 2,
       "tags": [
         "Person"
       ],
-      "aiTagged": true
+      "aiTagged": true,
+      "weather": {
+        "tempF": 48,
+        "wind": 10,
+        "windDir": "NW",
+        "windBand": "10\u201315 mph",
+        "pressure": 30.12,
+        "trend": "Steady",
+        "sky": "Dry"
+      }
     },
     {
       "species": "Squirrel",
@@ -158,12 +270,12 @@ window.TRAILHUB_DATA = {
       ],
       "aiTagged": true,
       "weather": {
-        "tempF": 49,
-        "wind": 11,
-        "windDir": "N",
+        "tempF": 50,
+        "wind": 10,
+        "windDir": "NW",
         "windBand": "10\u201315 mph",
-        "pressure": 30.08,
-        "trend": "Falling",
+        "pressure": 30.11,
+        "trend": "Steady",
         "sky": "Dry"
       }
     },
@@ -187,12 +299,12 @@ window.TRAILHUB_DATA = {
       ],
       "aiTagged": true,
       "weather": {
-        "tempF": 49,
-        "wind": 11,
-        "windDir": "N",
+        "tempF": 50,
+        "wind": 10,
+        "windDir": "NW",
         "windBand": "10\u201315 mph",
-        "pressure": 30.08,
-        "trend": "Falling",
+        "pressure": 30.11,
+        "trend": "Steady",
         "sky": "Dry"
       }
     },
@@ -216,12 +328,12 @@ window.TRAILHUB_DATA = {
       ],
       "aiTagged": true,
       "weather": {
-        "tempF": 49,
-        "wind": 11,
-        "windDir": "N",
+        "tempF": 50,
+        "wind": 10,
+        "windDir": "NW",
         "windBand": "10\u201315 mph",
-        "pressure": 30.08,
-        "trend": "Falling",
+        "pressure": 30.11,
+        "trend": "Steady",
         "sky": "Dry"
       }
     },
@@ -246,7 +358,7 @@ window.TRAILHUB_DATA = {
       "aiTagged": true,
       "weather": {
         "tempF": 49,
-        "wind": 13,
+        "wind": 10,
         "windDir": "NW",
         "windBand": "10\u201315 mph",
         "pressure": 30.11,
@@ -22454,18 +22566,18 @@ window.TRAILHUB_DATA = {
   ],
   "weatherHours": {
     "windBand": {
-      "5\u201310 mph": 1483,
-      "10\u201315 mph": 260,
+      "5\u201310 mph": 1484,
+      "10\u201315 mph": 261,
       "Under 5 mph": 1801,
       "15+ mph": 79
     },
     "trend": {
-      "Falling": 719,
-      "Steady": 2159,
+      "Falling": 718,
+      "Steady": 2162,
       "Rising": 745
     },
     "sky": {
-      "Dry": 3031,
+      "Dry": 3033,
       "Rain": 592
     }
   }

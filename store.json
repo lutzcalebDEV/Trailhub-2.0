@@ -11569,9 +11569,9 @@
   "confidence": null,
   "moon": null,
   "id": "sp_6af8d6982be2a35e89485198",
+  "overlayRead": 2,
   "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8d6982be2a35e89485198.jpg",
-  "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8d6982be2a35e89485198_t.jpg",
-  "overlayRead": 2
+  "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8d6982be2a35e89485198_t.jpg"
  },
  "sp_6af8d6982be2a35e8948519a": {
   "species": "Animal",
@@ -11585,9 +11585,9 @@
   "confidence": null,
   "moon": null,
   "id": "sp_6af8d6982be2a35e8948519a",
+  "overlayRead": 2,
   "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8d6982be2a35e8948519a.jpg",
-  "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8d6982be2a35e8948519a_t.jpg",
-  "overlayRead": 2
+  "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8d6982be2a35e8948519a_t.jpg"
  },
  "sp_6af8d67fea09fa894cfaf060": {
   "species": "Animal",
@@ -11601,9 +11601,9 @@
   "confidence": null,
   "moon": null,
   "id": "sp_6af8d67fea09fa894cfaf060",
+  "overlayRead": 2,
   "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8d67fea09fa894cfaf060.jpg",
-  "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8d67fea09fa894cfaf060_t.jpg",
-  "overlayRead": 2
+  "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8d67fea09fa894cfaf060_t.jpg"
  },
  "sp_6af8d67fea09fa894cfaf062": {
   "species": "Animal",
@@ -11617,9 +11617,9 @@
   "confidence": null,
   "moon": null,
   "id": "sp_6af8d67fea09fa894cfaf062",
+  "overlayRead": 2,
   "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8d67fea09fa894cfaf062.jpg",
-  "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8d67fea09fa894cfaf062_t.jpg",
-  "overlayRead": 2
+  "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8d67fea09fa894cfaf062_t.jpg"
  },
  "sp_6af8d663728ff08a6b25f915": {
   "species": "Animal",
@@ -11633,9 +11633,9 @@
   "confidence": null,
   "moon": null,
   "id": "sp_6af8d663728ff08a6b25f915",
+  "overlayRead": 2,
   "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8d663728ff08a6b25f915.jpg",
-  "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8d663728ff08a6b25f915_t.jpg",
-  "overlayRead": 2
+  "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8d663728ff08a6b25f915_t.jpg"
  },
  "sp_6af8d663728ff08a6b25f918": {
   "species": "Animal",
@@ -11649,8 +11649,40 @@
   "confidence": null,
   "moon": null,
   "id": "sp_6af8d663728ff08a6b25f918",
+  "overlayRead": 2,
   "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8d663728ff08a6b25f918.jpg",
-  "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8d663728ff08a6b25f918_t.jpg",
+  "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8d663728ff08a6b25f918_t.jpg"
+ },
+ "sp_6af8d6e13071c0b1a02908a3": {
+  "species": "Animal",
+  "camera": "Camera 6a309e41bdc62e4448c0a370",
+  "date": "2026-11-14T21:46:54+00:00",
+  "uploaded": "2026-11-14T21:47:13.981000+00:00",
+  "timeSource": "camera",
+  "isNight": false,
+  "todSource": "tag",
+  "temp": 46,
+  "confidence": null,
+  "moon": null,
+  "id": "sp_6af8d6e13071c0b1a02908a3",
+  "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8d6e13071c0b1a02908a3.jpg",
+  "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8d6e13071c0b1a02908a3_t.jpg",
+  "overlayRead": 2
+ },
+ "sp_6af8d6e13071c0b1a02908a5": {
+  "species": "Animal",
+  "camera": "Camera 6a309e41bdc62e4448c0a370",
+  "date": "2026-11-14T21:46:53+00:00",
+  "uploaded": "2026-11-14T21:47:13.981000+00:00",
+  "timeSource": "camera",
+  "isNight": false,
+  "todSource": "tag",
+  "temp": 46,
+  "confidence": null,
+  "moon": null,
+  "id": "sp_6af8d6e13071c0b1a02908a5",
+  "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8d6e13071c0b1a02908a5.jpg",
+  "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8d6e13071c0b1a02908a5_t.jpg",
   "overlayRead": 2
  }
 }
