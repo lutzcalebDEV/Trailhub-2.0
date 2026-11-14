@@ -3713,5 +3713,15 @@
   "confidence": 0.99,
   "label": "Person",
   "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6af7c791a1fee9bf74580a0a": {
+  "confidence": 0.95,
+  "label": "Raccoon",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6af7c791a1fee9bf74580a0c": {
+  "confidence": 0.95,
+  "label": "Raccoon",
+  "model": "gemini-3.5-flash-lite"
  }
 }

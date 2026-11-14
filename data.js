@@ -1,5 +1,5 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-11-14T01:51:21+00:00",
+  "generatedAt": "2026-11-14T02:32:01+00:00",
   "demo": false,
   "cameras": [
     {
@@ -18,6 +18,44 @@ window.TRAILHUB_DATA = {
     }
   ],
   "captures": [
+    {
+      "species": "Raccoon",
+      "camera": "Camera 6a30af992e5969f7ed9fdc5c",
+      "date": "2026-11-14T02:29:14+00:00",
+      "uploaded": "2026-11-14T02:29:37.681000+00:00",
+      "timeSource": "camera",
+      "isNight": true,
+      "todSource": "tag",
+      "temp": 41,
+      "confidence": 0.95,
+      "moon": null,
+      "id": "sp_6af7c791a1fee9bf74580a0a",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af7c791a1fee9bf74580a0a.jpg",
+      "overlayRead": 2,
+      "tags": [
+        "Raccoon"
+      ],
+      "aiTagged": true
+    },
+    {
+      "species": "Raccoon",
+      "camera": "Camera 6a30af992e5969f7ed9fdc5c",
+      "date": "2026-11-14T02:29:13+00:00",
+      "uploaded": "2026-11-14T02:29:37.681000+00:00",
+      "timeSource": "camera",
+      "isNight": true,
+      "todSource": "tag",
+      "temp": 41,
+      "confidence": 0.95,
+      "moon": null,
+      "id": "sp_6af7c791a1fee9bf74580a0c",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af7c791a1fee9bf74580a0c.jpg",
+      "overlayRead": 2,
+      "tags": [
+        "Raccoon"
+      ],
+      "aiTagged": true
+    },
     {
       "species": "Person",
       "camera": "Camera 6a30af992e5969f7ed9fdc5c",
