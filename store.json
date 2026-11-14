@@ -11492,5 +11492,21 @@
   "overlayRead": 2,
   "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af865216f28a5eaf3155d96.jpg",
   "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af865216f28a5eaf3155d96_t.jpg"
+ },
+ "sp_6af8a95e2df0e433c60dfd6d": {
+  "species": "Animal",
+  "camera": "Camera 6a30af992e5969f7ed9fdc5c",
+  "date": "2026-11-14T18:32:36+00:00",
+  "uploaded": "2026-11-14T18:33:02.237000+00:00",
+  "timeSource": "camera",
+  "isNight": false,
+  "todSource": "tag",
+  "temp": 5,
+  "confidence": null,
+  "moon": null,
+  "id": "sp_6af8a95e2df0e433c60dfd6d",
+  "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8a95e2df0e433c60dfd6d.jpg",
+  "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8a95e2df0e433c60dfd6d_t.jpg",
+  "overlayRead": 2
  }
 }

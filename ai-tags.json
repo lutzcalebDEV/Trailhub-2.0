@@ -3813,5 +3813,10 @@
   "confidence": 0.95,
   "label": "Empty",
   "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6af8a95e2df0e433c60dfd6d": {
+  "confidence": 0.99,
+  "label": "Person",
+  "model": "gemini-3.5-flash-lite"
  }
 }
