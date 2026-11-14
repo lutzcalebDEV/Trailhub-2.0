@@ -1,5 +1,5 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-11-14T19:16:25+00:00",
+  "generatedAt": "2026-11-14T19:56:29+00:00",
   "demo": false,
   "cameras": [
     {
@@ -19,6 +19,35 @@ window.TRAILHUB_DATA = {
   ],
   "captures": [
     {
+      "species": "Squirrel",
+      "camera": "Camera 6a30af992e5969f7ed9fdc5c",
+      "date": "2026-11-14T19:52:19+00:00",
+      "uploaded": "2026-11-14T19:53:02.207000+00:00",
+      "timeSource": "camera",
+      "isNight": false,
+      "todSource": "tag",
+      "temp": 54,
+      "confidence": 0.85,
+      "moon": null,
+      "id": "sp_6af8bc1e53b1ba047073a6bb",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8bc1e53b1ba047073a6bb.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8bc1e53b1ba047073a6bb_t.jpg",
+      "overlayRead": 2,
+      "tags": [
+        "Squirrel"
+      ],
+      "aiTagged": true,
+      "weather": {
+        "tempF": 49,
+        "wind": 11,
+        "windDir": "N",
+        "windBand": "10\u201315 mph",
+        "pressure": 30.08,
+        "trend": "Falling",
+        "sky": "Dry"
+      }
+    },
+    {
       "species": "Doe",
       "camera": "Camera 6a309e41bdc62e4448c0a370",
       "date": "2026-11-14T19:14:05+00:00",
@@ -30,9 +59,9 @@ window.TRAILHUB_DATA = {
       "confidence": 0.95,
       "moon": null,
       "id": "sp_6af8b317ea13bb2fdd3219eb",
+      "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8b317ea13bb2fdd3219eb.jpg",
       "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8b317ea13bb2fdd3219eb_t.jpg",
-      "overlayRead": 2,
       "tags": [
         "Doe"
       ],
@@ -59,9 +88,9 @@ window.TRAILHUB_DATA = {
       "confidence": 0.95,
       "moon": null,
       "id": "sp_6af8b317ea13bb2fdd3219ed",
+      "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8b317ea13bb2fdd3219ed.jpg",
       "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8b317ea13bb2fdd3219ed_t.jpg",
-      "overlayRead": 2,
       "tags": [
         "Buck"
       ],
