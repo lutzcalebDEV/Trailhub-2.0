@@ -1,5 +1,5 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-11-14T10:11:33+00:00",
+  "generatedAt": "2026-11-14T11:11:41+00:00",
   "demo": false,
   "cameras": [
     {
@@ -30,9 +30,9 @@ window.TRAILHUB_DATA = {
       "confidence": 0.99,
       "moon": null,
       "id": "sp_6af8321dd8221c99620b00e7",
+      "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8321dd8221c99620b00e7.jpg",
       "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8321dd8221c99620b00e7_t.jpg",
-      "overlayRead": 2,
       "tags": [
         "Empty"
       ],
@@ -59,9 +59,9 @@ window.TRAILHUB_DATA = {
       "confidence": 0.85,
       "moon": null,
       "id": "sp_6af8321dd8221c99620b00e9",
+      "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8321dd8221c99620b00e9.jpg",
       "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8321dd8221c99620b00e9_t.jpg",
-      "overlayRead": 2,
       "tags": [
         "Raccoon"
       ],
