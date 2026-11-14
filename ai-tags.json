@@ -3723,5 +3723,15 @@
   "confidence": 0.95,
   "label": "Raccoon",
   "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6af8321dd8221c99620b00e7": {
+  "confidence": 0.99,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6af8321dd8221c99620b00e9": {
+  "confidence": 0.85,
+  "label": "Raccoon",
+  "model": "gemini-3.5-flash-lite"
  }
 }

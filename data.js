@@ -1,5 +1,5 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-11-14T09:31:28+00:00",
+  "generatedAt": "2026-11-14T10:11:33+00:00",
   "demo": false,
   "cameras": [
     {
@@ -18,6 +18,64 @@ window.TRAILHUB_DATA = {
     }
   ],
   "captures": [
+    {
+      "species": "Empty",
+      "camera": "Camera 6a30af992e5969f7ed9fdc5c",
+      "date": "2026-11-14T10:03:49+00:00",
+      "uploaded": "2026-11-14T10:04:13.220000+00:00",
+      "timeSource": "camera",
+      "isNight": true,
+      "todSource": "tag",
+      "temp": 30,
+      "confidence": 0.99,
+      "moon": null,
+      "id": "sp_6af8321dd8221c99620b00e7",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8321dd8221c99620b00e7.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8321dd8221c99620b00e7_t.jpg",
+      "overlayRead": 2,
+      "tags": [
+        "Empty"
+      ],
+      "aiTagged": true,
+      "weather": {
+        "tempF": 36,
+        "wind": 7,
+        "windDir": "N",
+        "windBand": "5\u201310 mph",
+        "pressure": 30.01,
+        "trend": "Rising",
+        "sky": "Dry"
+      }
+    },
+    {
+      "species": "Raccoon",
+      "camera": "Camera 6a30af992e5969f7ed9fdc5c",
+      "date": "2026-11-14T10:03:48+00:00",
+      "uploaded": "2026-11-14T10:04:13.220000+00:00",
+      "timeSource": "camera",
+      "isNight": true,
+      "todSource": "tag",
+      "temp": 30,
+      "confidence": 0.85,
+      "moon": null,
+      "id": "sp_6af8321dd8221c99620b00e9",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8321dd8221c99620b00e9.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8321dd8221c99620b00e9_t.jpg",
+      "overlayRead": 2,
+      "tags": [
+        "Raccoon"
+      ],
+      "aiTagged": true,
+      "weather": {
+        "tempF": 36,
+        "wind": 7,
+        "windDir": "N",
+        "windBand": "5\u201310 mph",
+        "pressure": 30.01,
+        "trend": "Rising",
+        "sky": "Dry"
+      }
+    },
     {
       "species": "Raccoon",
       "camera": "Camera 6a30af992e5969f7ed9fdc5c",
@@ -39,10 +97,10 @@ window.TRAILHUB_DATA = {
       "aiTagged": true,
       "weather": {
         "tempF": 43,
-        "wind": 10,
+        "wind": 8,
         "windDir": "NW",
         "windBand": "5\u201310 mph",
-        "pressure": 29.88,
+        "pressure": 29.89,
         "trend": "Rising",
         "sky": "Dry"
       }
@@ -68,10 +126,10 @@ window.TRAILHUB_DATA = {
       "aiTagged": true,
       "weather": {
         "tempF": 43,
-        "wind": 10,
+        "wind": 8,
         "windDir": "NW",
         "windBand": "5\u201310 mph",
-        "pressure": 29.88,
+        "pressure": 29.89,
         "trend": "Rising",
         "sky": "Dry"
       }
@@ -21696,18 +21754,18 @@ window.TRAILHUB_DATA = {
   ],
   "weatherHours": {
     "windBand": {
-      "5\u201310 mph": 1478,
+      "5\u201310 mph": 1483,
       "10\u201315 mph": 256,
-      "Under 5 mph": 1793,
+      "Under 5 mph": 1796,
       "15+ mph": 79
     },
     "trend": {
       "Falling": 718,
-      "Steady": 2155,
-      "Rising": 733
+      "Steady": 2157,
+      "Rising": 739
     },
     "sky": {
-      "Dry": 3014,
+      "Dry": 3022,
       "Rain": 592
     }
   }
