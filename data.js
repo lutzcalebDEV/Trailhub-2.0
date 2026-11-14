@@ -1,5 +1,5 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-11-14T03:41:26+00:00",
+  "generatedAt": "2026-11-14T03:48:03+00:00",
   "demo": false,
   "cameras": [
     {
@@ -32,6 +32,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6af7c791a1fee9bf74580a0a",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af7c791a1fee9bf74580a0a.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af7c791a1fee9bf74580a0a_t.jpg",
       "tags": [
         "Raccoon"
       ],
@@ -60,6 +61,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6af7c791a1fee9bf74580a0c",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af7c791a1fee9bf74580a0c.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af7c791a1fee9bf74580a0c_t.jpg",
       "tags": [
         "Raccoon"
       ],
@@ -88,6 +90,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6af76610ab9b7b3022ea0f01",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af76610ab9b7b3022ea0f01.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af76610ab9b7b3022ea0f01_t.jpg",
       "tags": [
         "Person"
       ],
@@ -116,6 +119,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6af76610ab9b7b3022ea0f03",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af76610ab9b7b3022ea0f03.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af76610ab9b7b3022ea0f03_t.jpg",
       "tags": [
         "Person"
       ],
@@ -144,6 +148,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6af4226329617027b78e5dcb",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af4226329617027b78e5dcb.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af4226329617027b78e5dcb_t.jpg",
       "tags": [
         "Empty"
       ],
@@ -173,6 +178,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6af4226329617027b78e5dce",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af4226329617027b78e5dce.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af4226329617027b78e5dce_t.jpg",
       "tags": [
         "Empty"
       ],
@@ -201,6 +207,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6af420fd20c6daef9dc119cc",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af420fd20c6daef9dc119cc.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af420fd20c6daef9dc119cc_t.jpg",
       "tags": [
         "Deer"
       ],
@@ -229,6 +236,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6af420fd20c6daef9dc119ce",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af420fd20c6daef9dc119ce.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af420fd20c6daef9dc119ce_t.jpg",
       "tags": [
         "Deer"
       ],
@@ -257,6 +265,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6af42098fbc25053078ad0e6",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af42098fbc25053078ad0e6.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af42098fbc25053078ad0e6_t.jpg",
       "tags": [
         "Empty"
       ],
@@ -285,6 +294,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6af42098fbc25053078ad0e8",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af42098fbc25053078ad0e8.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af42098fbc25053078ad0e8_t.jpg",
       "tags": [
         "Deer"
       ],
@@ -312,6 +322,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6af39bacedb86b75e72d7d66",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af39bacedb86b75e72d7d66.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af39bacedb86b75e72d7d66_t.jpg",
       "tags": [
         "Deer"
       ],
@@ -339,6 +350,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6af39bacedb86b75e72d7d68",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af39bacedb86b75e72d7d68.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af39bacedb86b75e72d7d68_t.jpg",
       "tags": [
         "Deer"
       ],
@@ -366,6 +378,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6af32a005ac24fe3d6dd0d28",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af32a005ac24fe3d6dd0d28.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af32a005ac24fe3d6dd0d28_t.jpg",
       "tags": [
         "Empty"
       ],
@@ -394,6 +407,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6af32a005ac24fe3d6dd0d2a",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af32a005ac24fe3d6dd0d2a.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af32a005ac24fe3d6dd0d2a_t.jpg",
       "tags": [
         "Empty"
       ],
@@ -422,6 +436,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6af31278415b45f7c6c94587",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af31278415b45f7c6c94587.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af31278415b45f7c6c94587_t.jpg",
       "tags": [
         "Doe"
       ],
@@ -450,6 +465,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6af31278415b45f7c6c94589",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af31278415b45f7c6c94589.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af31278415b45f7c6c94589_t.jpg",
       "tags": [
         "Doe"
       ],
@@ -478,6 +494,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6af30424ee51ffbe2954f142",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af30424ee51ffbe2954f142.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af30424ee51ffbe2954f142_t.jpg",
       "tags": [
         "Doe"
       ],
@@ -507,6 +524,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6af30424ee51ffbe2954f144",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af30424ee51ffbe2954f144.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af30424ee51ffbe2954f144_t.jpg",
       "tags": [
         "Doe"
       ],
@@ -523,10 +541,11 @@ window.TRAILHUB_DATA = {
     },
     {
       "id": "up_e845cac1-ecf6-403b-b5c7-ae9bf4038aac",
-      "species": "Animal",
+      "species": "Buck",
       "camera": "Camera 6a309e41bdc62e4448c0a370",
       "date": "2026-11-10T04:37:35.345000+00:00",
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/up_e845cac1-ecf6-403b-b5c7-ae9bf4038aac.mp4",
+      "thumb": null,
       "isNight": true,
       "temp": 49,
       "confidence": null,
@@ -534,7 +553,7 @@ window.TRAILHUB_DATA = {
       "uploadedBySite": true,
       "media": "video",
       "tags": [
-        "Animal"
+        "Buck"
       ],
       "weather": {
         "tempF": 49,
@@ -550,10 +569,11 @@ window.TRAILHUB_DATA = {
     },
     {
       "id": "up_ffef9605-2c7b-40e7-8c57-4cffe6707237",
-      "species": "Animal",
+      "species": "Buck",
       "camera": "Camera 6a309e41bdc62e4448c0a370",
       "date": "2026-11-10T04:35:46.099000+00:00",
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/up_ffef9605-2c7b-40e7-8c57-4cffe6707237.mp4",
+      "thumb": null,
       "isNight": true,
       "temp": 49,
       "confidence": null,
@@ -561,7 +581,7 @@ window.TRAILHUB_DATA = {
       "uploadedBySite": true,
       "media": "video",
       "tags": [
-        "Animal"
+        "Buck"
       ],
       "weather": {
         "tempF": 49,
@@ -589,6 +609,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6af299db289dec2441cd62d9",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af299db289dec2441cd62d9.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af299db289dec2441cd62d9_t.jpg",
       "tags": [
         "Buck"
       ],
@@ -616,6 +637,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6af299db289dec2441cd62db",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af299db289dec2441cd62db.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af299db289dec2441cd62db_t.jpg",
       "tags": [
         "Buck"
       ],
@@ -631,10 +653,11 @@ window.TRAILHUB_DATA = {
     },
     {
       "id": "up_80400ae4-988b-4e04-b864-27c590b188ac",
-      "species": "Animal",
+      "species": "Deer",
       "camera": "Camera 6a309e41bdc62e4448c0a370",
       "date": "2026-11-10T03:39:54.525000+00:00",
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/up_80400ae4-988b-4e04-b864-27c590b188ac.mp4",
+      "thumb": null,
       "isNight": true,
       "temp": 51,
       "confidence": null,
@@ -642,7 +665,7 @@ window.TRAILHUB_DATA = {
       "uploadedBySite": true,
       "media": "video",
       "tags": [
-        "Animal"
+        "Deer"
       ],
       "weather": {
         "tempF": 51,
@@ -657,10 +680,11 @@ window.TRAILHUB_DATA = {
     },
     {
       "id": "up_aa084881-74f5-4523-9a07-6c381d179636",
-      "species": "Animal",
+      "species": "Buck",
       "camera": "Camera 6a309e41bdc62e4448c0a370",
       "date": "2026-11-10T03:38:23.322000+00:00",
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/up_aa084881-74f5-4523-9a07-6c381d179636.mp4",
+      "thumb": null,
       "isNight": true,
       "temp": 51,
       "confidence": null,
@@ -668,7 +692,7 @@ window.TRAILHUB_DATA = {
       "uploadedBySite": true,
       "media": "video",
       "tags": [
-        "Animal"
+        "Buck"
       ],
       "weather": {
         "tempF": 51,
@@ -684,10 +708,11 @@ window.TRAILHUB_DATA = {
     },
     {
       "id": "up_8c901d43-e193-4b41-b545-0538ef961201",
-      "species": "Animal",
+      "species": "Buck",
       "camera": "Camera 6a309e41bdc62e4448c0a370",
       "date": "2026-11-10T03:37:22.901000+00:00",
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/up_8c901d43-e193-4b41-b545-0538ef961201.mp4",
+      "thumb": null,
       "isNight": true,
       "temp": 51,
       "confidence": null,
@@ -695,7 +720,7 @@ window.TRAILHUB_DATA = {
       "uploadedBySite": true,
       "media": "video",
       "tags": [
-        "Animal"
+        "Buck"
       ],
       "weather": {
         "tempF": 51,
@@ -710,10 +735,11 @@ window.TRAILHUB_DATA = {
     },
     {
       "id": "up_22ad3e99-877c-4fc1-8f51-d8b89c1807a8",
-      "species": "Animal",
+      "species": "Buck",
       "camera": "Camera 6a309e41bdc62e4448c0a370",
       "date": "2026-11-10T03:36:10.531000+00:00",
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/up_22ad3e99-877c-4fc1-8f51-d8b89c1807a8.mp4",
+      "thumb": null,
       "isNight": true,
       "temp": 51,
       "confidence": null,
@@ -721,7 +747,7 @@ window.TRAILHUB_DATA = {
       "uploadedBySite": true,
       "media": "video",
       "tags": [
-        "Animal"
+        "Buck"
       ],
       "weather": {
         "tempF": 51,
@@ -736,10 +762,11 @@ window.TRAILHUB_DATA = {
     },
     {
       "id": "up_6aabc69e-1812-4239-aa1e-0a242c8188a3",
-      "species": "Animal",
+      "species": "Buck",
       "camera": "Camera 6a309e41bdc62e4448c0a370",
       "date": "2026-11-10T03:34:59.542000+00:00",
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/up_6aabc69e-1812-4239-aa1e-0a242c8188a3.mp4",
+      "thumb": null,
       "isNight": true,
       "temp": 51,
       "confidence": null,
@@ -747,7 +774,7 @@ window.TRAILHUB_DATA = {
       "uploadedBySite": true,
       "media": "video",
       "tags": [
-        "Animal"
+        "Buck"
       ],
       "weather": {
         "tempF": 51,
@@ -762,10 +789,11 @@ window.TRAILHUB_DATA = {
     },
     {
       "id": "up_f048f16b-8c8f-4ba6-bb32-a3fa23d8ad52",
-      "species": "Animal",
+      "species": "Buck",
       "camera": "Camera 6a309e41bdc62e4448c0a370",
       "date": "2026-11-10T03:33:39.162000+00:00",
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/up_f048f16b-8c8f-4ba6-bb32-a3fa23d8ad52.mp4",
+      "thumb": null,
       "isNight": true,
       "temp": 51,
       "confidence": null,
@@ -773,7 +801,7 @@ window.TRAILHUB_DATA = {
       "uploadedBySite": true,
       "media": "video",
       "tags": [
-        "Animal"
+        "Buck"
       ],
       "weather": {
         "tempF": 51,
@@ -788,10 +816,11 @@ window.TRAILHUB_DATA = {
     },
     {
       "id": "up_5137e2ec-56c0-49d6-9f89-2b59aec6fb17",
-      "species": "Animal",
+      "species": "Buck",
       "camera": "Camera 6a309e41bdc62e4448c0a370",
       "date": "2026-11-10T03:29:42.263000+00:00",
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/up_5137e2ec-56c0-49d6-9f89-2b59aec6fb17.mp4",
+      "thumb": null,
       "isNight": true,
       "temp": 51,
       "confidence": null,
@@ -799,7 +828,7 @@ window.TRAILHUB_DATA = {
       "uploadedBySite": true,
       "media": "video",
       "tags": [
-        "Animal"
+        "Buck"
       ],
       "weather": {
         "tempF": 51,
@@ -814,10 +843,11 @@ window.TRAILHUB_DATA = {
     },
     {
       "id": "up_e6f384bf-ec88-4a9c-8ee5-cccf9ac4028d",
-      "species": "Animal",
+      "species": "Buck",
       "camera": "Camera 6a309e41bdc62e4448c0a370",
       "date": "2026-11-10T03:27:11.102000+00:00",
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/up_e6f384bf-ec88-4a9c-8ee5-cccf9ac4028d.mp4",
+      "thumb": null,
       "isNight": true,
       "temp": 51,
       "confidence": null,
@@ -825,7 +855,7 @@ window.TRAILHUB_DATA = {
       "uploadedBySite": true,
       "media": "video",
       "tags": [
-        "Animal"
+        "Buck"
       ],
       "weather": {
         "tempF": 51,
@@ -841,10 +871,11 @@ window.TRAILHUB_DATA = {
     },
     {
       "id": "up_36214b84-13c1-46a0-b41a-963d6a6d0aab",
-      "species": "Animal",
+      "species": "Buck",
       "camera": "Camera 6a309e41bdc62e4448c0a370",
       "date": "2026-11-10T03:23:11.163000+00:00",
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/up_36214b84-13c1-46a0-b41a-963d6a6d0aab.mp4",
+      "thumb": null,
       "isNight": true,
       "temp": 51,
       "confidence": null,
@@ -852,7 +883,7 @@ window.TRAILHUB_DATA = {
       "uploadedBySite": true,
       "media": "video",
       "tags": [
-        "Animal"
+        "Buck"
       ],
       "weather": {
         "tempF": 51,
@@ -879,6 +910,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6af19e9289d688f70027884a",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af19e9289d688f70027884a.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af19e9289d688f70027884a_t.jpg",
       "tags": [
         "Buck"
       ],
@@ -906,6 +938,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6af19e9289d688f70027884c",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af19e9289d688f70027884c.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af19e9289d688f70027884c_t.jpg",
       "tags": [
         "Buck"
       ],
@@ -933,6 +966,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6af176c850e785db804bfdc3",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af176c850e785db804bfdc3.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af176c850e785db804bfdc3_t.jpg",
       "tags": [
         "Deer"
       ],
@@ -961,6 +995,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6af176c850e785db804bfdc5",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af176c850e785db804bfdc5.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af176c850e785db804bfdc5_t.jpg",
       "tags": [
         "Doe"
       ],
@@ -977,10 +1012,11 @@ window.TRAILHUB_DATA = {
     },
     {
       "id": "up_7d82dc25-e517-4609-8e18-b313b3bfc802",
-      "species": "Animal",
+      "species": "Buck",
       "camera": "Camera 6a309e41bdc62e4448c0a370",
       "date": "2026-11-09T05:00:36+00:00",
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/up_7d82dc25-e517-4609-8e18-b313b3bfc802.jpg",
+      "thumb": null,
       "isNight": true,
       "temp": 48,
       "confidence": null,
@@ -988,7 +1024,7 @@ window.TRAILHUB_DATA = {
       "uploadedBySite": true,
       "media": "photo",
       "tags": [
-        "Animal"
+        "Buck"
       ],
       "weather": {
         "tempF": 48,
@@ -1003,10 +1039,11 @@ window.TRAILHUB_DATA = {
     },
     {
       "id": "up_0517000f-5db2-4d11-be97-402838f9683a",
-      "species": "Animal",
+      "species": "Buck",
       "camera": "Camera 6a309e41bdc62e4448c0a370",
       "date": "2026-11-09T05:00:36+00:00",
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/up_0517000f-5db2-4d11-be97-402838f9683a.jpg",
+      "thumb": null,
       "isNight": true,
       "temp": 48,
       "confidence": null,
@@ -1014,7 +1051,7 @@ window.TRAILHUB_DATA = {
       "uploadedBySite": true,
       "media": "photo",
       "tags": [
-        "Animal"
+        "Buck"
       ],
       "weather": {
         "tempF": 48,
@@ -1029,10 +1066,11 @@ window.TRAILHUB_DATA = {
     },
     {
       "id": "up_b9714254-5701-4201-934f-15d101361e17",
-      "species": "Animal",
+      "species": "Buck",
       "camera": "Camera 6a309e41bdc62e4448c0a370",
       "date": "2026-11-09T05:00:34+00:00",
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/up_b9714254-5701-4201-934f-15d101361e17.jpg",
+      "thumb": null,
       "isNight": true,
       "temp": 48,
       "confidence": null,
@@ -1040,7 +1078,7 @@ window.TRAILHUB_DATA = {
       "uploadedBySite": true,
       "media": "photo",
       "tags": [
-        "Animal"
+        "Buck"
       ],
       "weather": {
         "tempF": 48,
@@ -1067,6 +1105,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aef88f8f83ef356519d82df",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef88f8f83ef356519d82df.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef88f8f83ef356519d82df_t.jpg",
       "tags": [
         "Vehicle"
       ],
@@ -1095,6 +1134,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aef88f8f83ef356519d82e1",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef88f8f83ef356519d82e1.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef88f8f83ef356519d82e1_t.jpg",
       "tags": [
         "Vehicle"
       ],
@@ -1123,6 +1163,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aef6c1f633028b59a4a0fb3",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef6c1f633028b59a4a0fb3.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef6c1f633028b59a4a0fb3_t.jpg",
       "tags": [
         "Person"
       ],
@@ -1151,6 +1192,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aef6c1f633028b59a4a0fb5",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef6c1f633028b59a4a0fb5.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef6c1f633028b59a4a0fb5_t.jpg",
       "tags": [
         "Person"
       ],
@@ -1179,6 +1221,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aef6c03fbf3dc74ce2dae69",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef6c03fbf3dc74ce2dae69.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef6c03fbf3dc74ce2dae69_t.jpg",
       "tags": [
         "Empty"
       ],
@@ -1207,6 +1250,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aef6c03fbf3dc74ce2dae6b",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef6c03fbf3dc74ce2dae6b.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef6c03fbf3dc74ce2dae6b_t.jpg",
       "tags": [
         "Empty"
       ],
@@ -1235,6 +1279,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aef62dd23623858eb7eb3c9",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef62dd23623858eb7eb3c9.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef62dd23623858eb7eb3c9_t.jpg",
       "tags": [
         "Empty"
       ],
@@ -1262,6 +1307,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aef62dd23623858eb7eb3cb",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef62dd23623858eb7eb3cb.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef62dd23623858eb7eb3cb_t.jpg",
       "tags": [
         "Empty"
       ],
@@ -1289,6 +1335,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aef62bb3392f0d9ebdd8ca9",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef62bb3392f0d9ebdd8ca9.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef62bb3392f0d9ebdd8ca9_t.jpg",
       "tags": [
         "Empty"
       ],
@@ -1316,6 +1363,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aef62bb3392f0d9ebdd8cab",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef62bb3392f0d9ebdd8cab.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef62bb3392f0d9ebdd8cab_t.jpg",
       "tags": [
         "Vehicle"
       ],
@@ -1343,6 +1391,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aef629c97d8ba44cf7c643d",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef629c97d8ba44cf7c643d.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef629c97d8ba44cf7c643d_t.jpg",
       "tags": [
         "Empty"
       ],
@@ -1370,6 +1419,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aef629c97d8ba44cf7c643f",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef629c97d8ba44cf7c643f.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef629c97d8ba44cf7c643f_t.jpg",
       "tags": [
         "Vehicle"
       ],
@@ -1397,6 +1447,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aef62808caa909074b70906",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef62808caa909074b70906.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef62808caa909074b70906_t.jpg",
       "tags": [
         "Empty"
       ],
@@ -1424,6 +1475,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aef62808caa909074b70908",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef62808caa909074b70908.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef62808caa909074b70908_t.jpg",
       "tags": [
         "Empty"
       ],
@@ -1451,6 +1503,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aef6207fbd3406692c3cc07",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef6207fbd3406692c3cc07.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef6207fbd3406692c3cc07_t.jpg",
       "tags": [
         "Person"
       ],
@@ -1478,6 +1531,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aef6207fbd3406692c3cc09",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef6207fbd3406692c3cc09.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef6207fbd3406692c3cc09_t.jpg",
       "tags": [
         "Empty"
       ],
@@ -1505,6 +1559,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aef61edb584909063432743",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef61edb584909063432743.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef61edb584909063432743_t.jpg",
       "tags": [
         "Empty"
       ],
@@ -1532,6 +1587,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aef61edb584909063432745",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef61edb584909063432745.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef61edb584909063432745_t.jpg",
       "tags": [
         "Empty"
       ],
@@ -1559,6 +1615,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aef618277d966b7a947d283",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef618277d966b7a947d283.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef618277d966b7a947d283_t.jpg",
       "tags": [
         "Empty"
       ],
@@ -1586,6 +1643,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aef618277d966b7a947d285",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef618277d966b7a947d285.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef618277d966b7a947d285_t.jpg",
       "tags": [
         "Empty"
       ],
@@ -1613,6 +1671,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aef114ae4c2240d5366b8ad",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef114ae4c2240d5366b8ad.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef114ae4c2240d5366b8ad_t.jpg",
       "tags": [
         "Deer"
       ],
@@ -1641,6 +1700,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aef114ae4c2240d5366b8af",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef114ae4c2240d5366b8af.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef114ae4c2240d5366b8af_t.jpg",
       "tags": [
         "Doe"
       ],
@@ -1669,6 +1729,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aef10c2ff8ce6528cd1d407",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef10c2ff8ce6528cd1d407.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef10c2ff8ce6528cd1d407_t.jpg",
       "tags": [
         "Doe"
       ],
@@ -1697,6 +1758,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aef10c2ff8ce6528cd1d409",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef10c2ff8ce6528cd1d409.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aef10c2ff8ce6528cd1d409_t.jpg",
       "tags": [
         "Doe"
       ],
@@ -1725,6 +1787,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aeee3af7be3282f5c7efd8c",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeee3af7be3282f5c7efd8c.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeee3af7be3282f5c7efd8c_t.jpg",
       "tags": [
         "Deer"
       ],
@@ -1753,6 +1816,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aeee3af7be3282f5c7efd8e",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeee3af7be3282f5c7efd8e.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeee3af7be3282f5c7efd8e_t.jpg",
       "tags": [
         "Deer"
       ],
@@ -1781,6 +1845,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aeecfc4b14a641dde0631d4",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeecfc4b14a641dde0631d4.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeecfc4b14a641dde0631d4_t.jpg",
       "tags": [
         "Buck"
       ],
@@ -1809,6 +1874,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aeecfc4b14a641dde0631d6",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeecfc4b14a641dde0631d6.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeecfc4b14a641dde0631d6_t.jpg",
       "tags": [
         "Buck"
       ],
@@ -1836,6 +1902,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aeece840700890649e5a934",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeece840700890649e5a934.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeece840700890649e5a934_t.jpg",
       "tags": [
         "Empty"
       ],
@@ -1864,6 +1931,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aeece840700890649e5a936",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeece840700890649e5a936.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeece840700890649e5a936_t.jpg",
       "tags": [
         "Empty"
       ],
@@ -1892,6 +1960,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aeecd43e1baf82e6d9e1552",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeecd43e1baf82e6d9e1552.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeecd43e1baf82e6d9e1552_t.jpg",
       "tags": [
         "Buck"
       ],
@@ -1919,6 +1988,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aeecd43e1baf82e6d9e1554",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeecd43e1baf82e6d9e1554.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeecd43e1baf82e6d9e1554_t.jpg",
       "tags": [
         "Buck"
       ],
@@ -1946,6 +2016,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aeec6a1348a5d4cccfdf2cc",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeec6a1348a5d4cccfdf2cc.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeec6a1348a5d4cccfdf2cc_t.jpg",
       "tags": [
         "Buck"
       ],
@@ -1973,6 +2044,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aeec6a1348a5d4cccfdf2ce",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeec6a1348a5d4cccfdf2ce.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeec6a1348a5d4cccfdf2ce_t.jpg",
       "tags": [
         "Buck"
       ],
@@ -2000,6 +2072,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aeec68cdd8bc41625907c57",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeec68cdd8bc41625907c57.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeec68cdd8bc41625907c57_t.jpg",
       "tags": [
         "Empty"
       ],
@@ -2028,6 +2101,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aeec68cdd8bc41625907c59",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeec68cdd8bc41625907c59.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeec68cdd8bc41625907c59_t.jpg",
       "tags": [
         "Deer"
       ],
@@ -2055,6 +2129,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aee568aac73566621f1d3a6",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aee568aac73566621f1d3a6.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aee568aac73566621f1d3a6_t.jpg",
       "tags": [
         "Doe"
       ],
@@ -2083,6 +2158,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aee568aac73566621f1d3a8",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aee568aac73566621f1d3a8.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aee568aac73566621f1d3a8_t.jpg",
       "tags": [
         "Doe"
       ],
@@ -2111,6 +2187,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aee560f1ab0418c3262a68b",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aee560f1ab0418c3262a68b.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aee560f1ab0418c3262a68b_t.jpg",
       "tags": [
         "Deer"
       ],
@@ -2139,6 +2216,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aee560f1ab0418c3262a68d",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aee560f1ab0418c3262a68d.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aee560f1ab0418c3262a68d_t.jpg",
       "tags": [
         "Doe"
       ],
@@ -2167,6 +2245,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aee32be5328d2f12273861a",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aee32be5328d2f12273861a.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aee32be5328d2f12273861a_t.jpg",
       "tags": [
         "Empty"
       ],
@@ -2195,6 +2274,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aee32be5328d2f12273861c",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aee32be5328d2f12273861c.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aee32be5328d2f12273861c_t.jpg",
       "tags": [
         "Doe"
       ],
@@ -2223,6 +2303,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aee07f84cb974e2088ed63a",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aee07f84cb974e2088ed63a.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aee07f84cb974e2088ed63a_t.jpg",
       "tags": [
         "Doe"
       ],
@@ -2251,6 +2332,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aee07f84cb974e2088ed63c",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aee07f84cb974e2088ed63c.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aee07f84cb974e2088ed63c_t.jpg",
       "tags": [
         "Doe"
       ],
@@ -2279,6 +2361,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aee0143e13efac538b24382",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aee0143e13efac538b24382.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aee0143e13efac538b24382_t.jpg",
       "tags": [
         "Empty"
       ],
@@ -2307,6 +2390,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aee0143e13efac538b24384",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aee0143e13efac538b24384.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aee0143e13efac538b24384_t.jpg",
       "tags": [
         "Doe"
       ],
@@ -2335,6 +2419,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aedc885529fafa151f20cd1",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aedc885529fafa151f20cd1.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aedc885529fafa151f20cd1_t.jpg",
       "tags": [
         "Deer"
       ],
@@ -2363,6 +2448,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aedc885529fafa151f20cd3",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aedc885529fafa151f20cd3.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aedc885529fafa151f20cd3_t.jpg",
       "tags": [
         "Doe"
       ],
@@ -2391,6 +2477,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aed85ff03d08edff14e07bc",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aed85ff03d08edff14e07bc.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aed85ff03d08edff14e07bc_t.jpg",
       "tags": [
         "Deer"
       ],
@@ -2419,6 +2506,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aed85ff03d08edff14e07be",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aed85ff03d08edff14e07be.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aed85ff03d08edff14e07be_t.jpg",
       "tags": [
         "Deer"
       ],
@@ -2439,6 +2527,7 @@ window.TRAILHUB_DATA = {
       "camera": "Other camera",
       "date": "2026-11-05T03:17:50.558000+00:00",
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/up_e7470a30-7f46-423a-b986-3bf0f6c1a870.jpg",
+      "thumb": null,
       "isNight": true,
       "temp": 67,
       "confidence": null,
@@ -2473,6 +2562,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aeb1db2a41369ef9ff724e8",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeb1db2a41369ef9ff724e8.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeb1db2a41369ef9ff724e8_t.jpg",
       "tags": [
         "Buck"
       ],
@@ -2501,6 +2591,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aeb1db2a41369ef9ff724ea",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeb1db2a41369ef9ff724ea.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeb1db2a41369ef9ff724ea_t.jpg",
       "tags": [
         "Doe"
       ],
@@ -2529,6 +2620,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aeb19f5e08759bbd1c35f73",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeb19f5e08759bbd1c35f73.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeb19f5e08759bbd1c35f73_t.jpg",
       "tags": [
         "Doe"
       ],
@@ -2557,6 +2649,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aeb19f5e08759bbd1c35f75",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeb19f5e08759bbd1c35f75.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeb19f5e08759bbd1c35f75_t.jpg",
       "tags": [
         "Doe"
       ],
@@ -2585,6 +2678,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aeb19a1ef78c53552530e67",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeb19a1ef78c53552530e67.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeb19a1ef78c53552530e67_t.jpg",
       "tags": [
         "Deer"
       ],
@@ -2613,6 +2707,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aeb19a1ef78c53552530e69",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeb19a1ef78c53552530e69.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeb19a1ef78c53552530e69_t.jpg",
       "tags": [
         "Deer"
       ],
@@ -2641,6 +2736,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aeb198b37e54cab90fe319d",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeb198b37e54cab90fe319d.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeb198b37e54cab90fe319d_t.jpg",
       "tags": [
         "Empty"
       ],
@@ -2669,6 +2765,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aeb198b37e54cab90fe319f",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeb198b37e54cab90fe319f.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aeb198b37e54cab90fe319f_t.jpg",
       "tags": [
         "Deer"
       ],
@@ -2697,6 +2794,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aea6d58b00d02dd72e32a40",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aea6d58b00d02dd72e32a40.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aea6d58b00d02dd72e32a40_t.jpg",
       "tags": [
         "Buck"
       ],
@@ -2725,6 +2823,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aea6d58b00d02dd72e32a42",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aea6d58b00d02dd72e32a42.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aea6d58b00d02dd72e32a42_t.jpg",
       "tags": [
         "Buck"
       ],
@@ -2752,6 +2851,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aea6ad6090b8d2fefd83ea9",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aea6ad6090b8d2fefd83ea9.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aea6ad6090b8d2fefd83ea9_t.jpg",
       "tags": [
         "Empty"
       ],
@@ -2780,6 +2880,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6aea6ad6090b8d2fefd83eab",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aea6ad6090b8d2fefd83eab.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6aea6ad6090b8d2fefd83eab_t.jpg",
       "tags": [
         "Deer"
       ],
@@ -2807,6 +2908,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6ae82e5cd739657d2d36f69a",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ae82e5cd739657d2d36f69a.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ae82e5cd739657d2d36f69a_t.jpg",
       "tags": [
         "Deer"
       ],
@@ -2834,6 +2936,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6ae82e5cd739657d2d36f69c",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ae82e5cd739657d2d36f69c.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ae82e5cd739657d2d36f69c_t.jpg",
       "tags": [
         "Empty"
       ],
@@ -2862,6 +2965,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6ae7f28525972cd0871ed13d",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ae7f28525972cd0871ed13d.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ae7f28525972cd0871ed13d_t.jpg",
       "tags": [
         "Buck"
       ],
@@ -2889,6 +2993,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6ae7f28525972cd0871ed13f",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ae7f28525972cd0871ed13f.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ae7f28525972cd0871ed13f_t.jpg",
       "tags": [
         "Buck"
       ],
@@ -2916,6 +3021,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6ae7b3a6c79430b28979ee56",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ae7b3a6c79430b28979ee56.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ae7b3a6c79430b28979ee56_t.jpg",
       "tags": [
         "Deer"
       ],
@@ -2944,6 +3050,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6ae7b3a6c79430b28979ee58",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ae7b3a6c79430b28979ee58.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ae7b3a6c79430b28979ee58_t.jpg",
       "tags": [
         "Doe"
       ],
@@ -2964,6 +3071,7 @@ window.TRAILHUB_DATA = {
       "camera": "Camera 6a309e41bdc62e4448c0a370",
       "date": "2026-11-01T20:57:44+00:00",
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/up_feb974af-e538-40e2-8ab8-cf20c4cf28e9.jpg",
+      "thumb": null,
       "isNight": false,
       "temp": 60,
       "confidence": null,
@@ -2998,6 +3106,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6ae78ee6ee154b9b2dd6298b",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ae78ee6ee154b9b2dd6298b.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ae78ee6ee154b9b2dd6298b_t.jpg",
       "tags": [
         "Doe"
       ],
@@ -3026,6 +3135,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6ae78ee6ee154b9b2dd6298d",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ae78ee6ee154b9b2dd6298d.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ae78ee6ee154b9b2dd6298d_t.jpg",
       "tags": [
         "Deer"
       ],
@@ -3055,6 +3165,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6ae78d436b6a2c048f1f10fe",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ae78d436b6a2c048f1f10fe.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ae78d436b6a2c048f1f10fe_t.jpg",
       "tags": [
         "Doe"
       ],
@@ -3083,6 +3194,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6ae78d436b6a2c048f1f1100",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ae78d436b6a2c048f1f1100.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ae78d436b6a2c048f1f1100_t.jpg",
       "tags": [
         "Deer"
       ],
@@ -3111,6 +3223,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6ae78c80f7ed7d882a1db388",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ae78c80f7ed7d882a1db388.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ae78c80f7ed7d882a1db388_t.jpg",
       "tags": [
         "Doe"
       ],
@@ -3139,6 +3252,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6ae78c80f7ed7d882a1db38a",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ae78c80f7ed7d882a1db38a.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ae78c80f7ed7d882a1db38a_t.jpg",
       "tags": [
         "Buck"
       ],
@@ -3167,6 +3281,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6ae78c62f3fdae6e9a82d3cd",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ae78c62f3fdae6e9a82d3cd.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ae78c62f3fdae6e9a82d3cd_t.jpg",
       "tags": [
         "Buck"
       ],
@@ -3195,6 +3310,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6ae78c62f3fdae6e9a82d3cf",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ae78c62f3fdae6e9a82d3cf.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ae78c62f3fdae6e9a82d3cf_t.jpg",
       "tags": [
         "Buck"
       ],
@@ -3223,6 +3339,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6ae726c183c90435243331db",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ae726c183c90435243331db.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ae726c183c90435243331db_t.jpg",
       "tags": [
         "Empty"
       ],
@@ -3251,6 +3368,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6ae726c183c90435243331dd",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ae726c183c90435243331dd.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ae726c183c90435243331dd_t.jpg",
       "tags": [
         "Empty"
       ],
@@ -3279,6 +3397,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6ae726a3cb7e9bcb0cb6fc73",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ae726a3cb7e9bcb0cb6fc73.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ae726a3cb7e9bcb0cb6fc73_t.jpg",
       "tags": [
         "Empty"
       ],
@@ -3307,6 +3426,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6ae726a3cb7e9bcb0cb6fc75",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ae726a3cb7e9bcb0cb6fc75.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ae726a3cb7e9bcb0cb6fc75_t.jpg",
       "tags": [
         "Buck"
       ],
@@ -3335,6 +3455,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6ae5139261d2518b5877480d",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ae5139261d2518b5877480d.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ae5139261d2518b5877480d_t.jpg",
       "tags": [
         "Vehicle"
       ],
@@ -3363,6 +3484,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6ae5139261d2518b58774811",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ae5139261d2518b58774811.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ae5139261d2518b58774811_t.jpg",
       "tags": [
         "Vehicle"
       ],
@@ -3379,10 +3501,11 @@ window.TRAILHUB_DATA = {
     },
     {
       "id": "up_55f3a461-3022-4e4c-8adf-80756253d0ef",
-      "species": "Animal",
+      "species": "Buck",
       "camera": "Camera 6a309e41bdc62e4448c0a370",
       "date": "2026-10-30T17:49:18+00:00",
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/up_55f3a461-3022-4e4c-8adf-80756253d0ef.jpg",
+      "thumb": null,
       "isNight": false,
       "temp": 76,
       "confidence": null,
@@ -3390,7 +3513,7 @@ window.TRAILHUB_DATA = {
       "uploadedBySite": true,
       "media": "photo",
       "tags": [
-        "Animal"
+        "Buck"
       ],
       "weather": {
         "tempF": 76,
@@ -3405,10 +3528,11 @@ window.TRAILHUB_DATA = {
     },
     {
       "id": "up_0eb8127f-3a85-448a-9b46-70d2d463d17c",
-      "species": "Animal",
+      "species": "Buck",
       "camera": "Camera 6a309e41bdc62e4448c0a370",
       "date": "2026-10-30T17:49:18+00:00",
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/up_0eb8127f-3a85-448a-9b46-70d2d463d17c.jpg",
+      "thumb": null,
       "isNight": false,
       "temp": 76,
       "confidence": null,
@@ -3416,7 +3540,7 @@ window.TRAILHUB_DATA = {
       "uploadedBySite": true,
       "media": "photo",
       "tags": [
-        "Animal"
+        "Buck"
       ],
       "weather": {
         "tempF": 76,
@@ -3431,10 +3555,11 @@ window.TRAILHUB_DATA = {
     },
     {
       "id": "up_1c9b6bce-ffcb-4c06-8f90-2d157827ff3b",
-      "species": "Animal",
+      "species": "Buck",
       "camera": "Camera 6a309e41bdc62e4448c0a370",
       "date": "2026-10-30T13:20:48+00:00",
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/up_1c9b6bce-ffcb-4c06-8f90-2d157827ff3b.jpg",
+      "thumb": null,
       "isNight": false,
       "temp": 54,
       "confidence": null,
@@ -3442,7 +3567,7 @@ window.TRAILHUB_DATA = {
       "uploadedBySite": true,
       "media": "photo",
       "tags": [
-        "Animal"
+        "Buck"
       ],
       "weather": {
         "tempF": 54,
@@ -3457,10 +3582,11 @@ window.TRAILHUB_DATA = {
     },
     {
       "id": "up_e4da592d-bad9-47fb-a825-3c2b8cbe1a33",
-      "species": "Animal",
+      "species": "Buck",
       "camera": "Camera 6a309e41bdc62e4448c0a370",
       "date": "2026-10-30T13:20:46+00:00",
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/up_e4da592d-bad9-47fb-a825-3c2b8cbe1a33.jpg",
+      "thumb": null,
       "isNight": false,
       "temp": 54,
       "confidence": null,
@@ -3468,7 +3594,7 @@ window.TRAILHUB_DATA = {
       "uploadedBySite": true,
       "media": "photo",
       "tags": [
-        "Animal"
+        "Buck"
       ],
       "weather": {
         "tempF": 54,
@@ -3495,6 +3621,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6ae08937aa4e1328117b882e",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ae08937aa4e1328117b882e.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ae08937aa4e1328117b882e_t.jpg",
       "tags": [
         "Deer"
       ],
@@ -3523,6 +3650,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6ae08937aa4e1328117b8830",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ae08937aa4e1328117b8830.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ae08937aa4e1328117b8830_t.jpg",
       "tags": [
         "Deer"
       ],
@@ -3550,6 +3678,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6adedb3a10c8678fee4702a0",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6adedb3a10c8678fee4702a0.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6adedb3a10c8678fee4702a0_t.jpg",
       "tags": [
         "Buck"
       ],
@@ -3577,6 +3706,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6adedb3a10c8678fee4702a2",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6adedb3a10c8678fee4702a2.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6adedb3a10c8678fee4702a2_t.jpg",
       "tags": [
         "Buck"
       ],
@@ -3604,6 +3734,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6ade880e6a61c02fb48a3dfc",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ade880e6a61c02fb48a3dfc.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ade880e6a61c02fb48a3dfc_t.jpg",
       "tags": [
         "Deer"
       ],
@@ -3632,6 +3763,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6ade880e6a61c02fb48a3dfe",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ade880e6a61c02fb48a3dfe.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ade880e6a61c02fb48a3dfe_t.jpg",
       "tags": [
         "Deer"
       ],
@@ -3660,6 +3792,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6addfbf700c9c9f918f346e3",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6addfbf700c9c9f918f346e3.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6addfbf700c9c9f918f346e3_t.jpg",
       "tags": [
         "Buck"
       ],
@@ -3688,6 +3821,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6addfbf700c9c9f918f346e5",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6addfbf700c9c9f918f346e5.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6addfbf700c9c9f918f346e5_t.jpg",
       "tags": [
         "Buck"
       ],
@@ -3716,6 +3850,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6addfaf029b0f5d67a81e088",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6addfaf029b0f5d67a81e088.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6addfaf029b0f5d67a81e088_t.jpg",
       "tags": [
         "Deer"
       ],
@@ -3744,6 +3879,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6addfaf029b0f5d67a81e08a",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6addfaf029b0f5d67a81e08a.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6addfaf029b0f5d67a81e08a_t.jpg",
       "tags": [
         "Deer"
       ],
@@ -3772,6 +3908,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6addf90d40fac95bdf8a6612",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6addf90d40fac95bdf8a6612.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6addf90d40fac95bdf8a6612_t.jpg",
       "tags": [
         "Deer"
       ],
@@ -3801,6 +3938,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6addf90d40fac95bdf8a6614",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6addf90d40fac95bdf8a6614.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6addf90d40fac95bdf8a6614_t.jpg",
       "tags": [
         "Empty"
       ],
@@ -3829,6 +3967,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6add974e652b1c9017177e3e",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6add974e652b1c9017177e3e.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6add974e652b1c9017177e3e_t.jpg",
       "tags": [
         "Empty"
       ],
@@ -3857,6 +3996,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6add974e652b1c9017177e40",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6add974e652b1c9017177e40.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6add974e652b1c9017177e40_t.jpg",
       "tags": [
         "Empty"
       ],
@@ -3885,6 +4025,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6add474335056eeada3652e8",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6add474335056eeada3652e8.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6add474335056eeada3652e8_t.jpg",
       "tags": [
         "Empty"
       ],
@@ -3913,6 +4054,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6add474335056eeada3652ea",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6add474335056eeada3652ea.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6add474335056eeada3652ea_t.jpg",
       "tags": [
         "Empty"
       ],
@@ -3941,6 +4083,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6add472d86f5bd6f4e78274f",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6add472d86f5bd6f4e78274f.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6add472d86f5bd6f4e78274f_t.jpg",
       "tags": [
         "Doe"
       ],
@@ -3969,6 +4112,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6add472d86f5bd6f4e782751",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6add472d86f5bd6f4e782751.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6add472d86f5bd6f4e782751_t.jpg",
       "tags": [
         "Doe"
       ],
@@ -3997,6 +4141,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6add44b821955417b053a836",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6add44b821955417b053a836.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6add44b821955417b053a836_t.jpg",
       "tags": [
         "Empty"
       ],
@@ -4025,6 +4170,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6add44b821955417b053a838",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6add44b821955417b053a838.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6add44b821955417b053a838_t.jpg",
       "tags": [
         "Empty"
       ],
@@ -4053,6 +4199,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6adc3ab9b40c2bae22319e23",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6adc3ab9b40c2bae22319e23.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6adc3ab9b40c2bae22319e23_t.jpg",
       "tags": [
         "Deer"
       ],
@@ -4081,6 +4228,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6adc3ab9b40c2bae22319e25",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6adc3ab9b40c2bae22319e25.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6adc3ab9b40c2bae22319e25_t.jpg",
       "tags": [
         "Buck"
       ],
@@ -4108,6 +4256,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6adc276e15ec08da793177bb",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6adc276e15ec08da793177bb.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6adc276e15ec08da793177bb_t.jpg",
       "tags": [
         "Empty"
       ],
@@ -4136,6 +4285,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6adc276e15ec08da793177bd",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6adc276e15ec08da793177bd.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6adc276e15ec08da793177bd_t.jpg",
       "tags": [
         "Empty"
       ],
@@ -4164,6 +4314,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6adc274cbb99a0b018833964",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6adc274cbb99a0b018833964.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6adc274cbb99a0b018833964_t.jpg",
       "tags": [
         "Empty"
       ],
@@ -4192,6 +4343,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6adc274cbb99a0b018833966",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6adc274cbb99a0b018833966.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6adc274cbb99a0b018833966_t.jpg",
       "tags": [
         "Empty"
       ],
@@ -4220,6 +4372,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6adc05a52d998a9a6e67b055",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6adc05a52d998a9a6e67b055.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6adc05a52d998a9a6e67b055_t.jpg",
       "tags": [
         "Deer"
       ],
@@ -4248,6 +4401,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6adc05a52d998a9a6e67b057",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6adc05a52d998a9a6e67b057.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6adc05a52d998a9a6e67b057_t.jpg",
       "tags": [
         "Buck"
       ],
@@ -4277,6 +4431,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6ad9ac7d51748b318facf445",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ad9ac7d51748b318facf445.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ad9ac7d51748b318facf445_t.jpg",
       "tags": [
         "Person"
       ],
@@ -4305,6 +4460,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6ad9ac7d51748b318facf447",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ad9ac7d51748b318facf447.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ad9ac7d51748b318facf447_t.jpg",
       "tags": [
         "Person"
       ],
@@ -4333,6 +4489,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6ad899e240fac95bdf27a828",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ad899e240fac95bdf27a828.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ad899e240fac95bdf27a828_t.jpg",
       "tags": [
         "Deer"
       ],
@@ -4361,6 +4518,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6ad899e240fac95bdf27a82a",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ad899e240fac95bdf27a82a.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ad899e240fac95bdf27a82a_t.jpg",
       "tags": [
         "Buck"
       ],
@@ -4388,6 +4546,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6ad86d4ef9896598f1bc9711",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ad86d4ef9896598f1bc9711.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ad86d4ef9896598f1bc9711_t.jpg",
       "tags": [
         "Buck"
       ],
@@ -4415,6 +4574,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6ad86d4ef9896598f1bc9713",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ad86d4ef9896598f1bc9713.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ad86d4ef9896598f1bc9713_t.jpg",
       "tags": [
         "Buck"
       ],
@@ -4443,6 +4603,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6ad6ebe5e71b945c3e77ec48",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ad6ebe5e71b945c3e77ec48.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ad6ebe5e71b945c3e77ec48_t.jpg",
       "tags": [
         "Buck"
       ],
@@ -4471,6 +4632,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6ad6ebe5e71b945c3e77ec4a",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ad6ebe5e71b945c3e77ec4a.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ad6ebe5e71b945c3e77ec4a_t.jpg",
       "tags": [
         "Empty"
       ],
@@ -4499,6 +4661,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6ad6e71302a5a5afa9235742",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ad6e71302a5a5afa9235742.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ad6e71302a5a5afa9235742_t.jpg",
       "tags": [
         "Deer"
       ],
@@ -4527,6 +4690,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6ad6e71302a5a5afa9235744",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ad6e71302a5a5afa9235744.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ad6e71302a5a5afa9235744_t.jpg",
       "tags": [
         "Deer"
       ],
@@ -4555,6 +4719,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6ad6e681447ab6b8b97c4380",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ad6e681447ab6b8b97c4380.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ad6e681447ab6b8b97c4380_t.jpg",
       "tags": [
         "Doe"
       ],
@@ -4583,6 +4748,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6ad6e681447ab6b8b97c4382",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ad6e681447ab6b8b97c4382.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ad6e681447ab6b8b97c4382_t.jpg",
       "tags": [
         "Doe"
       ],
@@ -4611,6 +4777,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6ad6ca029847ab37be4c7cdf",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ad6ca029847ab37be4c7cdf.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ad6ca029847ab37be4c7cdf_t.jpg",
       "tags": [
         "Deer"
       ],
@@ -4638,6 +4805,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6ad6ca029847ab37be4c7ce1",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ad6ca029847ab37be4c7ce1.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ad6ca029847ab37be4c7ce1_t.jpg",
       "tags": [
         "Deer"
       ],
@@ -4665,6 +4833,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6ad6afdf7c93b5dedcb69332",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ad6afdf7c93b5dedcb69332.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ad6afdf7c93b5dedcb69332_t.jpg",
       "tags": [
         "Deer"
       ],
@@ -4693,6 +4862,7 @@ window.TRAILHUB_DATA = {
       "id": "sp_6ad6afdf7c93b5dedcb69334",
       "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ad6afdf7c93b5dedcb69334.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6ad6afdf7c93b5dedcb69334_t.jpg",
       "tags": [
         "Deer"
       ],
