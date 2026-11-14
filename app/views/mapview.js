@@ -11,7 +11,7 @@ const OSM_TILES = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 const OSM_CREDIT = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
 export function MapView(app) {
-  const { data, filtered, filters, setFilter, setView, spList, theme, camName, renameCamera } = app;
+  const { data, filtered, filters, setFilter, setView, spList, theme, camName, renameCamera, auth, openSignIn } = app;
   const elRef = useRef(null);
   const mapRef = useRef(null);
   const layerRef = useRef(null);
@@ -35,7 +35,7 @@ export function MapView(app) {
   // (Re)create the map — also re-runs on theme change to swap tile colors.
   useEffect(() => {
     const L = window.L;
-    if (!L || !elRef.current || !cams.length) return;
+    if (!auth || !L || !elRef.current || !cams.length) return;
     const map = L.map(elRef.current, { zoomControl: true, scrollWheelZoom: true });
     L.tileLayer(OSM_TILES, {
       maxZoom: 19,
@@ -47,13 +47,13 @@ export function MapView(app) {
     if (pts.length === 1) map.setView(pts[0], 13);
     else map.fitBounds(pts, { padding: [44, 44], maxZoom: 14 });
     return () => { map.remove(); mapRef.current = null; layerRef.current = null; };
-  }, [cams, theme]);
+  }, [auth, cams, theme]);
 
   // Redraw markers whenever counts or the active camera change.
   useEffect(() => {
     const L = window.L;
     const map = mapRef.current;
-    if (!L || !map) return;
+    if (!auth || !L || !map) return;
     if (layerRef.current) layerRef.current.remove();
     const group = L.layerGroup().addTo(map);
     layerRef.current = group;
@@ -68,7 +68,7 @@ export function MapView(app) {
       mk.bindPopup(`<b>${camName(cam.name)}</b><br>${count} photo${count === 1 ? "" : "s"}`);
       mk.on("click", () => setFilter({ camera: filters.camera === cam.name ? "All" : cam.name }));
     });
-  }, [cams, countByCam, filters.camera, camName]);
+  }, [auth, cams, countByCam, filters.camera, camName]);
 
   // Keep Leaflet sized to its container when the viewport changes — rotating a
   // phone (portrait<->landscape) or resizing the window otherwise leaves gray,
@@ -84,6 +84,14 @@ export function MapView(app) {
       window.removeEventListener("orientationchange", onOrient);
     };
   }, []);
+
+  if (!auth) {
+    return html`<div className="map-access">
+      <${Empty} icon="map" title="Sign in to view the map"
+        message="Camera locations are only available when you're signed in."
+        action=${html`<${Btn} variant="primary" icon="user" onClick=${() => openSignIn("Sign in to view camera locations on the map.")}>Sign in</${Btn}>`} />
+    </div>`;
+  }
 
   if (!cams.length) {
     return html`<div className="col" style=${{ gap: 4 }}>
