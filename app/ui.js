@@ -639,10 +639,53 @@ export function ZoomImage({ capture, alt, onZoomChange, controls }) {
 export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggleFavorite, onTag, buckNames, comments, upload, signedIn, onSignIn, onClose, onPrev, onNext, hasPrev, hasNext }) {
   const zoomControls = useRef(null);
   const [zoomed, setZoomed] = useState(false);
+  const [navIdle, setNavIdle] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [fullscreenError, setFullscreenError] = useState("");
+  const navTimer = useRef(null);
+  const stage = useRef(null);
+  const photoId = capture && capture.id;
+  const wakeNavigation = () => {
+    setNavIdle(false);
+    if (navTimer.current) clearTimeout(navTimer.current);
+    navTimer.current = setTimeout(() => setNavIdle(true), 300);
+  };
+  useEffect(() => {
+    wakeNavigation();
+    return () => { if (navTimer.current) clearTimeout(navTimer.current); };
+  }, []);
+  useEffect(() => {
+    const syncFullscreen = () => setFullscreen(document.fullscreenElement === stage.current);
+    document.addEventListener("fullscreenchange", syncFullscreen);
+    return () => document.removeEventListener("fullscreenchange", syncFullscreen);
+  }, []);
+  const toggleFullscreen = async () => {
+    setFullscreenError("");
+    const exiting = document.fullscreenElement === stage.current;
+    try {
+      if (exiting) {
+        await document.exitFullscreen();
+      } else if (stage.current && stage.current.requestFullscreen) {
+        await stage.current.requestFullscreen();
+      } else {
+        setFullscreenError("Fullscreen isn't supported by this browser.");
+      }
+    } catch {
+      setFullscreenError(exiting
+        ? "Couldn't exit fullscreen. Please use the browser's fullscreen control."
+        : "Couldn't enter fullscreen. Your browser may have blocked the request.");
+    }
+  };
   useEffect(() => {
     const onKey = (e) => {
       // Arrow keys belong to the field or video being used, not photo navigation.
       if (e.key !== "Escape" && /^(INPUT|TEXTAREA|SELECT|VIDEO)$/.test(e.target.tagName)) return;
+      if (e.key === "Escape" && document.fullscreenElement === stage.current) {
+        document.exitFullscreen().catch(() => {
+          setFullscreenError("Couldn't exit fullscreen. Please use the browser's fullscreen control.");
+        });
+        return;
+      }
       const zoom = zoomControls.current;
       if (e.key === "Escape") onClose();
       else if ((e.key === "+" || e.key === "=") && zoom) zoom.zoomIn();
@@ -650,6 +693,7 @@ export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggle
       else if (e.key === "0" && zoom) zoom.reset();
       else if (e.key === "ArrowLeft" && hasPrev) onPrev();
       else if (e.key === "ArrowRight" && hasNext) onNext();
+      wakeNavigation();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -663,8 +707,6 @@ export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggle
   }, []);
 
   // Each photo starts at the top, even if the details were scrolled down.
-  const stage = useRef(null);
-  const photoId = capture && capture.id;
   useEffect(() => { if (stage.current) stage.current.scrollTop = 0; }, [photoId]);
 
   // Swipe on a photo to move between photos. Videos are left out because dragging
@@ -689,7 +731,9 @@ export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggle
 
   if (!capture) return null;
   const c = capture;
-  return html`<div className="lb" onClick=${onClose}>
+  return html`<div className=${cx("lb", navIdle && "is-nav-idle")} onClick=${onClose}
+      onPointerMove=${(e) => { if (e.pointerType === "mouse") wakeNavigation(); }}
+      onPointerDown=${(e) => { if (e.pointerType === "mouse") wakeNavigation(); }}>
     <div className=${cx("lb__stage", zoomed && "is-zoomed")} ref=${stage} onClick=${(e) => e.stopPropagation()}
       onTouchStart=${onTouchStart} onTouchMove=${onTouchMove} onTouchEnd=${onTouchEnd}>
       ${c.image && c.media === "video"
@@ -699,6 +743,13 @@ export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggle
             onZoomChange=${setZoomed} controls=${zoomControls} />`
         : html`<div className="shot__noimg" style=${{ width: "60vw", height: "60vh" }}>No image available</div>`}
       <div className="lb__close"><${IconBtn} icon="x" onClick=${onClose} aria-label="Close" /></div>
+      ${c.image && c.media !== "video" && html`<div className="lb__fullscreen">
+        <${IconBtn} icon=${fullscreen ? "shrink" : "expand"} onClick=${toggleFullscreen}
+          aria-label=${fullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+          aria-pressed=${fullscreen}
+          title=${fullscreen ? "Exit fullscreen" : "Fullscreen"} />
+      </div>`}
+      ${fullscreenError && html`<div className="lb__fullscreen-error" role="status">${fullscreenError}</div>`}
       ${hasPrev && html`<button className="lb__nav prev" onClick=${onPrev} aria-label="Previous"><${Icon} name="chevronLeft" size=${22} /></button>`}
       ${hasNext && html`<button className="lb__nav next" onClick=${onNext} aria-label="Next"><${Icon} name="chevronRight" size=${22} /></button>`}
       <div className="lb__panel">

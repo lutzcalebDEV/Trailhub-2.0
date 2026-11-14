@@ -36,6 +36,8 @@ const P = {
   trash: html`<path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6.5 7l.8 12.1a1 1 0 0 0 1 .9h7.4a1 1 0 0 0 1-.9L18 7"/>`,
   info: html`<g><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.6v.2"/></g>`,
   external: html`<path d="M14 4h6v6M20 4l-9 9M18 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/>`,
+  expand: html`<path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3"/>`,
+  shrink: html`<path d="M8 3v5H3M21 8h-5V3M3 16h5v5M16 21v-5h5"/>`,
   sparkle: html`<path d="M12 3l1.7 5.3L19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7L12 3Z"/>`,
   eye: html`<g><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/></g>`,
   paw: html`<g><circle cx="6.5" cy="12.5" r="1.7"/><circle cx="10" cy="9" r="1.7"/><circle cx="14" cy="9" r="1.7"/><circle cx="17.5" cy="12.5" r="1.7"/><path d="M8.2 16.4c0-2 1.7-3.4 3.8-3.4s3.8 1.4 3.8 3.4-1.7 2.6-3.8 2.6-3.8-.6-3.8-2.6Z"/></g>`,
