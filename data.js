@@ -1,5 +1,5 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-11-14T11:56:58+00:00",
+  "generatedAt": "2026-11-14T12:46:30+00:00",
   "demo": false,
   "cameras": [
     {
@@ -19,6 +19,64 @@ window.TRAILHUB_DATA = {
   ],
   "captures": [
     {
+      "species": "Empty",
+      "camera": "Camera 6a30af992e5969f7ed9fdc5c",
+      "date": "2026-11-14T12:45:48+00:00",
+      "uploaded": "2026-11-14T12:46:11.271000+00:00",
+      "timeSource": "camera",
+      "isNight": false,
+      "todSource": "tag",
+      "temp": 28,
+      "confidence": 0.95,
+      "moon": null,
+      "id": "sp_6af85813686c97fce02cb57f",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af85813686c97fce02cb57f.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af85813686c97fce02cb57f_t.jpg",
+      "overlayRead": 2,
+      "tags": [
+        "Empty"
+      ],
+      "aiTagged": true,
+      "weather": {
+        "tempF": 33,
+        "wind": 5,
+        "windDir": "NW",
+        "windBand": "5\u201310 mph",
+        "pressure": 30.03,
+        "trend": "Rising",
+        "sky": "Dry"
+      }
+    },
+    {
+      "species": "Empty",
+      "camera": "Camera 6a30af992e5969f7ed9fdc5c",
+      "date": "2026-11-14T12:45:47+00:00",
+      "uploaded": "2026-11-14T12:46:11.271000+00:00",
+      "timeSource": "camera",
+      "isNight": false,
+      "todSource": "tag",
+      "temp": 28,
+      "confidence": 0.95,
+      "moon": null,
+      "id": "sp_6af85813686c97fce02cb581",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af85813686c97fce02cb581.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af85813686c97fce02cb581_t.jpg",
+      "overlayRead": 2,
+      "tags": [
+        "Empty"
+      ],
+      "aiTagged": true,
+      "weather": {
+        "tempF": 33,
+        "wind": 5,
+        "windDir": "NW",
+        "windBand": "5\u201310 mph",
+        "pressure": 30.03,
+        "trend": "Rising",
+        "sky": "Dry"
+      }
+    },
+    {
       "species": "Squirrel",
       "camera": "Camera 6a30af992e5969f7ed9fdc5c",
       "date": "2026-11-14T11:53:03+00:00",
@@ -30,19 +88,19 @@ window.TRAILHUB_DATA = {
       "confidence": 0.85,
       "moon": null,
       "id": "sp_6af84bb6d04853671e244e39",
+      "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af84bb6d04853671e244e39.jpg",
       "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af84bb6d04853671e244e39_t.jpg",
-      "overlayRead": 2,
       "tags": [
         "Squirrel"
       ],
       "aiTagged": true,
       "weather": {
-        "tempF": 33,
+        "tempF": 34,
         "wind": 4,
-        "windDir": "W",
+        "windDir": "NW",
         "windBand": "Under 5 mph",
-        "pressure": 29.99,
+        "pressure": 30.01,
         "trend": "Rising",
         "sky": "Dry"
       }
@@ -59,19 +117,19 @@ window.TRAILHUB_DATA = {
       "confidence": 0.85,
       "moon": null,
       "id": "sp_6af84bb6d04853671e244e3b",
+      "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af84bb6d04853671e244e3b.jpg",
       "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af84bb6d04853671e244e3b_t.jpg",
-      "overlayRead": 2,
       "tags": [
         "Squirrel"
       ],
       "aiTagged": true,
       "weather": {
-        "tempF": 33,
+        "tempF": 34,
         "wind": 4,
-        "windDir": "W",
+        "windDir": "NW",
         "windBand": "Under 5 mph",
-        "pressure": 29.99,
+        "pressure": 30.01,
         "trend": "Rising",
         "sky": "Dry"
       }
@@ -88,19 +146,19 @@ window.TRAILHUB_DATA = {
       "confidence": 0.95,
       "moon": null,
       "id": "sp_6af84b48ab29882efe73fc19",
+      "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af84b48ab29882efe73fc19.jpg",
       "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af84b48ab29882efe73fc19_t.jpg",
-      "overlayRead": 2,
       "tags": [
         "Empty"
       ],
       "aiTagged": true,
       "weather": {
-        "tempF": 33,
+        "tempF": 34,
         "wind": 4,
-        "windDir": "W",
+        "windDir": "NW",
         "windBand": "Under 5 mph",
-        "pressure": 29.99,
+        "pressure": 30.01,
         "trend": "Rising",
         "sky": "Dry"
       }
@@ -117,19 +175,19 @@ window.TRAILHUB_DATA = {
       "confidence": 0.95,
       "moon": null,
       "id": "sp_6af84b48ab29882efe73fc1b",
+      "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af84b48ab29882efe73fc1b.jpg",
       "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af84b48ab29882efe73fc1b_t.jpg",
-      "overlayRead": 2,
       "tags": [
         "Squirrel"
       ],
       "aiTagged": true,
       "weather": {
-        "tempF": 33,
+        "tempF": 34,
         "wind": 4,
-        "windDir": "W",
+        "windDir": "NW",
         "windBand": "Under 5 mph",
-        "pressure": 29.99,
+        "pressure": 30.01,
         "trend": "Rising",
         "sky": "Dry"
       }
@@ -154,11 +212,11 @@ window.TRAILHUB_DATA = {
       ],
       "aiTagged": true,
       "weather": {
-        "tempF": 33,
+        "tempF": 34,
         "wind": 4,
-        "windDir": "W",
+        "windDir": "NW",
         "windBand": "Under 5 mph",
-        "pressure": 29.99,
+        "pressure": 30.01,
         "trend": "Rising",
         "sky": "Dry"
       }
@@ -183,11 +241,11 @@ window.TRAILHUB_DATA = {
       ],
       "aiTagged": true,
       "weather": {
-        "tempF": 33,
+        "tempF": 34,
         "wind": 4,
-        "windDir": "W",
+        "windDir": "NW",
         "windBand": "Under 5 mph",
-        "pressure": 29.99,
+        "pressure": 30.01,
         "trend": "Rising",
         "sky": "Dry"
       }
@@ -21928,7 +21986,7 @@ window.TRAILHUB_DATA = {
   ],
   "weatherHours": {
     "windBand": {
-      "5\u201310 mph": 1481,
+      "5\u201310 mph": 1482,
       "10\u201315 mph": 256,
       "Under 5 mph": 1799,
       "15+ mph": 79
@@ -21936,10 +21994,10 @@ window.TRAILHUB_DATA = {
     "trend": {
       "Falling": 718,
       "Steady": 2158,
-      "Rising": 739
+      "Rising": 740
     },
     "sky": {
-      "Dry": 3023,
+      "Dry": 3024,
       "Rain": 592
     }
   }
