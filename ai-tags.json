@@ -3743,5 +3743,25 @@
   "confidence": 0.8,
   "label": "Deer",
   "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6af84b48ab29882efe73fc19": {
+  "confidence": 0.95,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6af84b48ab29882efe73fc1b": {
+  "confidence": 0.95,
+  "label": "Squirrel",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6af84bb6d04853671e244e39": {
+  "confidence": 0.85,
+  "label": "Squirrel",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6af84bb6d04853671e244e3b": {
+  "confidence": 0.85,
+  "label": "Squirrel",
+  "model": "gemini-3.5-flash-lite"
  }
 }
