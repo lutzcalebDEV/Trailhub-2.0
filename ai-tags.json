@@ -3793,5 +3793,25 @@
   "confidence": 0.95,
   "label": "Squirrel",
   "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6af865216f28a5eaf3155d94": {
+  "confidence": 0.95,
+  "label": "Squirrel",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6af865216f28a5eaf3155d96": {
+  "confidence": 0.95,
+  "label": "Squirrel",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6af866101bb91ad9ac3366cc": {
+  "confidence": 0.99,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6af866101bb91ad9ac3366ce": {
+  "confidence": 0.95,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
  }
 }
