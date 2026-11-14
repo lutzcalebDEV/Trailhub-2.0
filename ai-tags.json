@@ -3818,5 +3818,15 @@
   "confidence": 0.99,
   "label": "Person",
   "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6af8b317ea13bb2fdd3219eb": {
+  "confidence": 0.95,
+  "label": "Doe",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6af8b317ea13bb2fdd3219ed": {
+  "confidence": 0.95,
+  "label": "Buck",
+  "model": "gemini-3.5-flash-lite"
  }
 }
