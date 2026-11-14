@@ -690,7 +690,7 @@ export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggle
   if (!capture) return null;
   const c = capture;
   return html`<div className="lb" onClick=${onClose}>
-    <div className="lb__stage" ref=${stage} onClick=${(e) => e.stopPropagation()}
+    <div className=${cx("lb__stage", zoomed && "is-zoomed")} ref=${stage} onClick=${(e) => e.stopPropagation()}
       onTouchStart=${onTouchStart} onTouchMove=${onTouchMove} onTouchEnd=${onTouchEnd}>
       ${c.image && c.media === "video"
         ? html`<${Media} key=${c.id} className="lb__img" capture=${c} alt=${species} playable />`
