@@ -11281,9 +11281,9 @@
   "confidence": null,
   "moon": null,
   "id": "sp_6af84bb6d04853671e244e39",
+  "overlayRead": 2,
   "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af84bb6d04853671e244e39.jpg",
-  "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af84bb6d04853671e244e39_t.jpg",
-  "overlayRead": 2
+  "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af84bb6d04853671e244e39_t.jpg"
  },
  "sp_6af84bb6d04853671e244e3b": {
   "species": "Animal",
@@ -11297,9 +11297,9 @@
   "confidence": null,
   "moon": null,
   "id": "sp_6af84bb6d04853671e244e3b",
+  "overlayRead": 2,
   "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af84bb6d04853671e244e3b.jpg",
-  "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af84bb6d04853671e244e3b_t.jpg",
-  "overlayRead": 2
+  "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af84bb6d04853671e244e3b_t.jpg"
  },
  "sp_6af84b48ab29882efe73fc19": {
   "species": "Animal",
@@ -11313,9 +11313,9 @@
   "confidence": null,
   "moon": null,
   "id": "sp_6af84b48ab29882efe73fc19",
+  "overlayRead": 2,
   "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af84b48ab29882efe73fc19.jpg",
-  "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af84b48ab29882efe73fc19_t.jpg",
-  "overlayRead": 2
+  "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af84b48ab29882efe73fc19_t.jpg"
  },
  "sp_6af84b48ab29882efe73fc1b": {
   "species": "Animal",
@@ -11329,8 +11329,8 @@
   "confidence": null,
   "moon": null,
   "id": "sp_6af84b48ab29882efe73fc1b",
+  "overlayRead": 2,
   "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af84b48ab29882efe73fc1b.jpg",
-  "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af84b48ab29882efe73fc1b_t.jpg",
-  "overlayRead": 2
+  "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af84b48ab29882efe73fc1b_t.jpg"
  }
 }
