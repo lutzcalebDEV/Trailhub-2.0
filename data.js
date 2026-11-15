@@ -1,5 +1,5 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-11-15T08:01:27+00:00",
+  "generatedAt": "2026-11-15T08:06:24+00:00",
   "demo": false,
   "cameras": [
     {
@@ -19,6 +19,64 @@ window.TRAILHUB_DATA = {
   ],
   "captures": [
     {
+      "species": "Deer",
+      "camera": "Camera 6a309e41bdc62e4448c0a370",
+      "date": "2026-11-15T08:00:16+00:00",
+      "uploaded": "2026-11-15T08:00:43.234000+00:00",
+      "timeSource": "camera",
+      "isNight": true,
+      "todSource": "tag",
+      "temp": 28,
+      "confidence": 0.82,
+      "moon": null,
+      "id": "sp_6af966ab2d416c3b9c610298",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af966ab2d416c3b9c610298.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af966ab2d416c3b9c610298_t.jpg",
+      "overlayRead": 2,
+      "tags": [
+        "Deer"
+      ],
+      "aiTagged": true,
+      "weather": {
+        "tempF": 32,
+        "wind": 5,
+        "windDir": "W",
+        "windBand": "Under 5 mph",
+        "pressure": 30.19,
+        "trend": "Steady",
+        "sky": "Dry"
+      }
+    },
+    {
+      "species": "Deer",
+      "camera": "Camera 6a309e41bdc62e4448c0a370",
+      "date": "2026-11-15T08:00:15+00:00",
+      "uploaded": "2026-11-15T08:00:43.234000+00:00",
+      "timeSource": "camera",
+      "isNight": true,
+      "todSource": "tag",
+      "temp": 28,
+      "confidence": 0.8,
+      "moon": null,
+      "id": "sp_6af966ab2d416c3b9c61029a",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af966ab2d416c3b9c61029a.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af966ab2d416c3b9c61029a_t.jpg",
+      "overlayRead": 2,
+      "tags": [
+        "Deer"
+      ],
+      "aiTagged": true,
+      "weather": {
+        "tempF": 32,
+        "wind": 5,
+        "windDir": "W",
+        "windBand": "Under 5 mph",
+        "pressure": 30.19,
+        "trend": "Steady",
+        "sky": "Dry"
+      }
+    },
+    {
       "species": "Empty",
       "camera": "Camera 6a309e41bdc62e4448c0a370",
       "date": "2026-11-15T07:55:56+00:00",
@@ -30,9 +88,9 @@ window.TRAILHUB_DATA = {
       "confidence": 0.95,
       "moon": null,
       "id": "sp_6af965a4418a1ff27c7eef23",
+      "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af965a4418a1ff27c7eef23.jpg",
       "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af965a4418a1ff27c7eef23_t.jpg",
-      "overlayRead": 2,
       "tags": [
         "Empty"
       ],
@@ -59,9 +117,9 @@ window.TRAILHUB_DATA = {
       "confidence": 0.95,
       "moon": null,
       "id": "sp_6af965a4418a1ff27c7eef25",
+      "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af965a4418a1ff27c7eef25.jpg",
       "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af965a4418a1ff27c7eef25_t.jpg",
-      "overlayRead": 2,
       "tags": [
         "Empty"
       ],
@@ -22887,16 +22945,16 @@ window.TRAILHUB_DATA = {
     "windBand": {
       "5\u201310 mph": 1490,
       "10\u201315 mph": 260,
-      "Under 5 mph": 1806,
+      "Under 5 mph": 1807,
       "15+ mph": 79
     },
     "trend": {
       "Falling": 718,
-      "Steady": 2168,
+      "Steady": 2169,
       "Rising": 749
     },
     "sky": {
-      "Dry": 3043,
+      "Dry": 3044,
       "Rain": 592
     }
   }
