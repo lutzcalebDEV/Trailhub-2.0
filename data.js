@@ -1,5 +1,5 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-11-15T00:41:31+00:00",
+  "generatedAt": "2026-11-15T01:46:19+00:00",
   "demo": false,
   "cameras": [
     {
@@ -30,9 +30,9 @@ window.TRAILHUB_DATA = {
       "confidence": 0.85,
       "moon": null,
       "id": "sp_6af8ff45a1fee9bf7471b53b",
+      "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8ff45a1fee9bf7471b53b.jpg",
       "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8ff45a1fee9bf7471b53b_t.jpg",
-      "overlayRead": 2,
       "tags": [
         "Deer"
       ],
@@ -59,9 +59,9 @@ window.TRAILHUB_DATA = {
       "confidence": 0.85,
       "moon": null,
       "id": "sp_6af8ff45a1fee9bf7471b53d",
+      "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8ff45a1fee9bf7471b53d.jpg",
       "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af8ff45a1fee9bf7471b53d_t.jpg",
-      "overlayRead": 2,
       "tags": [
         "Empty"
       ],
