@@ -454,7 +454,7 @@ function App() {
       <${Sidebar} view=${view} setView=${setView} counts=${counts} status=${status}
         onCollapse=${() => setSidebarCollapsed("true")} />
       <main className="main">
-        <${MobileTopbar} ...${chrome} />
+        <${MobileTopbar} ...${chrome} title=${view === "overview" ? null : meta.label} />
         <${Topbar} title=${meta.label} ...${chrome}
           sidebarHidden=${sidebarCollapsed === "true"} onShowSidebar=${() => setSidebarCollapsed("false")} />
         <div className="view view__enter" key=${view}>

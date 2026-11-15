@@ -1237,3 +1237,34 @@ button.actrow__name:hover { color: var(--accent); }
   .lb__zoomtoggle { position: fixed; top: calc(8px + env(safe-area-inset-top, 0px)); right: 108px; }
   .lb.is-dragging .lb__zoomtoggle { opacity: 0; }
 }
+
+/* While zoomed, the photo has the whole screen: the prev/next arrows step aside
+   (the arrow keys still work). */
+.lb__stage.is-zoomed .lb__nav { opacity: 0; pointer-events: none; }
+
+/* ------------------------------ Audit fixes ------------------------------- */
+.keylegend { display: inline-flex; gap: 12px; font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+.keylegend span { display: inline-flex; align-items: center; gap: 6px; }
+.keylegend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+
+@media (max-width: 560px) {
+  /* Three small numbers side by side, instead of three full-width cards. */
+  .grid--stats { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .grid--stats > :last-child:nth-child(odd) { grid-column: auto; }
+  .grid--stats .stat { padding: 11px 11px 12px; }
+  .grid--stats .stat__label { font-size: 11.5px; }
+  .grid--stats .stat__value { font-size: 21px; }
+  .grid--stats .stat__sub { font-size: 11px; line-height: 1.35; }
+
+  /* Identify: three columns keep every animal (and Skip) above the bottom bar. */
+  .spgrid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .spbtn { padding: 9px 9px; font-size: 13px; min-width: 0; }
+
+  /* Map cameras: a short full-width list (name, count, rename) above the map. */
+  .camlist { flex-direction: column; overflow: visible; gap: 6px; }
+  .camrow { min-width: 0; flex: none; }
+  .camrow__meta { display: none; }
+  .camrow__hit { padding-block: 8px; }
+  .grid--stats .stat__sub { display: block; }
+  .grid--stats .delta { display: inline-flex; margin-right: 3px; }
+}

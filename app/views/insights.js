@@ -119,7 +119,10 @@ export function Insights(app) {
     </${Panel}>
 
     <div className="grid grid--2">
-      <${Panel} title="Day or night">
+      <${Panel} title="Day or night" actions=${html`<span className="keylegend">
+          <span><i style=${{ background: "var(--day)" }} />Day</span>
+          <span><i style=${{ background: "var(--night)" }} />Night</span>
+        </span>`}>
         <div className="col" style=${{ gap: 13 }}>
           ${byDN.map((r) => html`<div key=${r.species}>
             <div className="row" style=${{ justifyContent: "space-between", marginBottom: 6 }}>

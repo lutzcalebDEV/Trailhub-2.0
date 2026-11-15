@@ -83,10 +83,11 @@ export function Topbar({ title, sub, theme, toggleTheme, onRefresh, refreshing, 
 }
 
 /* ----------------------------- Mobile chrome ---------------------------- */
-export function MobileTopbar({ theme, toggleTheme, onRefresh, refreshing, status, onUpload, auth, pending, onSignIn, onSignOut, onAccounts }) {
+// The phone's only header, so it names the page you're on (Home keeps the brand).
+export function MobileTopbar({ title, theme, toggleTheme, onRefresh, refreshing, status, onUpload, auth, pending, onSignIn, onSignOut, onAccounts }) {
   return html`<div className="mobile-top">
     <${BrandMark} size=${30} />
-    <div className="brand__name">Vale Trails
+    <div className="brand__name">${title || "Vale Trails"}
       <small className=${status.stale ? "is-stale" : ""}>
         ${status.checked ? "Checked " + status.checked : "Awaiting sync"}
       </small>
