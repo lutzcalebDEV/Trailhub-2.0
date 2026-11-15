@@ -1,5 +1,5 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-11-15T21:41:21+00:00",
+  "generatedAt": "2026-11-15T22:46:22+00:00",
   "demo": false,
   "cameras": [
     {
@@ -30,9 +30,9 @@ window.TRAILHUB_DATA = {
       "confidence": 0.95,
       "moon": null,
       "id": "sp_6afa26c68e327f4cf66ac723",
+      "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6afa26c68e327f4cf66ac723.jpg",
       "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6afa26c68e327f4cf66ac723_t.jpg",
-      "overlayRead": 2,
       "tags": [
         "Squirrel"
       ],
