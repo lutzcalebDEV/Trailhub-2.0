@@ -11921,9 +11921,9 @@
   "confidence": null,
   "moon": null,
   "id": "sp_6af99508d5517c96ee36cb78",
+  "overlayRead": 2,
   "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af99508d5517c96ee36cb78.jpg",
-  "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af99508d5517c96ee36cb78_t.jpg",
-  "overlayRead": 2
+  "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af99508d5517c96ee36cb78_t.jpg"
  },
  "sp_6af99508d5517c96ee36cb7a": {
   "species": "Animal",
@@ -11937,8 +11937,8 @@
   "confidence": null,
   "moon": null,
   "id": "sp_6af99508d5517c96ee36cb7a",
+  "overlayRead": 2,
   "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af99508d5517c96ee36cb7a.jpg",
-  "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af99508d5517c96ee36cb7a_t.jpg",
-  "overlayRead": 2
+  "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6af99508d5517c96ee36cb7a_t.jpg"
  }
 }
