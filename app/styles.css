@@ -1380,3 +1380,65 @@ button, a, [role="button"], .shot { touch-action: manipulation; }
    and slides off to the right, showing the tab underneath. */
 .lb.is-edge { transform: translateX(var(--edge, 0px)); box-shadow: -18px 0 36px rgba(0,0,0,.45); }
 .lb.is-edge-settle { transition: transform .22s cubic-bezier(.2,.8,.2,1); }
+
+/* ===================== Photo view on phones: details on demand ===================
+   The photo gets the whole screen. A "Details" button opens the info: a sheet from
+   the bottom when upright, a panel from the right when the phone is on its side. */
+.lb__infobtn, .lb__sheetclose { display: none; }
+.lb__infobtn {
+  position: fixed; z-index: 3; align-items: center; gap: 7px; padding: 10px 16px;
+  border: 1px solid rgba(255,255,255,.16); border-radius: 999px;
+  background: rgba(8,12,10,.72); color: #eef3ef; font: inherit; font-size: 14px; font-weight: 650;
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); touch-action: manipulation;
+  transition: opacity .2s ease;
+}
+.lb.is-sheet-open .lb__infobtn, .lb.is-immersive .lb__infobtn, .lb.is-dragging .lb__infobtn,
+.lb__stage.is-zoomed .lb__infobtn { opacity: 0; pointer-events: none; }
+
+@media (max-width: 900px) {
+  .lb { --peek: 0px; }
+  .lb ~ .toast { bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
+  .lb__infobtn { display: inline-flex; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); }
+  /* Lowered = fully out of view (and out of the tab order). */
+  .lb__panel {
+    transform: translateY(calc(100% + 40px + var(--sheet-drag, 0px)));
+    visibility: hidden; transition: transform .3s var(--ease-out), visibility 0s .3s;
+  }
+  .lb.is-sheet-open .lb__panel { visibility: visible; transition: transform .3s var(--ease-out), visibility 0s; }
+}
+
+/* Phone on its side (includes big iPhones, which are wider than 900px). */
+@media (orientation: landscape) and (max-height: 500px) and (pointer: coarse) {
+  .lb { --peek: 0px; }
+  .lb__stage { display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 0; grid-template-columns: none; }
+  .lb__zoom { width: fit-content; max-width: 100%; margin: 0 auto; }
+  .lb__zoom .lb__img, .lb__stage > .lb__img { width: auto; height: auto; max-width: 100vw; max-height: 100vh; max-height: 100dvh; margin: 0; }
+  .lb__nav { top: 50vh; top: 50dvh; }
+  .lb__nav.prev { left: calc(8px + env(safe-area-inset-left, 0px)); }
+  .lb__nav.next { right: calc(8px + env(safe-area-inset-right, 0px)); }
+  .lb__close { position: fixed; top: calc(8px + env(safe-area-inset-top, 0px)); right: calc(8px + env(safe-area-inset-right, 0px)); }
+  .lb__fullscreen { position: fixed; top: calc(8px + env(safe-area-inset-top, 0px)); right: calc(58px + env(safe-area-inset-right, 0px)); }
+  .lb__zoomtoggle { position: fixed; top: calc(8px + env(safe-area-inset-top, 0px)); right: calc(108px + env(safe-area-inset-right, 0px)); }
+  .lb__infobtn {
+    display: inline-flex; transform: none;
+    left: calc(10px + env(safe-area-inset-left, 0px)); top: calc(10px + env(safe-area-inset-top, 0px)); bottom: auto;
+  }
+  .lb__panel {
+    position: fixed; z-index: 4; top: 0; bottom: 0; right: 0; left: auto; grid-column: auto; grid-row: auto;
+    width: min(380px, 52vw); max-height: none; display: flex; flex-direction: column; align-items: stretch; gap: 14px;
+    overflow-y: auto; overscroll-behavior: contain; border-radius: 18px 0 0 18px;
+    padding: calc(8px + env(safe-area-inset-top, 0px)) calc(16px + env(safe-area-inset-right, 0px)) calc(16px + env(safe-area-inset-bottom, 0px)) 16px;
+    background: #101312; box-shadow: -14px 0 40px rgba(0,0,0,.55);
+    transform: translateX(calc(100% + 40px)); visibility: hidden;
+    transition: transform .3s var(--ease-out), visibility 0s .3s;
+  }
+  .lb.is-sheet-open .lb__panel { transform: none; visibility: visible; transition: transform .3s var(--ease-out), visibility 0s; }
+  .lb__sheethead { position: sticky; top: calc(-8px - env(safe-area-inset-top, 0px)); z-index: 1; margin: 0 -16px; padding: 8px 16px 4px; background: #101312; touch-action: auto; }
+  .lb__grip { display: none; }
+  .lb__sheetclose {
+    display: grid; place-items: center; width: 36px; height: 36px; margin: 0 0 4px auto;
+    border: 1px solid rgba(255,255,255,.16); border-radius: 999px; background: rgba(255,255,255,.06); color: #eef3ef;
+  }
+  .lb__info .row { max-height: none; }
+  .lb ~ .toast { bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
+}

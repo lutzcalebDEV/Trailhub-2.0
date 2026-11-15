@@ -1,5 +1,5 @@
 // Vale Trails — application root: state, routing, actions and mount.
-import { html, useState, useEffect, useMemo, useRef, useCallback, Fragment, ReactDOM } from "./react.js";
+import { html, useState, useEffect, useLayoutEffect, useMemo, useRef, useCallback, Fragment, ReactDOM } from "./react.js";
 import {
   LS, usePersistent, usePersistentSet, useData, loadOverrides,
   remoteLoadTags, remoteSaveTags, remoteSaveTagsBatch, hasSharedTags, effectiveSpecies, timeAgo,
@@ -32,13 +32,29 @@ const UPLOAD_EDIT_TTL_MS = 30 * 60000;
 
 const VIEW_COMPONENTS = { overview: Overview, gallery: Gallery, uploads: Uploads, bucks: Bucks, insights: Insights, map: MapView, review: Review };
 
-// Viewing a photo is a step in the back history, like a new screen in an app: the
-// phone's back gesture or button (or the browser's Back) closes the photo and returns
-// to the tab, instead of leaving the site.
-const inPhotoStep = () => !!(window.history.state && window.history.state.vtPhoto);
-const enterPhotoStep = () => { if (!inPhotoStep()) window.history.pushState({ vtPhoto: true }, ""); };
-// A reload keeps the old entry; start clean so the first close can't step past it.
-if (inPhotoStep()) window.history.replaceState(null, "");
+// Every screen and photo has its own address, like screens in an app. The phone's
+// back gesture (or the browser's Back) steps back through the screens you visited,
+// closes a photo before leaving the site, and a reload or link lands on the same spot:
+//   #/gallery              a screen (any id in VIEWS)
+//   #/gallery/photo/<id>   a photo opened from that screen
+// Older buck alerts link "#photo=<id>", which still opens the photo. Hash addresses
+// need nothing from the server, so they work on GitHub Pages.
+function readRoute() {
+  const h = window.location.hash;
+  const old = /^#photo=(.+)$/.exec(h);
+  if (old) return { view: null, photo: decodeURIComponent(old[1]), old: true };
+  const m = /^#\/([a-z]+)(?:\/photo\/(.+))?$/.exec(h);
+  if (!m) return { view: null, photo: null };
+  return { view: VIEWS.some((v) => v.id === m[1]) ? m[1] : null, photo: m[2] ? decodeURIComponent(m[2]) : null };
+}
+const routeUrl = (view, photo) => "#/" + view + (photo != null ? "/photo/" + encodeURIComponent(photo) : "");
+const historyState = () => window.history.state || {};
+const inPhotoStep = () => !!historyState().photo;
+// Each screen is drawn fresh, so the app puts the scroll back itself (saved per entry).
+if ("scrollRestoration" in window.history) window.history.scrollRestoration = "manual";
+const markScroll = () => {
+  try { window.history.replaceState({ ...historyState(), scrollY: window.scrollY }, ""); } catch (e) {}
+};
 
 function loadUploadEdits() {
   try {
@@ -56,7 +72,9 @@ function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = usePersistent(LS.sidebarCollapsed, "false");
   // Active tab + filters are remembered across refreshes so the page comes back
   // exactly where you left it (validated against the known views / filter keys).
-  const [view, setView] = useState(() => {
+  const [view, setViewState] = useState(() => {
+    const routed = readRoute().view;
+    if (routed) return routed;
     try {
       const v = localStorage.getItem(LS.view);
       return v && VIEWS.some((x) => x.id === v) ? v : "overview";
@@ -86,6 +104,33 @@ function App() {
   const [comments, setComments] = useState({});
   const [toast, setToast] = useState(null);
   const toastTimer = useRef(0);
+
+  /* ------------------------------ Addresses ------------------------------ */
+  const viewRef = useRef(view);
+  viewRef.current = view;
+  const pendingScroll = useRef(historyState().scrollY || 0);
+  // A photo in the address when the app opens (or from an alert) waits for its data.
+  const pendingPhoto = useRef(readRoute().photo);
+  // Start from a clean entry for this screen; a photo then opens on top of it as its
+  // own step, so the first Back closes the photo instead of leaving the site.
+  useEffect(() => {
+    window.history.replaceState({ scrollY: pendingScroll.current }, "", routeUrl(viewRef.current));
+  }, []);
+  const setView = useCallback((v) => {
+    if (v === viewRef.current) return;
+    markScroll();
+    window.history.pushState({ scrollY: 0 }, "", routeUrl(v));
+    pendingScroll.current = 0;
+    setViewState(v);
+  }, []);
+  // A new screen opens at the top; one you come back to opens where you left it.
+  useLayoutEffect(() => {
+    const y = pendingScroll.current;
+    if (y == null) return;
+    pendingScroll.current = null;
+    window.scrollTo(0, y);
+    requestAnimationFrame(() => window.scrollTo(0, y)); // for content drawn a frame later
+  }, [view]);
 
   // Once a tag or name is saved for everyone, the shared copy is the truth. Dropping
   // the local copy means this device follows later edits made anywhere else.
@@ -313,24 +358,52 @@ function App() {
     navigator.serviceWorker.ready.then((reg) => reg.active && reg.active.postMessage({ type: "keep-photos", urls })).catch(() => {});
   }, [data]);
 
-  // A link to one photo (a buck alert opens one): "#photo=<id>" opens it in the
-  // viewer. If it's newer than the loaded data, this runs again once data refreshes.
+  // Photos are found by id among the filtered photos (so prev/next follow the screen's
+  // filters) or, failing that, among all of them.
+  const capsRef = useRef(null);
+  capsRef.current = { captures, allCaptures };
+  const findPhoto = useCallback((id) => {
+    const { captures: shown, allCaptures: all } = capsRef.current;
+    const c = all.find((x) => String(x.id) === String(id));
+    if (!c) return null;
+    const list = shown.includes(c) ? shown : all;
+    return { list, index: list.indexOf(c) };
+  }, []);
+
+  // A linked photo (reload, shared link, buck alert) opens once it's in the data; if
+  // it's newer than what's loaded, this runs again when data refreshes.
   useEffect(() => {
-    const openFromHash = () => {
-      const m = /^#photo=(.+)$/.exec(window.location.hash);
-      if (!m) return;
-      const id = decodeURIComponent(m[1]);
-      const c = allCaptures.find((x) => String(x.id) === id);
-      if (!c) return;
-      const list = captures.includes(c) ? captures : allCaptures;
-      history.replaceState(null, "", window.location.pathname + window.location.search);
-      setLightbox({ list, index: list.indexOf(c) });
-      enterPhotoStep();
+    const id = pendingPhoto.current;
+    if (id == null) return;
+    const found = findPhoto(id);
+    if (!found) return;
+    pendingPhoto.current = null;
+    setLightbox(found);
+    window.history.pushState({ photo: true }, "", routeUrl(viewRef.current, id));
+  }, [allCaptures, captures, findPhoto]);
+
+  // Back / Forward (and alert taps while the app is open) follow the address.
+  useEffect(() => {
+    const onPop = () => {
+      const r = readRoute();
+      if (r.old) {
+        // "#photo=<id>" from an alert: this entry becomes that photo's own address.
+        const found = findPhoto(r.photo);
+        const url = routeUrl(viewRef.current, found ? r.photo : null);
+        window.history.replaceState(found ? { photo: true } : {}, "", url);
+        if (found) setLightbox(found); else pendingPhoto.current = r.photo;
+        return;
+      }
+      if (r.view && r.view !== viewRef.current) {
+        pendingScroll.current = historyState().scrollY || 0;
+        setViewState(r.view);
+      }
+      const found = r.photo != null ? findPhoto(r.photo) : null;
+      setLightbox(found);
     };
-    openFromHash();
-    window.addEventListener("hashchange", openFromHash);
-    return () => window.removeEventListener("hashchange", openFromHash);
-  }, [allCaptures, captures]);
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [findPhoto]);
 
   /* --------------------------- Actions ---------------------------------- */
   const setFilter = useCallback((patch) => setFilters((f) => ({ ...f, ...patch })), []);
@@ -381,17 +454,25 @@ function App() {
 
   const keep = useCallback((id) => { reviewed$.add(id); showToast("ok", "Marked reviewed"); }, [reviewed$, showToast]);
   const archiveCap = useCallback((id) => { archive$.add(id); showToast("ok", "Archived"); }, [archive$, showToast]);
-  const openLightbox = useCallback((list, index) => { setLightbox({ list, index }); enterPhotoStep(); }, []);
+  const openLightbox = useCallback((list, index) => {
+    const c = list[index];
+    if (!c) return;
+    setLightbox({ list, index });
+    markScroll();
+    window.history.pushState({ photo: true }, "", routeUrl(viewRef.current, c.id));
+  }, []);
   // Every way of closing a photo goes back through history, so the two never disagree.
   const closeLightbox = useCallback(() => {
     if (inPhotoStep()) window.history.back();
-    else setLightbox(null);
+    else { setLightbox(null); window.history.replaceState(historyState(), "", routeUrl(viewRef.current)); }
   }, []);
+  // Next / previous swap the photo in the address without adding steps, so one Back
+  // always returns to the screen rather than through every photo seen.
+  const lbId = lightbox && lightbox.list[lightbox.index] ? lightbox.list[lightbox.index].id : null;
   useEffect(() => {
-    const onPop = () => { if (!inPhotoStep()) setLightbox(null); };
-    window.addEventListener("popstate", onPop);
-    return () => window.removeEventListener("popstate", onPop);
-  }, []);
+    if (lbId == null || !inPhotoStep()) return;
+    window.history.replaceState(historyState(), "", routeUrl(viewRef.current, lbId));
+  }, [lbId]);
 
   // Tag many captures at once (Gallery selection). One local update, one request.
   const bulkAssign = useCallback((ids, species) => {

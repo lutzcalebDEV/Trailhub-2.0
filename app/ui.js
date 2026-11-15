@@ -836,7 +836,10 @@ export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggle
   // view and up raises the details. Videos are left out because dragging there
   // belongs to the player's seek bar, and a zoomed photo uses drags to pan.
   const swipe = useRef(null);
-  const isPhone = () => window.matchMedia("(max-width: 900px)").matches;
+  // Big phones on their side are wider than 900px, so a short touch screen counts too.
+  const isPhone = () => window.matchMedia("(max-width: 900px), (orientation: landscape) and (max-height: 500px) and (pointer: coarse)").matches;
+  // On a phone held sideways the details slide in from the right instead of up.
+  const isSidePanel = () => window.matchMedia("(orientation: landscape) and (max-height: 500px) and (pointer: coarse)").matches;
   const setDrag = (dy) => {
     const el = root.current;
     if (!el) return;
@@ -939,7 +942,7 @@ export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggle
   // The details sheet (phones): drag its handle up or down, or tap it.
   const sheetDrag = useRef(null);
   const onSheetStart = (e) => {
-    if (e.touches.length !== 1) return;
+    if (e.touches.length !== 1 || isSidePanel()) return;
     sheetDrag.current = { y: e.touches[0].clientY, dy: 0, onGrip: !!e.target.closest("button") };
   };
   const onSheetMove = (e) => {
@@ -992,6 +995,11 @@ export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggle
         <${SpeciesDot} species=${species} size=${9} /><b>${species}</b>
         <span>${cameraLabel || c.camera}</span><span>${fmtDateTime(c.date)}</span>
       </div>`}
+      ${/* Phones: details stay out of the way until asked for, so the photo has the screen. */ ""}
+      <button type="button" className="lb__infobtn" onClick=${(e) => { e.stopPropagation(); setSheetOpen(true); }}
+        aria-label="Show photo details" aria-expanded=${sheetOpen}>
+        <${Icon} name="info" size=${17} /><span>Details</span>
+      </button>
       ${hasPrev && html`<button className="lb__nav prev" onClick=${onPrev} aria-label="Previous"><${Icon} name="chevronLeft" size=${22} /></button>`}
       ${hasNext && html`<button className="lb__nav next" onClick=${onNext} aria-label="Next"><${Icon} name="chevronRight" size=${22} /></button>`}
       <div className="lb__panel" ref=${panel}>
@@ -999,6 +1007,9 @@ export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggle
           onTouchEnd=${onSheetEnd} onTouchCancel=${onSheetEnd}>
         <button type="button" className="lb__grip" onClick=${() => setSheetOpen((o) => !o)}
           aria-label=${sheetOpen ? "Hide details" : "Show details"} aria-expanded=${sheetOpen} />
+        <button type="button" className="lb__sheetclose" onClick=${() => setSheetOpen(false)} aria-label="Hide details">
+          <${Icon} name="x" size=${18} />
+        </button>
         <div className="lb__info">
           <h3>
             <${SpeciesDot} species=${species} size=${12} />${species}

@@ -1,11 +1,12 @@
 // Vale Trails — Photos: every photo, grouped by day, one tile per trigger.
-import { html, useState, useMemo, useEffect, Fragment } from "../react.js";
+import { html, useState, useMemo, useEffect, useRef, Fragment } from "../react.js";
 import { FilterBar, defaultFilters } from "../shell.js";
 import { Segmented, Select, Shot, Empty, Btn } from "../ui.js";
 import { effectiveSpecies, TAG_OPTIONS, fmtDateLong, fmtTime, isoDay } from "../core.js";
 import { collapseBursts } from "../analytics.js";
 
 const PAGE = 120;
+let keptShown = PAGE;
 
 function dayLabel(date) {
   const yesterday = new Date();
@@ -33,7 +34,10 @@ export function Gallery(app) {
     gridSize, setGridSize, openLightbox, camName, bulkAssign,
   } = app;
   const [newestFirst, setNewestFirst] = useState(true);
-  const [shown, setShown] = useState(PAGE);
+  // Kept when leaving the tab, so Back returns to the same spot in a long list.
+  const [shown, setShown] = useState(() => keptShown);
+  const firstRun = useRef(true);
+  useEffect(() => { keptShown = shown; }, [shown]);
   const [selecting, setSelecting] = useState(false);
   const [selected, setSelected] = useState(() => new Set());
   const [bulkSpecies, setBulkSpecies] = useState("Deer");
@@ -48,7 +52,10 @@ export function Gallery(app) {
     [sorted, selecting]
   );
   const groups = useMemo(() => groupByDay(items.slice(0, shown)), [items, shown]);
-  useEffect(() => setShown(PAGE), [filtered, newestFirst]);
+  useEffect(() => {
+    if (firstRun.current) { firstRun.current = false; return; }
+    setShown(PAGE);
+  }, [filtered, newestFirst]);
 
   const toggle = (id) =>
     setSelected((s) => {
