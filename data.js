@@ -1,5 +1,5 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-11-15T04:47:14+00:00",
+  "generatedAt": "2026-11-15T04:51:25+00:00",
   "demo": false,
   "cameras": [
     {
@@ -1644,7 +1644,7 @@ window.TRAILHUB_DATA = {
     },
     {
       "id": "up_b8457755-acd4-49b2-8bf5-5d1ac41008f8",
-      "species": "Animal",
+      "species": "Buck",
       "camera": "Camera 6a309e41bdc62e4448c0a370",
       "date": "2026-11-10T06:02:00+00:00",
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/up_b8457755-acd4-49b2-8bf5-5d1ac41008f8.jpg",
@@ -1656,7 +1656,7 @@ window.TRAILHUB_DATA = {
       "uploadedBySite": true,
       "media": "photo",
       "tags": [
-        "Animal"
+        "Buck"
       ],
       "weather": {
         "tempF": 46,
@@ -1667,7 +1667,8 @@ window.TRAILHUB_DATA = {
         "trend": "Steady",
         "sky": "Dry"
       },
-      "tempEstimated": true
+      "tempEstimated": true,
+      "note": "8 acres, creek trail"
     },
     {
       "id": "up_e845cac1-ecf6-403b-b5c7-ae9bf4038aac",
