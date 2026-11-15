@@ -3978,5 +3978,15 @@
   "confidence": 0.95,
   "label": "Squirrel",
   "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6afa1f0620c5fc9b4bfb8d58": {
+  "confidence": 0.95,
+  "label": "Squirrel",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6afa1fa6870921f17cb7f1e5": {
+  "confidence": 0.95,
+  "label": "Empty",
+  "model": "gemini-3.5-flash-lite"
  }
 }
