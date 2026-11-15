@@ -486,6 +486,9 @@ export function ZoomImage({ capture, alt, onZoomChange, controls }) {
   const frame = useRef(null);
   const [view, setView] = useState({ s: 1, x: 0, y: 0 });
   const [moving, setMoving] = useState(false);
+  // Fixed per photo: once the host is known to allow it, photos load in a way the
+  // share sheet can reuse (see checkShareFiles). Never switched on a shown photo.
+  const [cors] = useState(() => (shareFilesOk === true ? "anonymous" : undefined));
   const [hint, setHint] = useState(null);
   const viewRef = useRef(view);
   viewRef.current = view;
@@ -655,14 +658,75 @@ export function ZoomImage({ capture, alt, onZoomChange, controls }) {
   return html`<div ref=${frame} className=${cx("lb__zoom", zoomed && "is-zoomed", moving && "is-moving")}
       onPointerDown=${onPointerDown} onPointerMove=${onPointerMove}
       onPointerUp=${onPointerEnd} onPointerCancel=${onPointerEnd}>
-    <img className="lb__img" src=${capture.image} alt=${alt} draggable=${false}
+    <img className="lb__img" src=${capture.image} alt=${alt} draggable=${false} crossOrigin=${cors}
       style=${{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.s})` }} />
     ${hint && html`<span className="lb__zoomhint" role="status">${hint}</span>`}
     ${zoomed && html`<span className="lb__zoomlevel" key=${view.s} aria-live="polite">${formatZoom(view.s)}</span>`}
   </div>`;
 }
 
-export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggleFavorite, onTag, buckNames, comments, upload, signedIn, onSignIn, onClose, onPrev, onNext, hasPrev, hasNext }) {
+/* --------------------------------- Share --------------------------------- */
+// The phone's share sheet (Messages, AirDrop, Save to Photos). The photo itself is
+// attached when its host allows the site to download it (CORS on the R2 bucket);
+// otherwise the share carries a link to the photo, which Messages shows as the
+// picture. It's fetched ahead of the tap because iPhones only open the share sheet
+// straight from a tap, not after waiting on a download.
+//
+// Whether the host allows it is checked once per visit with a separate URL (the
+// small preview plus a marker). Asking for the on-screen photo's own URL in a way
+// the host refuses can stop that photo from showing, so that URL is only fetched
+// once the answer is yes, and from then on the viewer loads photos the same way
+// (crossOrigin), so the share copy comes from the browser cache, not a second download.
+export let shareFilesOk = null; // null = not checked yet
+let shareProbe = null;
+function checkShareFiles(c) {
+  if (shareFilesOk !== null) return Promise.resolve(shareFilesOk);
+  if (!shareProbe) {
+    const src = c.thumb || c.image;
+    shareProbe = fetch(src + (src.includes("?") ? "&" : "?") + "share-check=1", { mode: "cors", cache: "no-store" })
+      .then((r) => (shareFilesOk = r.ok), () => (shareFilesOk = false));
+  }
+  return shareProbe;
+}
+
+function usePhotoShare(c, species, cameraLabel, onToast) {
+  const file = useRef(null);
+  const id = c && c.id;
+  useEffect(() => {
+    file.current = null;
+    if (!c || !c.image || c.media === "video" || !navigator.canShare) return;
+    const ctrl = new AbortController();
+    checkShareFiles(c)
+      .then((ok) => (ok && !ctrl.signal.aborted ? fetch(c.image, { mode: "cors", signal: ctrl.signal }) : null))
+      .then((r) => (r && r.ok ? r.blob() : null))
+      .then((blob) => {
+        if (!blob) return;
+        const name = `${species}-${isoDay(c.date)}.jpg`.toLowerCase().replace(/[^a-z0-9.-]+/g, "-");
+        const f = new File([blob], name, { type: blob.type || "image/jpeg" });
+        if (navigator.canShare({ files: [f] })) file.current = f;
+      })
+      .catch(() => {});
+    return () => ctrl.abort();
+  }, [id]);
+
+  return () => {
+    if (!c || !c.image) return;
+    const url = new URL(c.image, window.location.href).href;
+    const text = `${species} · ${cameraLabel || c.camera} · ${fmtDateTime(c.date)}`;
+    const copyLink = () => navigator.clipboard && navigator.clipboard.writeText
+      ? navigator.clipboard.writeText(url).then(() => onToast && onToast("ok", "Photo link copied"), () => window.open(url, "_blank"))
+      : window.open(url, "_blank");
+    if (!navigator.share) { copyLink(); return; }
+    const data = file.current ? { files: [file.current], text } : { title: "Vale Trails", text, url };
+    navigator.share(data).catch((e) => { if (e && e.name !== "AbortError") copyLink(); });
+  };
+}
+
+// One-tap labels for the common cases; "Other…" opens the full list in the details.
+const QUICK_TAGS = ["Buck", "Doe", "Deer", "Empty"];
+
+export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggleFavorite, onTag, onToast, buckNames, comments, upload, signedIn, onSignIn, onClose, onPrev, onNext, hasPrev, hasNext }) {
+  const share = usePhotoShare(capture, species, cameraLabel, onToast);
   const zoomControls = useRef(null);
   const [zoomed, setZoomed] = useState(false);
   const [navIdle, setNavIdle] = useState(false);
@@ -806,11 +870,23 @@ export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggle
     else if (dx > 0 && hasPrev) onPrev();
   };
 
+  // "Other…" brings up the full Animal list in the details.
+  const openOtherTags = () => {
+    setSheetOpen(true);
+    setTimeout(() => {
+      const select = panel.current && panel.current.querySelector(".lb__corrections select");
+      if (!select) return;
+      select.scrollIntoView({ block: "center", behavior: "smooth" });
+      select.focus({ preventScroll: true });
+      if (select.showPicker) { try { select.showPicker(); } catch (e) {} }
+    }, 320);
+  };
+
   // The details sheet (phones): drag its handle up or down, or tap it.
   const sheetDrag = useRef(null);
   const onSheetStart = (e) => {
     if (e.touches.length !== 1) return;
-    sheetDrag.current = { y: e.touches[0].clientY, dy: 0, onGrip: !!e.target.closest(".lb__grip") };
+    sheetDrag.current = { y: e.touches[0].clientY, dy: 0, onGrip: !!e.target.closest("button") };
   };
   const onSheetMove = (e) => {
     const d = sheetDrag.current;
@@ -872,6 +948,9 @@ export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggle
           <h3>
             <${SpeciesDot} species=${species} size=${12} />${species}
             ${meta && meta.favorite && html`<${Icon} name="star" size=${15} className="lb__fav" />`}
+            ${c.image && html`<button type="button" className="lb__share" onClick=${share} aria-label="Share photo" title="Share">
+              <${Icon} name="share" size=${17} /><span>Share</span>
+            </button>`}
           </h3>
           <div className="row">
             <span><${Icon} name="camera" size=${15} />${cameraLabel || c.camera}</span>
@@ -884,6 +963,16 @@ export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggle
             ${c.confidence != null && html`<span><${Icon} name="target" size=${15} />${c.aiTagged ? "AI " : ""}${Math.round(c.confidence * 100)}%</span>`}
           </div>
         </div>
+        ${onTag && html`<div className="lb__quicktags" role="group" aria-label="What's in this photo">
+          ${QUICK_TAGS.map((sp) => html`<button key=${sp} type="button"
+            className=${cx("qtag", species === sp && "is-on")} aria-pressed=${species === sp}
+            onClick=${() => { if (species !== sp) onTag(sp); }}>
+            <span className="sdot" style=${{ background: speciesColor(sp) }} />${sp}
+          </button>`)}
+          <button type="button" className=${cx("qtag", !QUICK_TAGS.includes(species) && "is-on")} onClick=${openOtherTags}>
+            ${QUICK_TAGS.includes(species) ? "Other…" : `${species} ▾`}
+          </button>
+        </div>`}
         </div>
         ${onMeta && html`<${LightboxEdit} key=${c.id} capture=${c} species=${species} meta=${meta}
           onMeta=${onMeta} onToggleFavorite=${onToggleFavorite} onTag=${onTag} buckNames=${buckNames}

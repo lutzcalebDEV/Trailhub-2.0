@@ -1295,3 +1295,34 @@ button.actrow__name:hover { color: var(--accent); }
   .modal { padding-top: max(16px, env(safe-area-inset-top, 0px)); padding-bottom: max(16px, env(safe-area-inset-bottom, 0px)); }
   .drawer { max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 24px); }
 }
+
+/* ------------------------ Share + one-tap tagging ------------------------- */
+.lb__info h3 { flex-wrap: nowrap; }
+.lb__share {
+  margin-left: auto; display: inline-flex; align-items: center; gap: 6px; flex: none;
+  padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,.18);
+  background: rgba(255,255,255,.06); color: #eef3ef; font: inherit; font-size: 13px; font-weight: 600;
+}
+.lb__share:hover { background: rgba(255,255,255,.12); }
+.lb__quicktags { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+.qtag {
+  display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.05);
+  color: #dfe7e2; font: inherit; font-size: 13px; font-weight: 600; white-space: nowrap;
+  transition: background .14s, border-color .14s;
+}
+.qtag:hover { background: rgba(255,255,255,.11); }
+.qtag.is-on { background: var(--accent); border-color: var(--accent); color: var(--accent-contrast); }
+.qtag.is-on .sdot { box-shadow: 0 0 0 1.5px rgba(0,0,0,.25); }
+
+@media (max-width: 900px) {
+  .lb { --peek: calc(152px + env(safe-area-inset-bottom, 0px)); }
+  .lb:not(.is-sheet-open) .lb__info .row { max-height: 22px; }
+  .lb__quicktags { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 10px -16px 0; padding: 0 16px 2px; }
+  .lb__quicktags::-webkit-scrollbar { display: none; }
+  .qtag { padding: 8px 13px; font-size: 14px; }
+  .lb ~ .toast { bottom: calc(160px + env(safe-area-inset-bottom, 0px)); }
+}
+@media (max-width: 900px) and (orientation: landscape) {
+  .lb { --peek: calc(52px + env(safe-area-inset-bottom, 0px)); }
+}

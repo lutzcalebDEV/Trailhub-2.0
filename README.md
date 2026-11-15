@@ -283,7 +283,20 @@ with no copy yet simply loads the full image.
 The next runs move existing photos to R2 and remove them from the repo. Older copies
 stay in git history until that history is rewritten.
 
-## 8. Install it like an app
+## 8. Sharing photos
+
+The **Share** button in the photo view opens the phone's share
+sheet. Out of the box it shares a link to the photo, which Messages shows as the
+picture. To share the photo file itself (so **Save to Photos** works), let the site
+download photos from the bucket once:
+
+```
+npx wrangler r2 bucket cors set trailhub-photos --file r2-cors.json
+```
+
+`r2-cors.json` allows only this site's address. Change it if the site moves.
+
+## 9. Install it like an app
 
 The site is a Progressive Web App: `manifest.webmanifest` names it and gives it icons,
 and `sw.js` is a small service worker that keeps the app files and the latest

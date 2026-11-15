@@ -277,6 +277,24 @@ function App() {
     newest: captures.length ? timeAgo(captures[0].date) : null,
   };
 
+  // A link to one photo (a buck alert opens one): "#photo=<id>" opens it in the
+  // viewer. If it's newer than the loaded data, this runs again once data refreshes.
+  useEffect(() => {
+    const openFromHash = () => {
+      const m = /^#photo=(.+)$/.exec(window.location.hash);
+      if (!m) return;
+      const id = decodeURIComponent(m[1]);
+      const c = allCaptures.find((x) => String(x.id) === id);
+      if (!c) return;
+      const list = captures.includes(c) ? captures : allCaptures;
+      setLightbox({ list, index: list.indexOf(c) });
+      history.replaceState(null, "", window.location.pathname + window.location.search);
+    };
+    openFromHash();
+    window.addEventListener("hashchange", openFromHash);
+    return () => window.removeEventListener("hashchange", openFromHash);
+  }, [allCaptures, captures]);
+
   /* --------------------------- Actions ---------------------------------- */
   const setFilter = useCallback((patch) => setFilters((f) => ({ ...f, ...patch })), []);
   const toggleTheme = useCallback(() => setTheme((t) => (t === "light" ? "dark" : "light")), [setTheme]);
@@ -474,6 +492,7 @@ function App() {
       onMeta=${(patch, opts) => updateMeta(lbItem.id, patch, opts)}
       onToggleFavorite=${() => toggleFavorite(lbItem.id)}
       onTag=${(sp) => assignSpecies(lbItem.id, sp)}
+      onToast=${showToast}
       buckNames=${buckNames}
       signedIn=${!hasSharedTags || !!uploadAuth}
       onSignIn=${() => openSignIn("Sign in to save tags, names and notes for everyone.")}
