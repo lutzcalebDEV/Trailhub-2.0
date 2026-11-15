@@ -69,14 +69,8 @@ export function Icon({ name, size = 18, className = "", strokeWidth = 1.9 }) {
   >${P[name] || null}</svg>`;
 }
 
-// The Vale Trails brand mark — mountains + trail inside a rounded badge tile.
+// The Vale Trails logo ("First light": a buck on the ridge at sunrise). The same
+// icons/icon.svg is the browser tab icon, so the app and the tab always match.
 export function BrandMark({ size = 38 }) {
-  const inner = Math.round(size * 0.62);
-  return html`<span className="brand__mark" style=${{ width: size, height: size }}>
-    <svg width=${inner} height=${inner} viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="m2.5 19 5.5-9 3 4.5L18 7l3.5 12Z"/>
-      <path d="M2.5 19c3.5 0 4.5-2 7-2s3.5 2 7 2" opacity="0.55"/>
-    </svg>
-  </span>`;
+  return html`<img className="brand__mark" src="icons/icon.svg" width=${size} height=${size} alt="" draggable=${false} />`;
 }

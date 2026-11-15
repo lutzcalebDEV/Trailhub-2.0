@@ -6,7 +6,7 @@
 // Always trying the network first means a deploy is picked up on the next load
 // and the app's modules can never be served from two different versions. Photos
 // (R2), map tiles and fonts are other origins and are left to the browser cache.
-const VERSION = "vale-trails-v5";
+const VERSION = "vale-trails-v6";
 // Kept across app updates (only "vale-trails-v*" caches are replaced on update).
 const PHOTO_CACHE = "vale-photos";
 const STATE_CACHE = "vale-state";
@@ -43,6 +43,7 @@ const SHELL = [
   "./vendor/leaflet/leaflet.css",
   "./icons/icon.svg",
   "./icons/icon-192.png",
+  "./icons/badge-96.png",
 ];
 
 // Cache keys drop the query string, so "data.js?t=123" is stored as plain data.js.
@@ -117,7 +118,7 @@ self.addEventListener("push", (event) => {
     body: msg.body || "",
     tag: msg.tag || undefined,
     icon: "icons/icon-192.png",
-    badge: "icons/icon-192.png",
+    badge: "icons/badge-96.png",
     data: { url: msg.url || "./" },
   })]));
 });
