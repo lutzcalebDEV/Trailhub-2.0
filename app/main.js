@@ -32,6 +32,14 @@ const UPLOAD_EDIT_TTL_MS = 30 * 60000;
 
 const VIEW_COMPONENTS = { overview: Overview, gallery: Gallery, uploads: Uploads, bucks: Bucks, insights: Insights, map: MapView, review: Review };
 
+// Viewing a photo is a step in the back history, like a new screen in an app: the
+// phone's back gesture or button (or the browser's Back) closes the photo and returns
+// to the tab, instead of leaving the site.
+const inPhotoStep = () => !!(window.history.state && window.history.state.vtPhoto);
+const enterPhotoStep = () => { if (!inPhotoStep()) window.history.pushState({ vtPhoto: true }, ""); };
+// A reload keeps the old entry; start clean so the first close can't step past it.
+if (inPhotoStep()) window.history.replaceState(null, "");
+
 function loadUploadEdits() {
   try {
     const raw = JSON.parse(sessionStorage.getItem(LS.uploadEdits) || "{}");
@@ -315,8 +323,9 @@ function App() {
       const c = allCaptures.find((x) => String(x.id) === id);
       if (!c) return;
       const list = captures.includes(c) ? captures : allCaptures;
-      setLightbox({ list, index: list.indexOf(c) });
       history.replaceState(null, "", window.location.pathname + window.location.search);
+      setLightbox({ list, index: list.indexOf(c) });
+      enterPhotoStep();
     };
     openFromHash();
     window.addEventListener("hashchange", openFromHash);
@@ -372,7 +381,17 @@ function App() {
 
   const keep = useCallback((id) => { reviewed$.add(id); showToast("ok", "Marked reviewed"); }, [reviewed$, showToast]);
   const archiveCap = useCallback((id) => { archive$.add(id); showToast("ok", "Archived"); }, [archive$, showToast]);
-  const openLightbox = useCallback((list, index) => setLightbox({ list, index }), []);
+  const openLightbox = useCallback((list, index) => { setLightbox({ list, index }); enterPhotoStep(); }, []);
+  // Every way of closing a photo goes back through history, so the two never disagree.
+  const closeLightbox = useCallback(() => {
+    if (inPhotoStep()) window.history.back();
+    else setLightbox(null);
+  }, []);
+  useEffect(() => {
+    const onPop = () => { if (!inPhotoStep()) setLightbox(null); };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
 
   // Tag many captures at once (Gallery selection). One local update, one request.
   const bulkAssign = useCallback((ids, species) => {
@@ -464,11 +483,11 @@ function App() {
     try {
       await updateUpload({ id: String(id), remove: true }, uploadAuth);
       setUploadEdits((m) => ({ ...m, [String(id)]: { removed: true, at: Date.now() } }));
-      setLightbox(null);
+      closeLightbox();
       showToast("ok", "Upload deleted for everyone");
       return true;
     } catch (e) { syncFailed(e); return false; }
-  }, [uploadAuth, openSignIn, showToast, syncFailed]);
+  }, [uploadAuth, openSignIn, showToast, syncFailed, closeLightbox]);
 
   /* ----------------------------- Render --------------------------------- */
   const meta = VIEWS.find((v) => v.id === view) || VIEWS[0];
@@ -538,7 +557,7 @@ function App() {
       hasNext=${lightbox.index < lightbox.list.length - 1}
       onPrev=${() => setLightbox((s) => ({ ...s, index: Math.max(0, s.index - 1) }))}
       onNext=${() => setLightbox((s) => ({ ...s, index: Math.min(s.list.length - 1, s.index + 1) }))}
-      onClose=${() => setLightbox(null)} />`}
+      onClose=${closeLightbox} />`}
 
     ${uploadOpen && html`<${UploadDialog} cameras=${data.cameras} camNames=${camNames} buckNames=${buckNames}
       auth=${uploadAuth} setAuth=${signedIn} onClose=${() => setUploadOpen(false)}

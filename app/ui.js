@@ -722,6 +722,18 @@ function usePhotoShare(c, species, cameraLabel, onToast) {
   };
 }
 
+/* -------------------------- Swipe from the edge ---------------------------
+   In the iPhone Home Screen app there's no browser around the page, so no system
+   swipe-back. A drag that starts at the left edge slides the photo view away and
+   goes back to the tab, as in iPhone apps. Safari and Android have their own back
+   gesture (closing the photo through history, see main.js), so this stays off there
+   to never go back twice. */
+const EDGE_PX = 28;
+const edgeBackHere = () => {
+  const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  return ios && (navigator.standalone === true || window.matchMedia("(display-mode: standalone)").matches);
+};
+
 // One-tap labels for the common cases; "Other…" opens the full list in the details.
 const QUICK_TAGS = ["Buck", "Doe", "Deer", "Empty"];
 
@@ -840,6 +852,7 @@ export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggle
   };
   const onTouchStart = (e) => {
     const t = e.touches[0];
+    if (edgeOn && t.clientX <= EDGE_PX) { swipe.current = null; return; } // that's a back swipe
     swipe.current = !zoomed && e.target.tagName === "IMG" && e.touches.length === 1
       ? { x: t.clientX, y: t.clientY } : null;
   };
@@ -882,6 +895,47 @@ export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggle
     }, 320);
   };
 
+  const edgeOn = useState(edgeBackHere)[0];
+  const edge = useRef(null);
+  const onEdgeStart = (e) => {
+    edge.current = null;
+    if (!edgeOn || zoomed || e.touches.length !== 1) return;
+    const t = e.touches[0];
+    if (t.clientX > EDGE_PX) return;
+    edge.current = { x: t.clientX, y: t.clientY, at: e.timeStamp, dx: 0, live: false };
+  };
+  const onEdgeMove = (e) => {
+    const g = edge.current;
+    if (!g || e.touches.length !== 1) return;
+    const t = e.touches[0];
+    const dx = t.clientX - g.x;
+    const dy = t.clientY - g.y;
+    if (!g.live) {
+      if (Math.abs(dy) > 14 && Math.abs(dy) > dx) { edge.current = null; return; } // a scroll, not a back swipe
+      if (dx < 8) return;
+      g.live = true;
+      root.current.classList.add("is-edge");
+    }
+    g.dx = Math.max(0, dx);
+    g.at2 = e.timeStamp;
+    root.current.style.setProperty("--edge", g.dx + "px");
+  };
+  const onEdgeEnd = (e) => {
+    const g = edge.current;
+    edge.current = null;
+    if (!g || !g.live) return;
+    const el = root.current;
+    const speed = g.dx / Math.max(1, (g.at2 || e.timeStamp) - g.at); // px per ms
+    const back = g.dx > window.innerWidth * 0.33 || (speed > 0.5 && g.dx > 40);
+    el.classList.add("is-edge-settle");
+    el.style.setProperty("--edge", back ? window.innerWidth + "px" : "0px");
+    setTimeout(() => {
+      if (back) { onClose(); return; }
+      el.classList.remove("is-edge", "is-edge-settle");
+      el.style.removeProperty("--edge");
+    }, 220);
+  };
+
   // The details sheet (phones): drag its handle up or down, or tap it.
   const sheetDrag = useRef(null);
   const onSheetStart = (e) => {
@@ -912,7 +966,8 @@ export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggle
   const c = capture;
   return html`<div ref=${root} className=${cx("lb", navIdle && "is-nav-idle", immersive && "is-immersive", sheetOpen && "is-sheet-open")} onClick=${onClose}
       onPointerMove=${(e) => { lastPointer.current = e.pointerType; if (e.pointerType === "mouse") wakeNavigation(); }}
-      onPointerDown=${(e) => { lastPointer.current = e.pointerType; if (e.pointerType === "mouse") wakeNavigation(); }}>
+      onPointerDown=${(e) => { lastPointer.current = e.pointerType; if (e.pointerType === "mouse") wakeNavigation(); }}
+      onTouchStart=${onEdgeStart} onTouchMove=${onEdgeMove} onTouchEnd=${onEdgeEnd} onTouchCancel=${onEdgeEnd}>
     <div className=${cx("lb__stage", zoomed && "is-zoomed")} ref=${stage} onClick=${onStageClick}
       onTouchStart=${onTouchStart} onTouchMove=${onTouchMove} onTouchEnd=${onTouchEnd}>
       ${c.image && c.media === "video"

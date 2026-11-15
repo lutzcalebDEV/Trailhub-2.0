@@ -158,15 +158,16 @@ async function writeState(key, value) {
 }
 
 let corsCheck = null;
+let corsKnown = null; // the answer once known, so a photo never waits on the check
 function photosAllowed(sampleUrl) {
   if (!corsCheck) {
     corsCheck = (async () => {
       const saved = await readState("photo-cors");
-      if (saved && Date.now() - saved.at < 86400000) return saved.ok;
+      if (saved && Date.now() - saved.at < 86400000) return (corsKnown = saved.ok);
       let ok = false;
       try { ok = (await fetch(sampleUrl + "?offline-check=" + Date.now(), { mode: "cors", cache: "no-store" })).ok; } catch (e) {}
       await writeState("photo-cors", { ok, at: Date.now() });
-      return ok;
+      return (corsKnown = ok);
     })();
   }
   return corsCheck;
@@ -185,7 +186,14 @@ async function photo(request) {
   const cache = await caches.open(PHOTO_CACHE);
   const hit = await cache.match(request.url);
   if (hit) return hit;
-  if (await photosAllowed(request.url)) {
+  // Until the check has an answer, load the photo as before and let the check run
+  // alongside; the photos after it use the answer.
+  if (corsKnown === null) {
+    const saved = await readState("photo-cors");
+    if (saved && Date.now() - saved.at < 86400000) corsKnown = saved.ok;
+    else { photosAllowed(request.url).catch(() => {}); return fetch(request); }
+  }
+  if (corsKnown) {
     try {
       const res = await fetch(request.url, { mode: "cors", credentials: "omit" });
       if (res.ok) keep(cache, request.url, res.clone()).catch(() => {});

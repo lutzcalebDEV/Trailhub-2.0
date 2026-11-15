@@ -1381,3 +1381,8 @@ button, a, [role="button"], .shot { touch-action: manipulation; }
 @media (display-mode: standalone) {
   html, body { overscroll-behavior: none; }
 }
+
+/* Swipe from the left edge (installed iPhone app): the photo view follows the finger
+   and slides off to the right, showing the tab underneath. */
+.lb.is-edge { transform: translateX(var(--edge, 0px)); box-shadow: -18px 0 36px rgba(0,0,0,.45); }
+.lb.is-edge-settle { transition: transform .22s cubic-bezier(.2,.8,.2,1); }
