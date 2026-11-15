@@ -1,5 +1,5 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-11-15T21:26:27+00:00",
+  "generatedAt": "2026-11-15T21:41:21+00:00",
   "demo": false,
   "cameras": [
     {
@@ -21,6 +21,35 @@ window.TRAILHUB_DATA = {
     {
       "species": "Squirrel",
       "camera": "Camera 6a30af992e5969f7ed9fdc5c",
+      "date": "2026-11-15T21:40:02+00:00",
+      "uploaded": "2026-11-15T21:40:22.879000+00:00",
+      "timeSource": "camera",
+      "isNight": false,
+      "todSource": "tag",
+      "temp": 56,
+      "confidence": 0.95,
+      "moon": null,
+      "id": "sp_6afa26c68e327f4cf66ac723",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6afa26c68e327f4cf66ac723.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6afa26c68e327f4cf66ac723_t.jpg",
+      "overlayRead": 2,
+      "tags": [
+        "Squirrel"
+      ],
+      "aiTagged": true,
+      "weather": {
+        "tempF": 54,
+        "wind": 5,
+        "windDir": "NW",
+        "windBand": "5\u201310 mph",
+        "pressure": 30.3,
+        "trend": "Steady",
+        "sky": "Dry"
+      }
+    },
+    {
+      "species": "Squirrel",
+      "camera": "Camera 6a30af992e5969f7ed9fdc5c",
       "date": "2026-11-15T21:21:23+00:00",
       "uploaded": "2026-11-15T21:21:44.745000+00:00",
       "timeSource": "camera",
@@ -30,9 +59,9 @@ window.TRAILHUB_DATA = {
       "confidence": 0.95,
       "moon": null,
       "id": "sp_6afa2268d8faeb9898bb57ce",
+      "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6afa2268d8faeb9898bb57ce.jpg",
       "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6afa2268d8faeb9898bb57ce_t.jpg",
-      "overlayRead": 2,
       "tags": [
         "Squirrel"
       ],
