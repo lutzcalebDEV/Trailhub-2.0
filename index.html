@@ -43,13 +43,16 @@
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <!-- Loaded without blocking the first paint: on a weak signal the page shows in the
+       system font instead of waiting on Google, then switches to Inter. -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" /></noscript>
 
   <!-- Design system -->
   <link rel="stylesheet" href="app/styles.css" />
 
-  <!-- Leaflet 1.9.4, vendored like React (map tiles still need the network). -->
-  <link rel="stylesheet" href="vendor/leaflet/leaflet.css" />
+  <!-- Leaflet 1.9.4 is vendored and loaded by the Map tab when it first opens
+       (app/views/mapview.js), so it isn't parsed on every start. -->
 </head>
 <body>
   <div id="root">
@@ -74,9 +77,6 @@
   <script src="vendor/react.production.min.js"></script>
   <script src="vendor/react-dom.production.min.js"></script>
   <script src="vendor/htm.umd.js"></script>
-
-  <!-- Leaflet runtime -->
-  <script src="vendor/leaflet/leaflet.js"></script>
 
   <!-- Application (ES modules) -->
   <script type="module" src="app/main.js"></script>

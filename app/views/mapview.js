@@ -6,13 +6,44 @@ import { Empty, Btn, Chip } from "../ui.js";
 import { filterCaptures } from "../analytics.js";
 
 const cx = (...xs) => xs.filter(Boolean).join(" ");
+const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]);
 // OpenStreetMap's public tiles: open data, no API key or account. Its usage policy
 // requires the attribution below and a Referer header.
 const OSM_TILES = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 const OSM_CREDIT = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
+// Leaflet (~160 KB) is only needed here, so it loads the first time the map opens
+// instead of on every app start. Its stylesheet goes in before app/styles.css so the
+// app's .leaflet-* overrides still win. Both files are in the service worker shell.
+let leafletLoad = null;
+function loadLeaflet() {
+  if (window.L) return Promise.resolve(window.L);
+  if (!leafletLoad) {
+    leafletLoad = new Promise((resolve, reject) => {
+      const css = document.createElement("link");
+      css.rel = "stylesheet";
+      css.href = "vendor/leaflet/leaflet.css";
+      const appCss = document.querySelector('link[href="app/styles.css"]');
+      document.head.insertBefore(css, appCss || null);
+      const js = document.createElement("script");
+      js.src = "vendor/leaflet/leaflet.js";
+      js.onload = () => resolve(window.L);
+      js.onerror = () => { leafletLoad = null; js.remove(); reject(new Error("Leaflet failed to load")); };
+      document.head.appendChild(js);
+    });
+  }
+  return leafletLoad;
+}
+
 export function MapView(app) {
   const { data, captures, ov, filtered, filters, setFilter, setView, spList, theme, camName, renameCamera, auth, openSignIn } = app;
+  const [leafletReady, setLeafletReady] = useState(() => !!window.L);
+  useEffect(() => {
+    if (leafletReady) return;
+    let live = true;
+    loadLeaflet().then(() => { if (live) setLeafletReady(true); }).catch(() => {});
+    return () => { live = false; };
+  }, [leafletReady]);
   const elRef = useRef(null);
   const mapRef = useRef(null);
   const layerRef = useRef(null);
@@ -50,7 +81,7 @@ export function MapView(app) {
     if (pts.length === 1) map.setView(pts[0], 13);
     else map.fitBounds(pts, { padding: [44, 44], maxZoom: 14 });
     return () => { map.remove(); mapRef.current = null; layerRef.current = null; };
-  }, [auth, cams, theme]);
+  }, [auth, cams, theme, leafletReady]);
 
   // Redraw markers whenever counts or the active camera change.
   useEffect(() => {
@@ -68,10 +99,11 @@ export function MapView(app) {
       const markup = `<div class="vt-marker" style="width:${size}px;height:${size}px;${active ? "outline:3px solid var(--accent);outline-offset:2px;" : ""}">${count}</div>`;
       const icon = L.divIcon({ className: "", html: markup, iconSize: [size, size], iconAnchor: [size / 2, size / 2] });
       const mk = L.marker([cam.latitude, cam.longitude], { icon }).addTo(group);
-      mk.bindPopup(`<b>${camName(cam.name)}</b><br>${count} photo${count === 1 ? "" : "s"}`);
+      // Leaflet renders popups as HTML and camera names are user-editable, so escape them.
+      mk.bindPopup(`<b>${escapeHtml(camName(cam.name))}</b><br>${count} photo${count === 1 ? "" : "s"}`);
       mk.on("click", () => setFilter({ camera: filters.camera === cam.name ? "All" : cam.name }));
     });
-  }, [auth, cams, countByCam, filters.camera, camName]);
+  }, [auth, cams, countByCam, filters.camera, camName, leafletReady]);
 
   // Keep Leaflet sized to its container when the viewport changes — rotating a
   // phone (portrait<->landscape) or resizing the window otherwise leaves gray,

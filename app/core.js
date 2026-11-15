@@ -624,7 +624,12 @@ export function useData(pollMs = 5 * 60 * 1000) {
     setRefreshing(true);
     try {
       const fresh = await fetchLatestData();
-      if (mounted.current) setData(fresh);
+      // pull.py only rewrites data.js (with a new generatedAt) when something changed.
+      // Keeping the old object when it didn't saves re-filtering every photo on each
+      // poll and every time the phone comes back to the app.
+      const same = (prev) => prev.generatedAt && fresh.generatedAt &&
+        prev.generatedAt.getTime() === fresh.generatedAt.getTime() && prev.captures.length === fresh.captures.length;
+      if (mounted.current) setData((prev) => (same(prev) ? prev : fresh));
       return fresh;
     } catch (e) {
       return null; // keep current data
