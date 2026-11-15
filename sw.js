@@ -6,7 +6,7 @@
 // Always trying the network first means a deploy is picked up on the next load
 // and the app's modules can never be served from two different versions. Photos
 // (R2), map tiles and fonts are other origins and are left to the browser cache.
-const VERSION = "vale-trails-v3";
+const VERSION = "vale-trails-v4";
 const SHELL = [
   "./",
   "./index.html",
@@ -24,6 +24,7 @@ const SHELL = [
   "./app/exif.js",
   "./app/comments.js",
   "./app/account.js",
+  "./app/alerts.js",
   "./app/views/overview.js",
   "./app/views/gallery.js",
   "./app/views/uploads.js",
@@ -97,5 +98,36 @@ self.addEventListener("fetch", (event) => {
       }
       throw e;
     }
+  })());
+});
+
+// Push alerts (see push_alerts.py and the Worker's /push routes). These arrive and
+// show on the lock screen even when the app is closed.
+self.addEventListener("push", (event) => {
+  let msg = {};
+  try { msg = event.data ? event.data.json() : {}; } catch (e) { msg = { title: "Vale Trails", body: event.data && event.data.text() }; }
+  event.waitUntil(self.registration.showNotification(msg.title || "Vale Trails", {
+    body: msg.body || "",
+    tag: msg.tag || undefined,
+    icon: "icons/icon-192.png",
+    badge: "icons/icon-192.png",
+    data: { url: msg.url || "./" },
+  }));
+});
+
+// Tapping an alert opens that photo: in the app if it's already open, else fresh.
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const target = new URL((event.notification.data && event.notification.data.url) || "./", self.registration.scope).href;
+  event.waitUntil((async () => {
+    const wins = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    for (const w of wins) {
+      if (new URL(w.url).origin === new URL(target).origin && "focus" in w) {
+        await w.focus();
+        if ("navigate" in w) return w.navigate(target);
+        return;
+      }
+    }
+    return self.clients.openWindow(target);
   })());
 });

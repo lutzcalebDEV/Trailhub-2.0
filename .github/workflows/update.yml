@@ -45,6 +45,7 @@ jobs:
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
           R2_PUBLIC_BASE_URL: ${{ secrets.R2_PUBLIC_BASE_URL }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          PUSH_SECRET: ${{ secrets.PUSH_SECRET }}
         run: |
           set -e
           git config user.name "trailhub-bot"
@@ -59,6 +60,8 @@ jobs:
             # we never rebase or merge, we rebuild on top of current origin/main.
             git fetch origin main --quiet
             git reset --hard origin/main
+            # What was published before this run, for push alerts afterwards.
+            BEFORE=$(git rev-parse HEAD)
 
             # Regenerate data.js / store.json / cameras.json / photos. pull.py only
             # downloads photos it hasn't seen (tracked in store.json), so re-running
@@ -84,6 +87,7 @@ jobs:
             if git push origin HEAD:main; then
               echo "SUCCESS: Published update."
               published=1
+              pushed=1
               break
             fi
 
@@ -94,4 +98,11 @@ jobs:
           if [ "${published}" -ne 1 ]; then
             echo "ERROR: Could not publish after multiple attempts."
             exit 1
+          fi
+
+          # Push alerts go out only after the push succeeded, comparing against what
+          # was published before, so each sighting alerts once. A failure here never
+          # fails the run. Does nothing until PUSH_SECRET is set.
+          if [ "${pushed:-0}" -eq 1 ]; then
+            python push_alerts.py --before "${BEFORE}" || echo "::warning::Push alerts failed."
           fi

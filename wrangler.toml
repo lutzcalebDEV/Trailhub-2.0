@@ -24,6 +24,8 @@ crons = ["*/5 * * * *"]
 [vars]
 UPLOAD_USER = "valecrew"
 R2_PUBLIC_BASE_URL = "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev"
+# Push alerts: paste the public key from `node make-vapid-keys.mjs` (README section 9).
+# VAPID_PUBLIC_KEY = ""
 
 # Personal accounts with admin approval. Create the namespace once:
 #   npx wrangler kv namespace create ACCOUNTS

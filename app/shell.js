@@ -61,7 +61,7 @@ export function Sidebar({ view, setView, counts, status, onCollapse }) {
 
 /* -------------------------------- Topbar -------------------------------- */
 // `auth` is the signed-in account; saving anything for everyone needs it.
-export function Topbar({ title, sub, theme, toggleTheme, onRefresh, refreshing, onUpload, auth, pending, onSignIn, onSignOut, onAccounts, sidebarHidden, onShowSidebar, children }) {
+export function Topbar({ title, sub, theme, toggleTheme, onRefresh, refreshing, onUpload, auth, pending, onSignIn, onSignOut, onAccounts, onAlerts, sidebarHidden, onShowSidebar, children }) {
   return html`<header className="topbar">
     ${sidebarHidden && html`<${IconBtn} icon="menu" bare className="topbar__menu" onClick=${onShowSidebar}
       aria-label="Show sidebar" aria-controls="sidebar" aria-expanded=${false} title="Show sidebar" />`}
@@ -72,7 +72,7 @@ export function Topbar({ title, sub, theme, toggleTheme, onRefresh, refreshing, 
     <div className="topbar__spacer" />
     <div className="topbar__actions">
       ${children}
-      <${UserMenu} auth=${auth} pending=${pending} onSignIn=${onSignIn} onSignOut=${onSignOut} onAccounts=${onAccounts} />
+      <${UserMenu} auth=${auth} pending=${pending} onSignIn=${onSignIn} onSignOut=${onSignOut} onAccounts=${onAccounts} onAlerts=${onAlerts} />
       <button className="btn btn--sm" onClick=${onUpload}><${Icon} name="upload" size=${15} /><span>Upload</span></button>
       <${IconBtn} icon="refresh" bare onClick=${onRefresh} title="Refresh data"
         className=${refreshing ? "is-spin" : ""} aria-label="Refresh" />
@@ -84,7 +84,7 @@ export function Topbar({ title, sub, theme, toggleTheme, onRefresh, refreshing, 
 
 /* ----------------------------- Mobile chrome ---------------------------- */
 // The phone's only header, so it names the page you're on (Home keeps the brand).
-export function MobileTopbar({ title, theme, toggleTheme, onRefresh, refreshing, status, onUpload, auth, pending, onSignIn, onSignOut, onAccounts }) {
+export function MobileTopbar({ title, theme, toggleTheme, onRefresh, refreshing, status, onUpload, auth, pending, onSignIn, onSignOut, onAccounts, onAlerts }) {
   return html`<div className="mobile-top">
     <${BrandMark} size=${30} />
     <div className="brand__name">${title || "Vale Trails"}
@@ -93,7 +93,7 @@ export function MobileTopbar({ title, theme, toggleTheme, onRefresh, refreshing,
       </small>
     </div>
     <div className="topbar__spacer" />
-    <${UserMenu} compact auth=${auth} pending=${pending} onSignIn=${onSignIn} onSignOut=${onSignOut} onAccounts=${onAccounts} />
+    <${UserMenu} compact auth=${auth} pending=${pending} onSignIn=${onSignIn} onSignOut=${onSignOut} onAccounts=${onAccounts} onAlerts=${onAlerts} />
     <${IconBtn} icon="upload" bare onClick=${onUpload} aria-label="Upload photos" />
     <${IconBtn} icon="refresh" bare onClick=${onRefresh} className=${refreshing ? "is-spin" : ""} aria-label="Refresh" />
     <${IconBtn} icon=${theme === "light" ? "moon" : "sun"} bare onClick=${toggleTheme} aria-label="Toggle theme" />
@@ -105,7 +105,7 @@ export function MobileTopbar({ title, theme, toggleTheme, onRefresh, refreshing,
 const MOBILE_MAIN = ["overview", "gallery", "bucks", "map"];
 const MOBILE_MORE = ["uploads", "insights", "review"];
 
-export function MobileNav({ view, setView, counts }) {
+export function MobileNav({ view, setView, counts, onAlerts }) {
   const [more, setMore] = useState(false);
   const inMore = MOBILE_MORE.includes(view);
   const go = (id) => { setMore(false); setView(id); };
@@ -131,6 +131,10 @@ export function MobileNav({ view, setView, counts }) {
           ${v.id === "review" && reviewBadge}
           <${Icon} name="chevronRight" size=${18} className="morenav__chev" />
         </button>`)}
+        ${onAlerts && html`<button className="morenav__item" onClick=${() => { setMore(false); onAlerts(); }}>
+          <${Icon} name="bell" size=${20} /><span>Alerts</span>
+          <${Icon} name="chevronRight" size=${18} className="morenav__chev" />
+        </button>`}
       </div>
     </div>`, document.body)}
   </${Fragment}>`;

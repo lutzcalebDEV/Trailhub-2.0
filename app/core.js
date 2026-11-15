@@ -304,6 +304,23 @@ export async function loadAccounts(auth) {
 }
 export const accountAction = (auth, user, action) => postJSON(TAGS_API + "/accounts", { user, action }, auth);
 
+/* ----------------------------- Push alerts ------------------------------ */
+// { enabled, publicKey } from the Worker; enabled is false until it's set up.
+export async function loadPushKey() {
+  if (!TAGS_API) return { enabled: false };
+  try {
+    const r = await fetch(TAGS_API + "/push/key", { cache: "no-store" });
+    return r.ok ? await r.json() : { enabled: false };
+  } catch (e) {
+    return { enabled: false, offline: true };
+  }
+}
+// Save this phone's subscription with the species it wants (or remove it).
+export const savePushSubscription = (auth, subscription, species) =>
+  postJSON(TAGS_API + "/push/subscribe", { subscription, species }, auth);
+export const removePushSubscription = (auth, subscription) =>
+  postJSON(TAGS_API + "/push/unsubscribe", { subscription }, auth);
+
 // The sign-in survives a refresh: the session token is kept on this device until
 // it expires (30 days) or you sign out. A password-only login is never stored.
 export function loadSession() {
@@ -530,6 +547,7 @@ export const LS = {
   uploadEdits: "trailhub-upload-edits",
   sidebarCollapsed: "trailhub-sidebar-collapsed",
   session: "trailhub-session",
+  alertSpecies: "trailhub-alert-species",
 };
 
 // Local date helpers for the date-range filter and the upload date field.

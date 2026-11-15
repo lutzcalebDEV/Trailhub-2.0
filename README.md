@@ -296,7 +296,41 @@ npx wrangler r2 bucket cors set trailhub-photos --file r2-cors.json
 
 `r2-cors.json` allows only this site's address. Change it if the site moves.
 
-## 9. Install it like an app
+## 9. Push alerts
+
+Each person can get a phone notification when a new photo shows the animals they
+care about, on the lock screen, with the app closed. They choose in the app:
+**More → Alerts** (or their name → **Alerts**), tick species such as Buck or Turkey,
+tap **Turn on alerts** and allow notifications. Choices are per phone and can be
+changed or turned off there any time. Tapping an alert opens that photo.
+
+On iPhone this works from the Home Screen app (iOS 16.4 or newer): in Safari tap
+**Share → Add to Home Screen**, open Vale Trails from the Home Screen, then turn on
+alerts. Android phones and desktop Chrome, Edge and Firefox work from the browser too.
+Turning on alerts needs a sign-in.
+
+How it works: after each publish, `push_alerts.py` (in the workflow) finds photos
+from the last 48 hours whose animal is new since the previous publish, counting a
+burst of frames as one sighting. It sends that list to the Worker, which sends a
+standard Web Push to every phone that chose those species. "Animal" (not yet
+identified) and "Empty" never alert, and more than three sightings at once become
+one summary.
+
+One-time setup (uses the same KV namespace as personal accounts, section 5):
+
+1. Create the KV namespace if you haven't: `npx wrangler kv namespace create ACCOUNTS`,
+   then uncomment the `[[kv_namespaces]]` block in `wrangler.toml` with its id.
+2. Make the signing keys: `node make-vapid-keys.mjs`. Put the public key in
+   `wrangler.toml` as `VAPID_PUBLIC_KEY`, and store the private key with
+   `npx wrangler secret put VAPID_PRIVATE_KEY`.
+3. Make up a long random password for the workflow to use with the Worker, and store
+   it in both places: `npx wrangler secret put PUSH_SECRET`, and a GitHub repository
+   secret named `PUSH_SECRET` with the same value.
+4. Deploy: `npx wrangler deploy`.
+
+Preview what would alert, without sending: `python push_alerts.py --before HEAD~50 --dry-run`.
+
+## 10. Install it like an app
 
 The site is a Progressive Web App: `manifest.webmanifest` names it and gives it icons,
 and `sw.js` is a small service worker that keeps the app files and the latest

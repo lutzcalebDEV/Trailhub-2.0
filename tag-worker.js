@@ -613,6 +613,165 @@ async function handleUploadEdit(request, env) {
   return json({ ok: true, upload: record });
 }
 
+/* ---------------------------- Push notifications ---------------------------
+   Standard Web Push: phones get alerts on the lock screen with the app closed.
+   - Each phone subscribes from the app (signed in) with the species it wants;
+     the subscription lives in the ACCOUNTS KV namespace under "push:<hash>".
+   - After each publish the GitHub workflow (push_alerts.py) POSTs the new sightings
+     to /push/notify with PUSH_SECRET; this sends one notification per sighting to
+     every phone that chose that species.
+   Keys: VAPID_PUBLIC_KEY (var) and VAPID_PRIVATE_KEY (secret), made once with
+   `node make-vapid-keys.mjs`. Messages are encrypted per phone (RFC 8291, aes128gcm)
+   and signed with the VAPID key (RFC 8292), all with WebCrypto. */
+const PUSH_MAX_PER_PHONE = 3; // more sightings than this in one publish become a summary
+const PUSH_SPECIES_MAX = 24;
+const enc = new TextEncoder();
+const concat = (...parts) => {
+  const out = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));
+  let i = 0;
+  for (const p of parts) { out.set(p, i); i += p.length; }
+  return out;
+};
+const pushKey = async (endpoint) =>
+  "push:" + b64url(new Uint8Array(await crypto.subtle.digest("SHA-256", enc.encode(endpoint)))).slice(0, 32);
+
+async function hkdf(salt, ikm, info, length) {
+  const key = await crypto.subtle.importKey("raw", ikm, "HKDF", false, ["deriveBits"]);
+  return new Uint8Array(await crypto.subtle.deriveBits({ name: "HKDF", hash: "SHA-256", salt, info }, key, length * 8));
+}
+
+// RFC 8291: encrypt one message for one subscription. Returns the request body.
+async function encryptPush(sub, plaintext) {
+  const uaPublic = fromB64url(sub.keys.p256dh);
+  const authSecret = fromB64url(sub.keys.auth);
+  const local = await crypto.subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveBits"]);
+  const asPublic = new Uint8Array(await crypto.subtle.exportKey("raw", local.publicKey));
+  const uaKey = await crypto.subtle.importKey("raw", uaPublic, { name: "ECDH", namedCurve: "P-256" }, false, []);
+  const shared = new Uint8Array(await crypto.subtle.deriveBits({ name: "ECDH", public: uaKey }, local.privateKey, 256));
+  const ikm = await hkdf(authSecret, shared, concat(enc.encode("WebPush: info\0"), uaPublic, asPublic), 32);
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const cek = await hkdf(salt, ikm, enc.encode("Content-Encoding: aes128gcm\0"), 16);
+  const nonce = await hkdf(salt, ikm, enc.encode("Content-Encoding: nonce\0"), 12);
+  const aes = await crypto.subtle.importKey("raw", cek, "AES-GCM", false, ["encrypt"]);
+  const sealed = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv: nonce },
+    aes, concat(enc.encode(plaintext), new Uint8Array([2]))));
+  const header = new Uint8Array(21);
+  header.set(salt, 0);
+  new DataView(header.buffer).setUint32(16, 4096);
+  header[20] = asPublic.length;
+  return concat(header, asPublic, sealed);
+}
+
+// RFC 8292: a short-lived signed token proving the sender owns the VAPID key.
+async function vapidHeader(env, endpoint) {
+  const pub = fromB64url(env.VAPID_PUBLIC_KEY);
+  const key = await crypto.subtle.importKey("jwk", {
+    kty: "EC", crv: "P-256", d: env.VAPID_PRIVATE_KEY,
+    x: b64url(pub.slice(1, 33)), y: b64url(pub.slice(33, 65)),
+  }, { name: "ECDSA", namedCurve: "P-256" }, false, ["sign"]);
+  const part = (o) => b64url(enc.encode(JSON.stringify(o)));
+  const subject = env.VAPID_SUBJECT || `https://${String(env.GITHUB_OWNER).toLowerCase()}.github.io/${env.GITHUB_REPO}/`;
+  const unsigned = `${part({ typ: "JWT", alg: "ES256" })}.${part({
+    aud: new URL(endpoint).origin, exp: Math.floor(Date.now() / 1000) + 12 * 3600, sub: subject,
+  })}`;
+  const sig = new Uint8Array(await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, key, enc.encode(unsigned)));
+  return `vapid t=${unsigned}.${b64url(sig)}, k=${env.VAPID_PUBLIC_KEY}`;
+}
+
+// Send one message. Returns "ok", "gone" (the phone unsubscribed) or "error".
+async function sendPush(env, sub, message) {
+  const res = await fetch(sub.endpoint, {
+    method: "POST",
+    headers: {
+      Authorization: await vapidHeader(env, sub.endpoint),
+      "Content-Encoding": "aes128gcm",
+      "Content-Type": "application/octet-stream",
+      TTL: "86400",
+      Urgency: "high",
+    },
+    body: await encryptPush(sub, JSON.stringify(message)),
+  });
+  if (res.status === 404 || res.status === 410) return "gone";
+  return res.ok ? "ok" : "error";
+}
+
+const pushReady = (env) => !!(env.ACCOUNTS && env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY);
+
+// Only real push services, so the Worker can never be pointed at an arbitrary URL.
+const PUSH_HOSTS = /(^|\.)(push\.apple\.com|fcm\.googleapis\.com|googleapis\.com|push\.services\.mozilla\.com|notify\.windows\.com)$/;
+function cleanSubscription(raw) {
+  try {
+    const url = new URL(String(raw.endpoint));
+    if (url.protocol !== "https:" || !PUSH_HOSTS.test(url.hostname)) return null;
+    const p256dh = String(raw.keys.p256dh), auth = String(raw.keys.auth);
+    if (fromB64url(p256dh).length !== 65 || fromB64url(auth).length !== 16) return null;
+    return { endpoint: url.href, keys: { p256dh, auth } };
+  } catch (_) { return null; }
+}
+
+// A phone turns alerts on, changes its species, or turns them off.
+async function handlePushPrefs(request, env, who, path) {
+  if (!pushReady(env)) return json({ error: "Alerts aren't set up on the server yet." }, 503);
+  const payload = await request.json().catch(() => null);
+  const sub = payload && cleanSubscription(payload.subscription || {});
+  if (!sub) return json({ error: "That phone's subscription isn't valid." }, 400);
+  const key = await pushKey(sub.endpoint);
+  if (path === "/push/unsubscribe") {
+    await env.ACCOUNTS.delete(key);
+    return json({ ok: true });
+  }
+  const species = cleanTags(Array.isArray(payload.species) ? payload.species : []).slice(0, PUSH_SPECIES_MAX);
+  await env.ACCOUNTS.put(key, JSON.stringify({ sub, species, user: who.user, updated: new Date().toISOString() }));
+  return json({ ok: true, species });
+}
+
+// From the workflow: { sightings: [{ species, title, body, url, tag }] }. Sends each
+// phone the sightings for its species: one notification each, or a summary.
+async function handlePushNotify(request, env) {
+  if (!pushReady(env) || !env.PUSH_SECRET) return json({ error: "Alerts aren't set up." }, 503);
+  const header = request.headers.get("Authorization") || "";
+  if (!(await sameText(header, "Bearer " + env.PUSH_SECRET))) return json({ error: "Not allowed." }, 401);
+  const payload = await request.json().catch(() => null);
+  const sightings = (payload && Array.isArray(payload.sightings) ? payload.sightings : []).slice(0, 50)
+    .map((s) => ({
+      species: String(s.species || ""), title: String(s.title || "").slice(0, 120),
+      body: String(s.body || "").slice(0, 200), url: String(s.url || ""), tag: String(s.tag || "").slice(0, 80),
+    }))
+    .filter((s) => s.species && s.title);
+  if (!sightings.length) return json({ ok: true, sent: 0 });
+
+  let sent = 0, removed = 0, failed = 0;
+  let cursor;
+  do {
+    const page = await env.ACCOUNTS.list({ prefix: "push:", cursor });
+    for (const k of page.keys) {
+      const entry = await env.ACCOUNTS.get(k.name, "json");
+      if (!entry || !entry.sub) continue;
+      const wanted = new Set(entry.species || []);
+      const mine = sightings.filter((s) => wanted.has(s.species));
+      if (!mine.length) continue;
+      let messages = mine;
+      if (mine.length > PUSH_MAX_PER_PHONE) {
+        const counts = {};
+        for (const s of mine) counts[s.species] = (counts[s.species] || 0) + 1;
+        messages = [{
+          title: `${mine.length} new sightings`,
+          body: Object.entries(counts).map(([sp, n]) => `${n} ${sp}`).join(", "),
+          url: mine[0].url.replace(/#.*$/, ""), tag: "summary",
+        }];
+      }
+      for (const m of messages) {
+        const r = await sendPush(env, entry.sub, m).catch(() => "error");
+        if (r === "ok") sent++;
+        else if (r === "gone") { await env.ACCOUNTS.delete(k.name); removed++; break; }
+        else failed++;
+      }
+    }
+    cursor = page.list_complete ? undefined : page.cursor;
+  } while (cursor);
+  return json({ ok: true, sent, removed, failed });
+}
+
 export default {
   // Cron Trigger (wrangler.toml): GitHub's own cron is heavily throttled on this repo.
   async scheduled(event, env) {
@@ -633,6 +792,10 @@ export default {
     const isMeta = path === "/meta" || path === "/metadata";
 
     try {
+      // The public key phones subscribe with (public by design).
+      if (request.method === "GET" && path === "/push/key") {
+        return json({ enabled: pushReady(env), publicKey: pushReady(env) ? env.VAPID_PUBLIC_KEY : null });
+      }
       if (request.method === "GET" && path !== "/accounts") {
         const file = path === "/comments" ? COMMENTS_FILE : isCameras ? CAMERA_FILE : isMeta ? META_FILE : TAGS_FILE;
         const { data } = await readFile(env, file);
@@ -648,11 +811,16 @@ export default {
       }
       if (path === "/login") return await handleLogin(request, env);
       if (path === "/register") return await handleRegister(request, env);
+      // The workflow's own key (PUSH_SECRET), not a person's sign-in.
+      if (path === "/push/notify" && request.method === "POST") return await handlePushNotify(request, env);
 
       const who = await authenticate(request, env);
       if (!who) return json({ error: "Sign in to save changes." }, 401);
 
       if (path === "/accounts") return await handleAccounts(request, env, who);
+      if ((path === "/push/subscribe" || path === "/push/unsubscribe") && request.method === "POST") {
+        return await handlePushPrefs(request, env, who, path);
+      }
       if (request.method !== "POST") return json({ error: "Method not allowed." }, 405);
       if (path === "/thumb") return await handleThumb(request, env);
       if (path === "/upload") return await handleUpload(request, env);

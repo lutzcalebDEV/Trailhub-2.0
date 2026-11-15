@@ -9,7 +9,7 @@ const cx = (...xs) => xs.filter(Boolean).join(" ");
 /* ------------------------------ Account menu ----------------------------- */
 // Signed out it's a plain "Sign in" button. Signed in it opens a small menu, so a
 // stray tap on your name never signs you out.
-export function UserMenu({ auth, pending = 0, onSignIn, onSignOut, onAccounts, compact }) {
+export function UserMenu({ auth, pending = 0, onSignIn, onSignOut, onAccounts, onAlerts, compact }) {
   const [open, setOpen] = useState(false);
   const wrap = useRef(null);
 
@@ -55,6 +55,9 @@ export function UserMenu({ auth, pending = 0, onSignIn, onSignOut, onAccounts, c
       ${auth.admin && auth.token && html`<button role="menuitem" className="usermenu__item" onClick=${pick(onAccounts)}>
         <${Icon} name="users" size=${16} /><span>Manage accounts</span>
         ${pending > 0 && html`<span className="nav__badge">${pending}</span>`}
+      </button>`}
+      ${onAlerts && html`<button role="menuitem" className="usermenu__item" onClick=${pick(onAlerts)}>
+        <${Icon} name="bell" size=${16} /><span>Alerts</span>
       </button>`}
       <button role="menuitem" className="usermenu__item" onClick=${pick(onSignOut)}>
         <${Icon} name="logout" size=${16} /><span>Sign out</span>

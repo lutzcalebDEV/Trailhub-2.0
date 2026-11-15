@@ -14,6 +14,7 @@ import { Lightbox, Toast } from "./ui.js";
 import { UploadDialog, SignInDialog } from "./upload.js";
 import { Comments } from "./comments.js";
 import { AccountsDialog, usePendingAccounts } from "./account.js";
+import { AlertsDialog } from "./alerts.js";
 import { Overview } from "./views/overview.js";
 import { Gallery } from "./views/gallery.js";
 import { MapView } from "./views/mapview.js";
@@ -70,6 +71,7 @@ function App() {
   // refresh doesn't sign you out; the password itself is never stored.
   const [uploadAuth, setUploadAuth] = useState(loadSession);
   const [accountsOpen, setAccountsOpen] = useState(false);
+  const [alertsOpen, setAlertsOpen] = useState(false);
   const [signIn, setSignIn] = useState(null);
   const [uploadEdits, setUploadEdits] = useState(loadUploadEdits);
   const [comments, setComments] = useState({});
@@ -465,6 +467,7 @@ function App() {
     onUpload: () => setUploadOpen(true),
     auth: uploadAuth, onSignIn: () => openSignIn(), onSignOut: signOut,
     pending: pendingAccounts, onAccounts: () => setAccountsOpen(true),
+    onAlerts: () => setAlertsOpen(true),
   };
 
   return html`<${Fragment}>
@@ -481,7 +484,7 @@ function App() {
       </main>
     </div>
 
-    <${MobileNav} view=${view} setView=${setView} counts=${counts} />
+    <${MobileNav} view=${view} setView=${setView} counts=${counts} onAlerts=${() => setAlertsOpen(true)} />
     <${PullToRefresh} onRefresh=${manualRefresh} />
 
     ${lbItem && html`<${Lightbox}
@@ -516,6 +519,11 @@ function App() {
         if (!failed) setUploadOpen(false);
         showToast("ok", `${sent} file${sent === 1 ? "" : "s"} uploaded. They'll appear in a few minutes.`);
       }} />`}
+
+    ${alertsOpen && html`<${AlertsDialog} auth=${uploadAuth} showToast=${showToast}
+      onClose=${() => setAlertsOpen(false)}
+      onSignIn=${() => { setAlertsOpen(false); openSignIn("Sign in to turn on alerts."); }}
+      onSignedOut=${() => { setAlertsOpen(false); setUploadAuth(null); openSignIn("Your session ended. Sign in again."); }} />`}
 
     ${accountsOpen && uploadAuth && html`<${AccountsDialog} auth=${uploadAuth} showToast=${showToast}
       onClose=${() => setAccountsOpen(false)} onChanged=${refreshPending}

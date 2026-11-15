@@ -1326,3 +1326,18 @@ button.actrow__name:hover { color: var(--accent); }
 @media (max-width: 900px) and (orientation: landscape) {
   .lb { --peek: calc(52px + env(safe-area-inset-bottom, 0px)); }
 }
+
+/* --------------------------------- Alerts --------------------------------- */
+.modal__head .h-sec { display: inline-flex; align-items: center; gap: 8px; }
+.alerts__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.alerts__opt {
+  display: flex; align-items: center; gap: 8px; padding: 10px 11px; border-radius: var(--r-md);
+  border: 1px solid var(--border-2, var(--border)); background: var(--surface-2); font-weight: 600; font-size: 13.5px; text-align: left;
+}
+.alerts__opt.is-on { border-color: var(--accent); background: var(--accent-soft); }
+.alerts__check { margin-left: auto; width: 20px; height: 20px; border-radius: 6px; display: grid; place-items: center;
+  border: 1.5px solid var(--border-strong); color: var(--accent-contrast); flex: none; }
+.alerts__opt.is-on .alerts__check { background: var(--accent); border-color: var(--accent); }
+.alerts__note { display: flex; gap: 10px; align-items: flex-start; padding: 12px; border-radius: var(--r-md); background: var(--surface-2); font-size: 13.5px; line-height: 1.45; }
+.alerts__note svg { flex: none; margin-top: 2px; color: var(--accent); }
+.alerts__note p { margin: 0; }
