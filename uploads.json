@@ -158,5 +158,14 @@
   "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/up_e845cac1-ecf6-403b-b5c7-ae9bf4038aac.mp4",
   "camera": "Camera 6a309e41bdc62e4448c0a370",
   "species": "Animal"
+ },
+ "up_b8457755-acd4-49b2-8bf5-5d1ac41008f8": {
+  "id": "up_b8457755-acd4-49b2-8bf5-5d1ac41008f8",
+  "date": "2026-11-10T06:02:00.000Z",
+  "media": "photo",
+  "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/up_b8457755-acd4-49b2-8bf5-5d1ac41008f8.jpg",
+  "camera": "Camera 6a309e41bdc62e4448c0a370",
+  "species": "Animal",
+  "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/up_b8457755-acd4-49b2-8bf5-5d1ac41008f8_t.jpg"
  }
 }
