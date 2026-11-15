@@ -1268,3 +1268,30 @@ button.actrow__name:hover { color: var(--accent); }
   .grid--stats .stat__sub { display: block; }
   .grid--stats .delta { display: inline-flex; margin-right: 3px; }
 }
+
+/* Touch screens move between photos by swiping, as phone photo apps do, so the
+   prev/next arrow buttons are for mouse and keyboard only. */
+@media (hover: none) and (pointer: coarse) {
+  .lb__nav { display: none; }
+}
+
+/* Installed on an iPhone (Add to Home Screen) the page runs under the status bar
+   and Dynamic Island, so the phone header and page edges keep clear of them. */
+@media (max-width: 900px) {
+  .mobile-top {
+    padding-top: calc(11px + env(safe-area-inset-top, 0px));
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  .view {
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  .mobilenav {
+    padding-left: max(8px, env(safe-area-inset-left, 0px));
+    padding-right: max(8px, env(safe-area-inset-right, 0px));
+  }
+  .ptr { top: calc(64px + env(safe-area-inset-top, 0px)); }
+  .modal { padding-top: max(16px, env(safe-area-inset-top, 0px)); padding-bottom: max(16px, env(safe-area-inset-bottom, 0px)); }
+  .drawer { max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 24px); }
+}

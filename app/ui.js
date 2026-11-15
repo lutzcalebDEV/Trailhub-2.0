@@ -571,7 +571,7 @@ export function ZoomImage({ capture, alt, onZoomChange, controls }) {
     if (shown >= HINT_TIMES) return;
     try { localStorage.setItem(HINT_KEY, String(shown + 1)); } catch (e) {}
     const touch = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
-    setHint(touch ? "Pinch or double-tap to zoom" : "Click to zoom, scroll for more");
+    setHint(touch ? "Swipe for more · pinch to zoom" : "Click to zoom, scroll for more");
     const t = setTimeout(() => setHint(null), 3200);
     return () => clearTimeout(t);
   }, []);
