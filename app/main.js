@@ -9,7 +9,7 @@ import {
   loadSession, saveSession,
 } from "./core.js";
 import { filterCaptures, speciesList, reviewQueue } from "./analytics.js";
-import { Sidebar, Topbar, MobileTopbar, MobileNav, PullToRefresh, VIEWS, loadFilters } from "./shell.js";
+import { Sidebar, Topbar, MobileTopbar, LargeTitle, MobileNav, PullToRefresh, VIEWS, MOBILE_MAIN, MOBILE_MORE, loadFilters } from "./shell.js";
 import { Lightbox, Toast } from "./ui.js";
 import { UploadDialog, SignInDialog } from "./upload.js";
 import { Comments } from "./comments.js";
@@ -55,6 +55,24 @@ if ("scrollRestoration" in window.history) window.history.scrollRestoration = "m
 const markScroll = () => {
   try { window.history.replaceState({ ...historyState(), scrollY: window.scrollY }, ""); } catch (e) {}
 };
+
+// Phones work like an iPhone app: the four tab bar screens are tabs (switching adds no
+// Back step and each tab keeps its own scroll), and the screens under "More" open on
+// top of the tab as a pushed screen with a back button. Desktop: every screen is a step.
+const isPhone = () => window.matchMedia("(max-width: 900px)").matches;
+const reduceMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+// Screen changes animate with View Transitions where supported (Safari 18+): tabs
+// crossfade, pushed screens slide in from the right and back out (styles.css).
+const HAS_VT = typeof document.startViewTransition === "function";
+function transition(kind, update) {
+  if (!HAS_VT || reduceMotion() || document.hidden) { update(); return; }
+  const root = document.documentElement;
+  root.dataset.nav = kind;
+  try {
+    const t = document.startViewTransition(() => ReactDOM.flushSync(update));
+    t.finished.finally(() => { if (root.dataset.nav === kind) delete root.dataset.nav; });
+  } catch (e) { delete root.dataset.nav; update(); }
+}
 
 function loadUploadEdits() {
   try {
@@ -116,13 +134,58 @@ function App() {
   useEffect(() => {
     window.history.replaceState({ scrollY: pendingScroll.current }, "", routeUrl(viewRef.current));
   }, []);
+  // Phone tabs: where each tab was scrolled to, a tab to show once a pushed screen's
+  // step is gone, and the animation for a Back the app started itself.
+  const tabScroll = useRef({});
+  const pendingTab = useRef(null);
+  const navAnim = useRef(null);
+
+  // A tab from the tab bar comes back where you left it; `fresh` (a link inside a page,
+  // usually with new filters) opens it at the top. Tapping the tab you're on scrolls up.
+  const switchTab = useCallback((v, fresh) => {
+    // A Back is already on its way (a quick second tap): just change where it lands.
+    if (pendingTab.current) { pendingTab.current = v; if (fresh) tabScroll.current[v] = 0; return; }
+    if (v === viewRef.current) { window.scrollTo({ top: 0, behavior: "smooth" }); return; }
+    tabScroll.current[viewRef.current] = window.scrollY;
+    if (fresh) tabScroll.current[v] = 0;
+    // On a pushed screen: drop its step first, then put the tab in place (popstate).
+    if (historyState().pushed) { pendingTab.current = v; window.history.back(); return; }
+    const y = tabScroll.current[v] || 0;
+    window.history.replaceState({ scrollY: y }, "", routeUrl(v));
+    pendingScroll.current = y;
+    transition("tab", () => setViewState(v));
+  }, []);
+  const pushScreen = useCallback((v) => {
+    if (v === viewRef.current) return;
+    tabScroll.current[viewRef.current] = window.scrollY;
+    markScroll();
+    // One pushed screen at a time: going from one "More" page to another swaps it.
+    if (historyState().pushed) window.history.replaceState({ scrollY: 0, pushed: true }, "", routeUrl(v));
+    else window.history.pushState({ scrollY: 0, pushed: true }, "", routeUrl(v));
+    pendingScroll.current = 0;
+    transition("push", () => setViewState(v));
+  }, []);
+  // The back button on a pushed screen. Opened straight from a link there's no step
+  // to go back to, so it returns to Home.
+  const goBack = useCallback(() => {
+    if (historyState().pushed) { navAnim.current = "pop"; window.history.back(); return; }
+    tabScroll.current[viewRef.current] = window.scrollY;
+    window.history.replaceState({ scrollY: 0 }, "", routeUrl("overview"));
+    pendingScroll.current = tabScroll.current.overview || 0;
+    transition("pop", () => setViewState("overview"));
+  }, []);
+  // Links inside pages (and the desktop sidebar).
   const setView = useCallback((v) => {
     if (v === viewRef.current) return;
+    if (isPhone()) {
+      if (MOBILE_MAIN.includes(v)) switchTab(v, true); else pushScreen(v);
+      return;
+    }
     markScroll();
     window.history.pushState({ scrollY: 0 }, "", routeUrl(v));
     pendingScroll.current = 0;
-    setViewState(v);
-  }, []);
+    transition("tab", () => setViewState(v));
+  }, [switchTab, pushScreen]);
   // A new screen opens at the top; one you come back to opens where you left it.
   useLayoutEffect(() => {
     const y = pendingScroll.current;
@@ -386,6 +449,19 @@ function App() {
   useEffect(() => {
     const onPop = () => {
       const r = readRoute();
+      const anim = navAnim.current;
+      navAnim.current = null;
+      if (pendingTab.current) {
+        // The pushed screen's step is gone; the chosen tab takes this entry.
+        const t = pendingTab.current;
+        pendingTab.current = null;
+        const y = tabScroll.current[t] || 0;
+        window.history.replaceState({ scrollY: y }, "", routeUrl(t));
+        pendingScroll.current = y;
+        setLightbox(null);
+        transition("tab", () => setViewState(t));
+        return;
+      }
       if (r.old) {
         // "#photo=<id>" from an alert: this entry becomes that photo's own address.
         const found = findPhoto(r.photo);
@@ -396,7 +472,9 @@ function App() {
       }
       if (r.view && r.view !== viewRef.current) {
         pendingScroll.current = historyState().scrollY || 0;
-        setViewState(r.view);
+        // Only the app's own back button animates: a browser swipe-back already does.
+        if (anim) transition(anim, () => setViewState(r.view));
+        else setViewState(r.view);
       }
       const found = r.photo != null ? findPhoto(r.photo) : null;
       setLightbox(found);
@@ -573,6 +651,7 @@ function App() {
   /* ----------------------------- Render --------------------------------- */
   const meta = VIEWS.find((v) => v.id === view) || VIEWS[0];
   const View = VIEW_COMPONENTS[view] || Overview;
+  const pageTitle = view === "overview" ? "Vale Trails" : meta.label;
   const app = {
     data, captures, ov, theme,
     filters, setFilter, filtered, spList,
@@ -601,16 +680,17 @@ function App() {
       <${Sidebar} view=${view} setView=${setView} counts=${counts} status=${status}
         onCollapse=${() => setSidebarCollapsed("true")} />
       <main className="main">
-        <${MobileTopbar} ...${chrome} title=${view === "overview" ? null : meta.label} />
+        <${MobileTopbar} ...${chrome} title=${pageTitle} onBack=${MOBILE_MORE.includes(view) ? goBack : null} />
+        <${LargeTitle} title=${pageTitle} status=${status} />
         <${Topbar} title=${meta.label} ...${chrome}
           sidebarHidden=${sidebarCollapsed === "true"} onShowSidebar=${() => setSidebarCollapsed("false")} />
-        <div className="view view__enter" key=${view}>
+        <div className=${HAS_VT && !reduceMotion() ? "view" : "view view__enter"} key=${view}>
           <${View} ...${app} />
         </div>
       </main>
     </div>
 
-    <${MobileNav} view=${view} setView=${setView} counts=${counts} onAlerts=${() => setAlertsOpen(true)} />
+    <${MobileNav} view=${view} onTab=${switchTab} onPush=${pushScreen} counts=${counts} onAlerts=${() => setAlertsOpen(true)} />
     <${PullToRefresh} onRefresh=${manualRefresh} />
     <${InstallHint} />
 

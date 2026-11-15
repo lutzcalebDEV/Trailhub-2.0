@@ -83,15 +83,32 @@ export function Topbar({ title, sub, theme, toggleTheme, onRefresh, refreshing, 
 }
 
 /* ----------------------------- Mobile chrome ---------------------------- */
-// The phone's only header, so it names the page you're on (Home keeps the brand).
-export function MobileTopbar({ title, theme, toggleTheme, onRefresh, refreshing, status, onUpload, auth, pending, onSignIn, onSignOut, onAccounts, onAlerts }) {
-  return html`<div className="mobile-top">
-    <${BrandMark} size=${30} />
-    <div className="brand__name">${title || "Vale Trails"}
-      <small className=${status.stale ? "is-stale" : ""}>
-        ${status.checked ? "Checked " + status.checked : "Awaiting sync"}
-      </small>
-    </div>
+// Past this much scroll the large title has gone under the top bar, so the bar shows
+// the page name itself, as iPhone apps do.
+const LARGE_TITLE_PX = 40;
+function useScrolledPast(px) {
+  const [past, setPast] = useState(() => window.scrollY > px);
+  useEffect(() => {
+    let frame = 0;
+    const check = () => { frame = 0; setPast(window.scrollY > px); };
+    const onScroll = () => { if (!frame) frame = requestAnimationFrame(check); };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    check();
+    return () => { window.removeEventListener("scroll", onScroll); cancelAnimationFrame(frame); };
+  }, [px]);
+  return past;
+}
+
+// The phone's header. A pushed screen (from "More") gets a back button in place of
+// the logo; the page name fades in once the large title scrolls away.
+export function MobileTopbar({ title, onBack, theme, toggleTheme, onRefresh, refreshing, onUpload, auth, pending, onSignIn, onSignOut, onAccounts, onAlerts }) {
+  const collapsed = useScrolledPast(LARGE_TITLE_PX);
+  return html`<div className=${cx("mobile-top", collapsed && "is-collapsed")}>
+    ${onBack
+      ? html`<button type="button" className="mobile-top__back" onClick=${onBack} aria-label="Back">
+          <${Icon} name="chevronLeft" size=${26} /></button>`
+      : html`<${BrandMark} size=${30} />`}
+    <div className="mobile-top__title" aria-hidden=${!collapsed}>${title}</div>
     <div className="topbar__spacer" />
     <${UserMenu} compact auth=${auth} pending=${pending} onSignIn=${onSignIn} onSignOut=${onSignOut} onAccounts=${onAccounts} onAlerts=${onAlerts} />
     <${IconBtn} icon="upload" bare onClick=${onUpload} aria-label="Upload photos" />
@@ -100,20 +117,108 @@ export function MobileTopbar({ title, theme, toggleTheme, onRefresh, refreshing,
   </div>`;
 }
 
+// The big page name at the top of each phone screen, with when photos were last checked.
+export function LargeTitle({ title, status }) {
+  return html`<div className="largetitle">
+    <h1>${title}</h1>
+    <small className=${status.stale ? "is-stale" : ""}>
+      ${status.checked ? "Checked " + status.checked : "Awaiting sync"}
+    </small>
+  </div>`;
+}
+
+/* ------------------------------ Bottom sheets ---------------------------- */
+// A sheet follows a downward drag and closes past a threshold (or on a quick flick),
+// otherwise it springs back. The drag starts on the grip, or anywhere on the sheet
+// while its own content is scrolled to the top. The scrim dims less as it goes.
+export function useSheetDrag(open, onClose) {
+  const ref = useRef(null);
+  const close = useRef(onClose);
+  close.current = onClose;
+  useEffect(() => {
+    const sheet = ref.current;
+    if (!open || !sheet) return;
+    const scrim = sheet.parentElement;
+    let start = null, dragging = false, dy = 0, lastY = 0, lastT = 0, speed = 0;
+    const place = (y, animate) => {
+      const ease = animate ? "transform .26s cubic-bezier(.2,.8,.2,1)" : "none";
+      sheet.style.transition = ease;
+      sheet.style.transform = y ? `translateY(${y}px)` : "";
+      if (scrim) {
+        scrim.style.transition = animate ? "background-color .26s ease" : "none";
+        scrim.style.setProperty("--sheet-fade", String(Math.max(0, 1 - y / (sheet.offsetHeight || 1))));
+      }
+    };
+    const onStart = (e) => {
+      start = null;
+      if (e.touches.length !== 1) return;
+      const grip = !!(e.target.closest && e.target.closest(".drawer__grip"));
+      if (!grip && sheet.scrollTop > 0) return;
+      const t = e.touches[0];
+      start = { x: t.clientX, y: t.clientY, grip };
+      dragging = false; dy = 0; lastY = t.clientY; lastT = e.timeStamp; speed = 0;
+    };
+    const onMove = (e) => {
+      if (!start) return;
+      const t = e.touches[0];
+      const d = t.clientY - start.y;
+      if (!dragging) {
+        // Scrolling the sheet's content up, or a sideways swipe: not a drag.
+        if (d < -4 || Math.abs(t.clientX - start.x) > Math.abs(d) + 4) { start = null; return; }
+        if (d < 6) return;
+        if (!start.grip && sheet.scrollTop > 0) { start = null; return; }
+        dragging = true;
+      }
+      if (e.cancelable) e.preventDefault();
+      dy = Math.max(0, d);
+      const dt = e.timeStamp - lastT;
+      if (dt > 0) speed = (t.clientY - lastY) / dt;
+      lastY = t.clientY; lastT = e.timeStamp;
+      place(dy, false);
+    };
+    const onEnd = () => {
+      if (!start) return;
+      const was = dragging;
+      start = null; dragging = false;
+      if (!was) return;
+      if (dy > Math.min(140, sheet.offsetHeight * 0.3) || speed > 0.5) {
+        place(sheet.offsetHeight + 40, true);
+        setTimeout(() => close.current(), 220);
+      } else place(0, true);
+    };
+    sheet.addEventListener("touchstart", onStart, { passive: true });
+    sheet.addEventListener("touchmove", onMove, { passive: false });
+    sheet.addEventListener("touchend", onEnd);
+    sheet.addEventListener("touchcancel", onEnd);
+    return () => {
+      sheet.removeEventListener("touchstart", onStart);
+      sheet.removeEventListener("touchmove", onMove);
+      sheet.removeEventListener("touchend", onEnd);
+      sheet.removeEventListener("touchcancel", onEnd);
+    };
+  }, [open]);
+  return ref;
+}
+
 // Phones get four main tabs plus "More", which opens a sheet with the rest. Seven
 // tabs at phone width made every label tiny and easy to mis-tap.
-const MOBILE_MAIN = ["overview", "gallery", "bucks", "map"];
-const MOBILE_MORE = ["uploads", "insights", "review"];
+export const MOBILE_MAIN = ["overview", "gallery", "bucks", "map"];
+export const MOBILE_MORE = ["uploads", "insights", "review"];
 
-export function MobileNav({ view, setView, counts, onAlerts }) {
+// `onTab` switches tabs (or scrolls the current one to the top); `onPush` opens a
+// "More" screen on top of the current tab.
+export function MobileNav({ view, onTab, onPush, counts, onAlerts }) {
   const [more, setMore] = useState(false);
+  const sheet = useSheetDrag(more, () => setMore(false));
   const inMore = MOBILE_MORE.includes(view);
-  const go = (id) => { setMore(false); setView(id); };
+  const tab = (id) => { setMore(false); onTab(id); };
+  const push = (id) => { setMore(false); onPush(id); };
   const reviewBadge = counts.review > 0 && html`<span className="nav__badge">${badgeCount(counts.review)}</span>`;
   return html`<${Fragment}>
     <nav className="mobilenav">
       ${VIEWS.filter((v) => MOBILE_MAIN.includes(v.id)).map((v) => html`<button key=${v.id}
-        className=${view === v.id && !more ? "is-active" : ""} onClick=${() => go(v.id)}>
+        className=${view === v.id && !more ? "is-active" : ""} onClick=${() => tab(v.id)}
+        aria-current=${view === v.id ? "page" : undefined}>
         <${Icon} name=${v.icon} size=${21} />${v.label}
       </button>`)}
       <button className=${inMore || more ? "is-active" : ""} onClick=${() => setMore((m) => !m)}
@@ -123,10 +228,10 @@ export function MobileNav({ view, setView, counts, onAlerts }) {
       </button>
     </nav>
     ${more && createPortal(html`<div className="scrim scrim--nav" onClick=${() => setMore(false)}>
-      <div className="drawer morenav" role="dialog" aria-label="More pages" onClick=${(e) => e.stopPropagation()}>
+      <div className="drawer morenav" ref=${sheet} role="dialog" aria-label="More pages" onClick=${(e) => e.stopPropagation()}>
         <div className="drawer__grip" />
         ${VIEWS.filter((v) => MOBILE_MORE.includes(v.id)).map((v) => html`<button key=${v.id}
-          className=${cx("morenav__item", view === v.id && "is-active")} onClick=${() => go(v.id)}>
+          className=${cx("morenav__item", view === v.id && "is-active")} onClick=${() => push(v.id)}>
           <${Icon} name=${v.icon} size=${20} /><span>${v.label}</span>
           ${v.id === "review" && reviewBadge}
           <${Icon} name="chevronRight" size=${18} className="morenav__chev" />
@@ -231,6 +336,7 @@ export function loadFilters() {
 
 export function FilterBar({ filters, set, cameras, speciesList, count, camName, children }) {
   const [open, setOpen] = useState(false);
+  const sheet = useSheetDrag(open, () => setOpen(false));
   const cn = camName || ((x) => x);
   const activeCount =
     (filters.species !== "All" ? 1 : 0) +
@@ -290,7 +396,7 @@ export function FilterBar({ filters, set, cameras, speciesList, count, camName, 
     </div>`}
 
     ${open && createPortal(html`<div className="scrim" onClick=${() => setOpen(false)}>
-      <div className="drawer" onClick=${(e) => e.stopPropagation()}>
+      <div className="drawer" ref=${sheet} onClick=${(e) => e.stopPropagation()}>
         <div className="drawer__grip" />
         <div className="filterbar__inline">${controls}</div>
         <button className="btn btn--primary mt" onClick=${() => setOpen(false)} style=${{ width: "100%" }}>
