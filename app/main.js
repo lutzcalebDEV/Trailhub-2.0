@@ -9,7 +9,7 @@ import {
   loadSession, saveSession,
 } from "./core.js";
 import { filterCaptures, speciesList, reviewQueue } from "./analytics.js";
-import { Sidebar, Topbar, MobileTopbar, MobileNav, VIEWS, loadFilters } from "./shell.js";
+import { Sidebar, Topbar, MobileTopbar, MobileNav, PullToRefresh, VIEWS, loadFilters } from "./shell.js";
 import { Lightbox, Toast } from "./ui.js";
 import { UploadDialog, SignInDialog } from "./upload.js";
 import { Comments } from "./comments.js";
@@ -464,6 +464,7 @@ function App() {
     </div>
 
     <${MobileNav} view=${view} setView=${setView} counts=${counts} />
+    <${PullToRefresh} onRefresh=${manualRefresh} />
 
     ${lbItem && html`<${Lightbox}
       capture=${lbItem}

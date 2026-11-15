@@ -1,5 +1,5 @@
 // Vale Trails — app chrome: sidebar, topbar, mobile nav and the shared filter bar.
-import { html, useState, Fragment, createPortal } from "./react.js";
+import { html, useState, useEffect, useRef, Fragment, createPortal } from "./react.js";
 import { Icon, BrandMark } from "./icons.js";
 import { IconBtn, Select, Segmented, Switch, Chip } from "./ui.js";
 import { speciesColor, LS, labelHour } from "./core.js";
@@ -99,14 +99,100 @@ export function MobileTopbar({ theme, toggleTheme, onRefresh, refreshing, status
   </div>`;
 }
 
+// Phones get four main tabs plus "More", which opens a sheet with the rest. Seven
+// tabs at phone width made every label tiny and easy to mis-tap.
+const MOBILE_MAIN = ["overview", "gallery", "bucks", "map"];
+const MOBILE_MORE = ["uploads", "insights", "review"];
+
 export function MobileNav({ view, setView, counts }) {
-  return html`<nav className="mobilenav">
-    ${VIEWS.map((v) => html`<button key=${v.id}
-      className=${view === v.id ? "is-active" : ""} onClick=${() => setView(v.id)}>
-      <${Icon} name=${v.icon} size=${20} />${v.label}
-      ${v.id === "review" && counts.review > 0 && html`<span className="nav__badge">${badgeCount(counts.review)}</span>`}
-    </button>`)}
-  </nav>`;
+  const [more, setMore] = useState(false);
+  const inMore = MOBILE_MORE.includes(view);
+  const go = (id) => { setMore(false); setView(id); };
+  const reviewBadge = counts.review > 0 && html`<span className="nav__badge">${badgeCount(counts.review)}</span>`;
+  return html`<${Fragment}>
+    <nav className="mobilenav">
+      ${VIEWS.filter((v) => MOBILE_MAIN.includes(v.id)).map((v) => html`<button key=${v.id}
+        className=${view === v.id && !more ? "is-active" : ""} onClick=${() => go(v.id)}>
+        <${Icon} name=${v.icon} size=${21} />${v.label}
+      </button>`)}
+      <button className=${inMore || more ? "is-active" : ""} onClick=${() => setMore((m) => !m)}
+        aria-haspopup="dialog" aria-expanded=${more}>
+        <${Icon} name="grid" size=${21} />More
+        ${reviewBadge}
+      </button>
+    </nav>
+    ${more && createPortal(html`<div className="scrim scrim--nav" onClick=${() => setMore(false)}>
+      <div className="drawer morenav" role="dialog" aria-label="More pages" onClick=${(e) => e.stopPropagation()}>
+        <div className="drawer__grip" />
+        ${VIEWS.filter((v) => MOBILE_MORE.includes(v.id)).map((v) => html`<button key=${v.id}
+          className=${cx("morenav__item", view === v.id && "is-active")} onClick=${() => go(v.id)}>
+          <${Icon} name=${v.icon} size=${20} /><span>${v.label}</span>
+          ${v.id === "review" && reviewBadge}
+          <${Icon} name="chevronRight" size=${18} className="morenav__chev" />
+        </button>`)}
+      </div>
+    </div>`, document.body)}
+  </${Fragment}>`;
+}
+
+/* ---------------------------- Pull to refresh --------------------------- */
+// On phones, pulling down at the top of a page checks for new photos. The browser's
+// own pull (a full reload) is turned off in CSS so the two don't fight.
+const PULL_TRIGGER = 64;
+export function PullToRefresh({ onRefresh }) {
+  const [pull, setPull] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const start = useRef(null);
+  const pullRef = useRef(0);
+  const busyRef = useRef(false);
+  useEffect(() => {
+    const phone = window.matchMedia("(max-width: 900px)");
+    const blocked = (t) => t.closest && t.closest(".lb, .modal, .drawer, .leaflet-container, .scrim, input, textarea, select");
+    const onStart = (e) => {
+      start.current = null;
+      if (!phone.matches || busyRef.current || e.touches.length !== 1 || window.scrollY > 0) return;
+      if (document.body.style.overflow === "hidden" || blocked(e.target)) return;
+      start.current = { y: e.touches[0].clientY, x: e.touches[0].clientX };
+    };
+    const onMove = (e) => {
+      if (!start.current) return;
+      const dy = e.touches[0].clientY - start.current.y;
+      const dx = e.touches[0].clientX - start.current.x;
+      if (dy <= 0 || window.scrollY > 0 || Math.abs(dx) > dy) { if (pullRef.current) { pullRef.current = 0; setPull(0); } if (dy < -4 || Math.abs(dx) > 12) start.current = null; return; }
+      if (e.cancelable) e.preventDefault();
+      // Resistance: the indicator moves slower than the finger and stops at 96px.
+      pullRef.current = Math.min(96, dy * 0.5);
+      setPull(pullRef.current);
+    };
+    const onEnd = async () => {
+      if (!start.current) return;
+      start.current = null;
+      const reached = pullRef.current >= PULL_TRIGGER;
+      pullRef.current = 0;
+      setPull(0);
+      if (!reached) return;
+      busyRef.current = true; setBusy(true);
+      try { await onRefresh(); } finally { busyRef.current = false; setBusy(false); }
+    };
+    document.addEventListener("touchstart", onStart, { passive: true });
+    document.addEventListener("touchmove", onMove, { passive: false });
+    document.addEventListener("touchend", onEnd);
+    document.addEventListener("touchcancel", onEnd);
+    return () => {
+      document.removeEventListener("touchstart", onStart);
+      document.removeEventListener("touchmove", onMove);
+      document.removeEventListener("touchend", onEnd);
+      document.removeEventListener("touchcancel", onEnd);
+    };
+  }, [onRefresh]);
+  if (!pull && !busy) return null;
+  const y = busy ? PULL_TRIGGER * 0.75 : pull;
+  const ready = pull >= PULL_TRIGGER;
+  return html`<div className=${cx("ptr", (busy || ready) && "is-ready", busy && "is-spin")} aria-hidden=${!busy}
+      role="status" style=${{ transform: `translate(-50%, ${y}px)`, opacity: busy ? 1 : Math.min(1, pull / 40) }}>
+    <span style=${{ transform: busy ? undefined : `rotate(${pull * 3.5}deg)` }}><${Icon} name="refresh" size=${18} /></span>
+    ${busy && html`<span className="sr-only">Checking for new photos</span>`}
+  </div>`;
 }
 
 /* ------------------------------ Filter bar ------------------------------ */

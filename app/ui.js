@@ -270,11 +270,40 @@ export function CameraCard({ name, row, onClick }) {
 }
 
 /* ------------------------------ Photo tile ------------------------------ */
-export function Shot({ capture, species, onClick, cameraLabel, selectable, selected, burst, timeLabel }) {
+// "Food Plot (Tall Stand)" -> "Food Plot": the part in brackets is detail a phone tile
+// has no room for. The full name is still in the tile's title and the photo view.
+export const shortCamera = (name) => String(name || "").replace(/\s*\([^)]*\)\s*$/, "").trim() || name;
+
+const LONG_PRESS_MS = 450;
+export function Shot({ capture, species, onClick, onLongPress, cameraLabel, selectable, selected, burst, timeLabel }) {
   const c = capture;
   const cam = cameraLabel || c.camera;
+  const short = shortCamera(cam);
+  // Press and hold (touch) starts selecting. Selecting reflows the grid, so the click
+  // that follows the hold can land anywhere; the next click on the page is eaten.
+  const press = useRef(null);
+  const cancelPress = () => { if (press.current) { clearTimeout(press.current.timer); press.current = null; } };
+  const onPointerDown = (e) => {
+    if (!onLongPress || e.pointerType === "mouse") return;
+    const start = { x: e.clientX, y: e.clientY };
+    press.current = { start, timer: setTimeout(() => {
+      press.current = null;
+      const eat = (ev) => { ev.stopPropagation(); ev.preventDefault(); };
+      document.addEventListener("click", eat, { capture: true, once: true });
+      setTimeout(() => document.removeEventListener("click", eat, true), 800);
+      if (navigator.vibrate) navigator.vibrate(12);
+      onLongPress();
+    }, LONG_PRESS_MS) };
+  };
+  const onPointerMove = (e) => {
+    const p = press.current;
+    if (p && Math.hypot(e.clientX - p.start.x, e.clientY - p.start.y) > 10) cancelPress();
+  };
   return html`<button className=${cx("shot", selectable && "is-selectable", selected && "is-selected")}
-      onClick=${onClick} title=${`${species} · ${cam}`}>
+      onClick=${onClick} title=${`${species} · ${cam}`}
+      onPointerDown=${onPointerDown} onPointerMove=${onPointerMove} onPointerUp=${cancelPress}
+      onPointerCancel=${cancelPress} onPointerLeave=${cancelPress}
+      onContextMenu=${onLongPress ? (e) => e.preventDefault() : undefined}>
     <div className="shot__thumb">
       ${c.image
         ? html`<${Media} capture=${c} alt=${species} />`
@@ -294,7 +323,11 @@ export function Shot({ capture, species, onClick, cameraLabel, selectable, selec
       </span>`}
     </div>
     <div className="shot__meta">
-      <span className="shot__cam"><span>${cam}</span></span>
+      <span className="shot__cam">
+        ${short !== cam
+          ? html`<span className="shot__cam-full">${cam}</span><span className="shot__cam-short">${short}</span>`
+          : html`<span>${cam}</span>`}
+      </span>
       <span className="shot__time">${timeLabel || timeAgo(c.date)}</span>
     </div>
   </button>`;
@@ -644,6 +677,8 @@ export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggle
   // The browser's Fullscreen API is used when there is one; iPhones don't offer it
   // for photos, and there the same view simply fills the page.
   const [immersive, setImmersive] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const panel = useRef(null);
   const navTimer = useRef(null);
   const root = useRef(null);
   const stage = useRef(null);
@@ -686,6 +721,8 @@ export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggle
   // moment so a double-tap (zoom) isn't also read as two single taps.
   const onStageClick = (e) => {
     e.stopPropagation();
+    // On a phone, tapping the photo while the details sheet is up lowers the sheet.
+    if (sheetOpen && !e.target.closest(".lb__panel, button")) { setSheetOpen(false); return; }
     if (!immersive || lastPointer.current === "mouse" || !e.target.closest(".lb__zoom")) return;
     if (tapTimer.current) { clearTimeout(tapTimer.current); tapTimer.current = null; return; }
     tapTimer.current = setTimeout(() => {
@@ -721,31 +758,90 @@ export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggle
   }, []);
 
   // Each photo starts at the top, even if the details were scrolled down.
-  useEffect(() => { if (stage.current) stage.current.scrollTop = 0; }, [photoId]);
+  useEffect(() => {
+    if (stage.current) stage.current.scrollTop = 0;
+    if (panel.current) panel.current.scrollTop = 0;
+  }, [photoId]);
 
-  // Swipe on a photo to move between photos. Videos are left out because dragging
-  // there belongs to the player's seek bar, and a zoomed photo uses drags to pan.
+  // Swipe on a photo: sideways moves between photos; on a phone, down closes the
+  // view and up raises the details. Videos are left out because dragging there
+  // belongs to the player's seek bar, and a zoomed photo uses drags to pan.
   const swipe = useRef(null);
+  const isPhone = () => window.matchMedia("(max-width: 900px)").matches;
+  const setDrag = (dy) => {
+    const el = root.current;
+    if (!el) return;
+    if (dy == null) {
+      el.classList.remove("is-dragging");
+      el.style.removeProperty("--drag");
+      el.style.removeProperty("--drag-fade");
+      return;
+    }
+    el.classList.add("is-dragging");
+    el.style.setProperty("--drag", dy + "px");
+    el.style.setProperty("--drag-fade", String(Math.max(0.25, 1 - dy / 420)));
+  };
   const onTouchStart = (e) => {
     const t = e.touches[0];
     swipe.current = !zoomed && e.target.tagName === "IMG" && e.touches.length === 1
       ? { x: t.clientX, y: t.clientY } : null;
   };
-  const onTouchMove = (e) => { if (e.touches.length > 1) swipe.current = null; };
+  const onTouchMove = (e) => {
+    if (e.touches.length > 1) { swipe.current = null; setDrag(null); return; }
+    const s = swipe.current;
+    if (!s || !isPhone() || sheetOpen) return;
+    const t = e.touches[0];
+    const dx = t.clientX - s.x;
+    const dy = t.clientY - s.y;
+    // The photo follows a downward drag and the backdrop fades, so it's clear that
+    // letting go will close it.
+    if (s.down || (dy > 12 && dy > Math.abs(dx) * 1.3)) { s.down = true; setDrag(Math.max(0, dy)); }
+  };
   const onTouchEnd = (e) => {
-    if (!swipe.current) return;
+    const s = swipe.current;
+    if (!s) return;
     const t = e.changedTouches[0];
-    const dx = t.clientX - swipe.current.x;
-    const dy = t.clientY - swipe.current.y;
+    const dx = t.clientX - s.x;
+    const dy = t.clientY - s.y;
     swipe.current = null;
+    setDrag(null);
+    const vertical = Math.abs(dy) > Math.abs(dx) * 1.3;
+    if (isPhone() && vertical && dy > 90) { if (sheetOpen) setSheetOpen(false); else onClose(); return; }
+    if (isPhone() && vertical && dy < -50 && !immersive) { setSheetOpen(true); return; }
     if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
     if (dx < 0 && hasNext) onNext();
     else if (dx > 0 && hasPrev) onPrev();
   };
 
+  // The details sheet (phones): drag its handle up or down, or tap it.
+  const sheetDrag = useRef(null);
+  const onSheetStart = (e) => {
+    if (e.touches.length !== 1) return;
+    sheetDrag.current = { y: e.touches[0].clientY, dy: 0, onGrip: !!e.target.closest(".lb__grip") };
+  };
+  const onSheetMove = (e) => {
+    const d = sheetDrag.current;
+    if (!d || !panel.current) return;
+    d.dy = e.touches[0].clientY - d.y;
+    // Only the direction that makes sense moves: down when open, up when lowered.
+    const dy = sheetOpen ? Math.max(0, d.dy) : Math.min(0, d.dy);
+    panel.current.classList.add("is-dragging");
+    panel.current.style.setProperty("--sheet-drag", dy + "px");
+  };
+  const onSheetEnd = () => {
+    const d = sheetDrag.current;
+    sheetDrag.current = null;
+    if (!d || !panel.current) return;
+    panel.current.classList.remove("is-dragging");
+    panel.current.style.removeProperty("--sheet-drag");
+    if (Math.abs(d.dy) < 8) { if (!d.onGrip) setSheetOpen((o) => !o); } // a tap (the grip handles its own)
+    else if (d.dy < -40) setSheetOpen(true);
+    else if (d.dy > 40) setSheetOpen(false);
+  };
+
   if (!capture) return null;
   const c = capture;
-  return html`<div ref=${root} className=${cx("lb", navIdle && "is-nav-idle", immersive && "is-immersive")} onClick=${onClose}
+  return html`<div ref=${root} className=${cx("lb", navIdle && "is-nav-idle", immersive && "is-immersive", sheetOpen && "is-sheet-open")} onClick=${onClose}
       onPointerMove=${(e) => { lastPointer.current = e.pointerType; if (e.pointerType === "mouse") wakeNavigation(); }}
       onPointerDown=${(e) => { lastPointer.current = e.pointerType; if (e.pointerType === "mouse") wakeNavigation(); }}>
     <div className=${cx("lb__stage", zoomed && "is-zoomed")} ref=${stage} onClick=${onStageClick}
@@ -769,7 +865,11 @@ export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggle
       </div>`}
       ${hasPrev && html`<button className="lb__nav prev" onClick=${onPrev} aria-label="Previous"><${Icon} name="chevronLeft" size=${22} /></button>`}
       ${hasNext && html`<button className="lb__nav next" onClick=${onNext} aria-label="Next"><${Icon} name="chevronRight" size=${22} /></button>`}
-      <div className="lb__panel">
+      <div className="lb__panel" ref=${panel}>
+        <div className="lb__sheethead" onTouchStart=${onSheetStart} onTouchMove=${onSheetMove}
+          onTouchEnd=${onSheetEnd} onTouchCancel=${onSheetEnd}>
+        <button type="button" className="lb__grip" onClick=${() => setSheetOpen((o) => !o)}
+          aria-label=${sheetOpen ? "Hide details" : "Show details"} aria-expanded=${sheetOpen} />
         <div className="lb__info">
           <h3>
             <${SpeciesDot} species=${species} size=${12} />${species}
@@ -785,6 +885,7 @@ export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggle
             ${c.moon && html`<span><${Icon} name="moon" size=${15} />${c.moon}</span>`}
             ${c.confidence != null && html`<span><${Icon} name="target" size=${15} />${c.aiTagged ? "AI " : ""}${Math.round(c.confidence * 100)}%</span>`}
           </div>
+        </div>
         </div>
         ${onMeta && html`<${LightboxEdit} key=${c.id} capture=${c} species=${species} meta=${meta}
           onMeta=${onMeta} onToggleFavorite=${onToggleFavorite} onTag=${onTag} buckNames=${buckNames}

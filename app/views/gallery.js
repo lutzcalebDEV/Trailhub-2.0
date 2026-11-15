@@ -108,6 +108,7 @@ export function Gallery(app) {
               ${g.items.map(({ capture: c, count }) => html`<${Shot} key=${c.id} capture=${c} burst=${count}
                 species=${effectiveSpecies(c, ov)} cameraLabel=${camName(c.camera)} timeLabel=${fmtTime(c.date)}
                 selectable=${selecting} selected=${selected.has(c.id)}
+                onLongPress=${selecting ? undefined : () => { setSelecting(true); setSelected(new Set([c.id])); }}
                 onClick=${selecting ? () => toggle(c.id) : () => openLightbox(sorted, sorted.indexOf(c))} />`)}
             </div>
           </section>`)}
