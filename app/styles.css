@@ -1442,3 +1442,63 @@ button, a, [role="button"], .shot { touch-action: manipulation; }
   .lb__info .row { max-height: none; }
   .lb ~ .toast { bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
 }
+
+/* ============================ iPhone app polish ============================= */
+/* Text fields: iPhone zooms the page into any field under 16px when it's tapped, so
+   on touch screens every field is 16px and the page stays put. */
+@media (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+  select, textarea { font-size: 16px !important; }
+}
+
+/* Large titles: each phone screen opens with its name in big type. Scrolled away,
+   the top bar takes a hairline and shows the name in small type instead. */
+.largetitle, .mobile-top__title, .mobile-top__back { display: none; }
+@media (max-width: 900px) {
+  .mobile-top { background: var(--bg); border-bottom-color: transparent; transition: border-color .2s ease, background-color .2s ease; }
+  .mobile-top.is-collapsed { background: color-mix(in srgb, var(--bg) 82%, transparent); border-bottom-color: var(--border); }
+  .mobile-top__title {
+    display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    font-size: 16px; font-weight: 700; letter-spacing: -0.01em;
+    opacity: 0; transform: translateY(6px); transition: opacity .2s ease, transform .2s ease;
+  }
+  .mobile-top.is-collapsed .mobile-top__title { opacity: 1; transform: none; }
+  .mobile-top__back {
+    display: grid; place-items: center; width: 36px; height: 36px; margin-left: -10px; margin-right: -6px;
+    border-radius: 999px; color: var(--accent); touch-action: manipulation;
+  }
+  .mobile-top__back:active { opacity: .5; }
+
+  .largetitle {
+    display: block; padding: 4px max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px));
+    -webkit-user-select: none; user-select: none;
+  }
+  .largetitle h1 { font-size: 31px; font-weight: 800; letter-spacing: -0.025em; line-height: 1.15; }
+  .largetitle small { display: block; margin-top: 2px; font-size: 12.5px; color: var(--text-faint); }
+  .largetitle small.is-stale { color: var(--warn); }
+  .view { padding-top: 14px; }
+}
+
+/* Bottom sheets dim less as they're dragged down (useSheetDrag in shell.js). */
+.scrim { background: rgba(4,6,5, calc(.6 * var(--sheet-fade, 1))); }
+
+/* Screen changes (View Transitions, Safari 18+): tabs crossfade quickly, a "More"
+   screen slides in from the right over the tab and slides back out on Back. The
+   phone's top bar and tab bar stay put instead of moving with the page. */
+@media (max-width: 900px) {
+  .mobile-top { view-transition-name: topbar; }
+  .mobilenav { view-transition-name: tabbar; }
+}
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: .16s; }
+html[data-nav="push"]::view-transition-old(root),
+html[data-nav="push"]::view-transition-new(root),
+html[data-nav="pop"]::view-transition-old(root),
+html[data-nav="pop"]::view-transition-new(root) { mix-blend-mode: normal; animation-duration: .34s; animation-timing-function: cubic-bezier(.2,.8,.2,1); animation-fill-mode: both; }
+html[data-nav="push"]::view-transition-old(root) { animation-name: navUnder; }
+html[data-nav="push"]::view-transition-new(root) { animation-name: navInFromRight; box-shadow: -12px 0 32px rgba(0,0,0,.35); }
+html[data-nav="pop"]::view-transition-old(root) { animation-name: navOutToRight; z-index: 1; box-shadow: -12px 0 32px rgba(0,0,0,.35); }
+html[data-nav="pop"]::view-transition-new(root) { animation-name: navFromUnder; }
+@keyframes navInFromRight { from { transform: translateX(100%); } to { transform: none; } }
+@keyframes navUnder { from { transform: none; } to { transform: translateX(-28%); filter: brightness(.8); } }
+@keyframes navOutToRight { from { transform: none; } to { transform: translateX(100%); } }
+@keyframes navFromUnder { from { transform: translateX(-28%); filter: brightness(.8); } to { transform: none; } }
