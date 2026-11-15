@@ -18,7 +18,10 @@
 //     GITHUB_REPO                e.g. Trailhub-2.0
 //     GITHUB_BRANCH    (opt.)    defaults to "main"
 //     UPLOAD_USER                the shared username (wrangler.toml [vars])
-//     UPLOAD_PASSWORD  (secret)  the shared password
+//     UPLOAD_PASSWORD  (secret)  the shared password (this login is always an admin)
+//     SESSION_SECRET   (secret, optional) signs sign-in sessions; defaults to UPLOAD_PASSWORD
+//     NOTIFY_URL       (secret, optional) e.g. https://ntfy.sh/<topic>, pinged on new sign-ups
+//     ACCOUNTS         (KV binding, optional) turns on personal accounts + sign-up approval
 //   Then copy the Worker URL into config.js:  window.TRAILHUB_TAGS_API = "https://...workers.dev";
 //
 // ACCESS
@@ -37,7 +40,12 @@
 //                     (merges the given keys into that photo; send a key as null to
 //                      remove it, or an empty meta object to clear the whole entry.)
 //   (POST an empty tags array or empty name to clear an entry.)
-//   POST /login       checks the upload username and password
+//   POST /login       Basic auth -> { token, user, admin, exp } (30-day session), or
+//                     403 { pending: true } for an account that isn't approved yet
+//   POST /register    with { "user": "...", "password": "..." } -> a pending account
+//   GET  /accounts    (admin) -> { accounts: [{ name, status, admin, created }], enabled }
+//   POST /accounts    (admin) with { "user": "...", "action": "approve"|"remove"|"admin"|"unadmin" }
+//   Writes take "Authorization: Bearer <token>" (or Basic, for older copies of the site).
 //   POST /thumb       ?id=up_<uuid>  body: a small JPEG preview, stored as <id>_t.jpg
 //   POST /upload      stores one JPEG or video in R2 and lists it in uploads.json;
 //                     body is the file; query has id (optional, from /thumb), date,
@@ -232,23 +240,185 @@ async function dispatchUpdate(env) {
 async function sameText(a, b) {
   const hash = async (s) => new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)));
   const [x, y] = await Promise.all([hash(a), hash(b)]);
+  return sameBytes(x, y);
+}
+function sameBytes(x, y) {
+  if (x.length !== y.length) return false;
   let diff = 0;
   for (let i = 0; i < x.length; i++) diff |= x[i] ^ y[i];
   return diff === 0;
 }
 
-// The password lives only in the UPLOAD_PASSWORD Worker secret. If it's unset,
-// nobody can sign in.
-async function isAuthorized(request, env) {
+/* ------------------------------- Accounts --------------------------------
+   Two kinds of login:
+   - The shared family login (UPLOAD_USER / UPLOAD_PASSWORD). It is always an admin.
+   - Personal accounts people register themselves. They wait as "pending" until an
+     admin approves them in the app. They live in the ACCOUNTS KV namespace (never
+     in the public repo); without that binding, registration is simply off.
+   Signing in returns a session token signed with SESSION_SECRET (falls back to
+   UPLOAD_PASSWORD, so changing that password signs everyone out). The site keeps
+   the token, never the password. */
+const SESSION_DAYS = 30;
+// Workers' free plan allows ~10 ms of CPU per request, so the hash cost is modest.
+// Logins are rate limited per IP and the hashes are private, which carries the rest.
+const PBKDF2_ITER = 20000;
+const USERNAME = /^[a-z0-9][a-z0-9_.-]{2,23}$/i;
+const accountKey = (name) => "user:" + String(name).toLowerCase();
+
+const b64url = (bytes) => btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+const fromB64url = (s) => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0));
+
+async function hmac(env, text) {
+  const secret = env.SESSION_SECRET || "pw:" + (env.UPLOAD_PASSWORD || "");
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  return new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(text)));
+}
+
+async function makeToken(env, user) {
+  const exp = Date.now() + SESSION_DAYS * 86400000;
+  const body = b64url(new TextEncoder().encode(JSON.stringify({ u: user, exp })));
+  return { token: `v1.${body}.${b64url(await hmac(env, body))}`, exp };
+}
+
+async function readToken(env, token) {
+  const [v, body, sig] = String(token).split(".");
+  if (v !== "v1" || !body || !sig) return null;
+  try {
+    if (!sameBytes(fromB64url(sig), await hmac(env, body))) return null;
+    const claims = JSON.parse(new TextDecoder().decode(fromB64url(body)));
+    return claims && claims.exp > Date.now() && claims.u ? claims : null;
+  } catch (_) { return null; }
+}
+
+async function hashPassword(password, salt, iter) {
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
+  const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt, iterations: iter }, key, 256);
+  return new Uint8Array(bits);
+}
+
+const isShared = async (env, user) => !!env.UPLOAD_USER && (await sameText(String(user).toLowerCase(), env.UPLOAD_USER.toLowerCase()));
+
+async function getAccount(env, user) {
+  if (!env.ACCOUNTS) return null;
+  return env.ACCOUNTS.get(accountKey(user), "json");
+}
+
+// Checks a username and password. Returns { user, admin } or { pending: true } or null.
+async function checkPassword(env, user, password) {
+  if (await isShared(env, user)) {
+    return env.UPLOAD_PASSWORD && (await sameText(password, env.UPLOAD_PASSWORD))
+      ? { user: env.UPLOAD_USER, admin: true } : null;
+  }
+  const acct = await getAccount(env, user);
+  if (!acct) return null;
+  const hash = await hashPassword(password, fromB64url(acct.salt), acct.iter || PBKDF2_ITER);
+  if (!sameBytes(hash, fromB64url(acct.hash))) return null;
+  if (acct.status !== "approved") return { pending: true };
+  return { user: acct.name, admin: !!acct.admin };
+}
+
+// Who sent this request: { user, admin } or null. Accepts a session token
+// (Bearer) or, for older copies of the site, the username and password (Basic).
+async function authenticate(request, env) {
   const header = request.headers.get("Authorization") || "";
-  if (!env.UPLOAD_PASSWORD || !env.UPLOAD_USER || !header.startsWith("Basic ")) return false;
-  let decoded;
-  try { decoded = b64decode(header.slice(6)); } catch (_) { return false; }
-  const split = decoded.indexOf(":");
-  if (split < 0) return false;
-  const userOk = await sameText(decoded.slice(0, split), env.UPLOAD_USER);
-  const passwordOk = await sameText(decoded.slice(split + 1), env.UPLOAD_PASSWORD);
-  return userOk && passwordOk;
+  if (header.startsWith("Bearer ")) {
+    const claims = await readToken(env, header.slice(7));
+    if (!claims) return null;
+    if (await isShared(env, claims.u)) return { user: env.UPLOAD_USER, admin: true };
+    // Looked up each time, so removing an account or changing its role applies at once.
+    const acct = await getAccount(env, claims.u);
+    return acct && acct.status === "approved" ? { user: acct.name, admin: !!acct.admin } : null;
+  }
+  if (header.startsWith("Basic ")) {
+    let decoded;
+    try { decoded = b64decode(header.slice(6)); } catch (_) { return null; }
+    const split = decoded.indexOf(":");
+    if (split < 0) return null;
+    const who = await checkPassword(env, decoded.slice(0, split), decoded.slice(split + 1));
+    return who && !who.pending ? who : null;
+  }
+  return null;
+}
+
+async function handleLogin(request, env) {
+  const header = request.headers.get("Authorization") || "";
+  let user = "", password = "";
+  try {
+    const decoded = b64decode(header.replace(/^Basic /, ""));
+    const split = decoded.indexOf(":");
+    user = decoded.slice(0, split).trim();
+    password = decoded.slice(split + 1);
+  } catch (_) {}
+  const who = user && password ? await checkPassword(env, user, password) : null;
+  if (!who) return json({ error: "That username or password isn't right." }, 401);
+  if (who.pending) return json({ error: "This account is waiting for approval.", pending: true }, 403);
+  const { token, exp } = await makeToken(env, who.user);
+  return json({ ok: true, user: who.user, admin: who.admin, token, exp });
+}
+
+// Best effort: a push to the admin's phone (e.g. an ntfy.sh topic URL) so a new
+// sign-up doesn't sit unnoticed. Set NOTIFY_URL as a Worker secret to turn it on.
+async function notifyAdmins(env, text) {
+  if (!env.NOTIFY_URL) return;
+  await fetch(env.NOTIFY_URL, { method: "POST", body: text, headers: { Title: "Vale Trails" } }).catch(() => {});
+}
+
+async function handleRegister(request, env) {
+  if (!env.ACCOUNTS) return json({ error: "Sign-ups aren't turned on yet." }, 503);
+  const payload = await request.json().catch(() => null);
+  const user = String((payload && payload.user) || "").trim();
+  const password = String((payload && payload.password) || "");
+  if (!USERNAME.test(user)) {
+    return json({ error: "Usernames are 3–24 letters, numbers, dots, dashes or underscores." }, 400);
+  }
+  if (password.length < 8 || password.length > 200) return json({ error: "Use a password of at least 8 characters." }, 400);
+  if ((await isShared(env, user)) || (await getAccount(env, user))) return json({ error: "That username is taken." }, 409);
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const hash = await hashPassword(password, salt, PBKDF2_ITER);
+  await env.ACCOUNTS.put(accountKey(user), JSON.stringify({
+    name: user, salt: b64url(salt), hash: b64url(hash), iter: PBKDF2_ITER,
+    status: "pending", admin: false, created: new Date().toISOString(),
+  }));
+  await notifyAdmins(env, `${user} asked for a Vale Trails account. Open the site to approve or decline.`);
+  return json({ ok: true, pending: true });
+}
+
+async function listAccounts(env) {
+  const out = [];
+  let cursor;
+  do {
+    const page = await env.ACCOUNTS.list({ prefix: "user:", cursor });
+    const rows = await Promise.all(page.keys.map((k) => env.ACCOUNTS.get(k.name, "json")));
+    for (const a of rows) {
+      if (a) out.push({ name: a.name, status: a.status, admin: !!a.admin, created: a.created, approvedBy: a.approvedBy || null });
+    }
+    cursor = page.list_complete ? undefined : page.cursor;
+  } while (cursor);
+  return out.sort((a, b) => (a.status === b.status ? a.name.localeCompare(b.name) : a.status === "pending" ? -1 : 1));
+}
+
+// Admins approve, decline/remove, and promote or demote accounts.
+async function handleAccounts(request, env, who) {
+  if (!who.admin) return json({ error: "Only an admin can manage accounts." }, 403);
+  if (!env.ACCOUNTS) return json({ accounts: [], enabled: false });
+  if (request.method === "GET") return json({ accounts: await listAccounts(env), enabled: true });
+  const payload = await request.json().catch(() => null);
+  const user = String((payload && payload.user) || "");
+  const action = payload && payload.action;
+  const acct = await getAccount(env, user);
+  if (!acct) return json({ error: "No such account." }, 404);
+  if (action === "remove") {
+    await env.ACCOUNTS.delete(accountKey(user));
+  } else if (action === "approve" || action === "admin" || action === "unadmin") {
+    if (action === "approve") { acct.status = "approved"; acct.approvedBy = who.user; }
+    if (action === "admin") acct.admin = true;
+    if (action === "unadmin") acct.admin = false;
+    await env.ACCOUNTS.put(accountKey(user), JSON.stringify(acct));
+  } else {
+    return json({ error: "Unknown action." }, 400);
+  }
+  return json({ ok: true, accounts: await listAccounts(env), enabled: true });
 }
 
 // Per-IP rate limiting through a Workers Rate Limiting binding (wrangler.toml).
@@ -463,21 +633,27 @@ export default {
     const isMeta = path === "/meta" || path === "/metadata";
 
     try {
-      if (request.method === "GET") {
+      if (request.method === "GET" && path !== "/accounts") {
         const file = path === "/comments" ? COMMENTS_FILE : isCameras ? CAMERA_FILE : isMeta ? META_FILE : TAGS_FILE;
         const { data } = await readFile(env, file);
         return json(data);
       }
 
-      if (request.method !== "POST") return json({ error: "Method not allowed." }, 405);
+      if (request.method !== "POST" && request.method !== "GET") return json({ error: "Method not allowed." }, 405);
 
       // Every write is signed in. Reads above stay public.
-      if (await overLimit(env, path === "/login" ? "LOGIN_LIMITER" : "WRITE_LIMITER", request)) {
+      const strict = path === "/login" || path === "/register";
+      if (await overLimit(env, strict ? "LOGIN_LIMITER" : "WRITE_LIMITER", request)) {
         return json({ error: "Too many attempts. Wait a minute and try again." }, 429);
       }
-      if (!(await isAuthorized(request, env))) return json({ error: "Sign in to save changes." }, 401);
+      if (path === "/login") return await handleLogin(request, env);
+      if (path === "/register") return await handleRegister(request, env);
 
-      if (path === "/login") return json({ ok: true });
+      const who = await authenticate(request, env);
+      if (!who) return json({ error: "Sign in to save changes." }, 401);
+
+      if (path === "/accounts") return await handleAccounts(request, env, who);
+      if (request.method !== "POST") return json({ error: "Method not allowed." }, 405);
       if (path === "/thumb") return await handleThumb(request, env);
       if (path === "/upload") return await handleUpload(request, env);
       if (path === "/uploads") return await handleUploadEdit(request, env);

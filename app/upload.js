@@ -3,7 +3,7 @@ import { html, useState, useRef, useEffect } from "./react.js";
 import { Btn, IconBtn, Select } from "./ui.js";
 import { Icon } from "./icons.js";
 import {
-  hasUploads, uploadLogin, uploadPhoto, uploadThumb, newUploadId, displayCamera, TAG_OPTIONS,
+  hasUploads, uploadLogin, registerAccount, uploadPhoto, uploadThumb, newUploadId, displayCamera, TAG_OPTIONS,
   StorageFull, NotSignedIn, TooManyAttempts, MAX_VIDEO_BYTES, LS, usePersistent, toLocalInput,
 } from "./core.js";
 import { captureDate } from "./exif.js";
@@ -71,33 +71,75 @@ function videoPoster(file) {
   });
 }
 
+// Sign in, or ask for an account (which an admin approves before it can sign in).
 export function SignIn({ onDone, message }) {
+  const [mode, setMode] = useState("signin");
   const [user, setUser] = useState("");
   const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
   const [state, setState] = useState("idle");
+  const [error, setError] = useState("");
+  const registering = mode === "register";
+
+  const switchMode = (m) => { setMode(m); setState("idle"); setError(""); setPassword(""); setConfirm(""); };
 
   const submit = async (e) => {
     e.preventDefault();
+    setError("");
+    if (registering) {
+      if (password !== confirm) { setState("idle"); setError("The passwords don't match."); return; }
+      setState("checking");
+      const r = await registerAccount(user.trim(), password);
+      if (r.status === "ok") { setState("requested"); return; }
+      setState("idle");
+      setError(r.status === "limited" ? "Too many tries. Wait a minute, then try again."
+        : r.status === "error" ? "Couldn't reach the server. Try again."
+        : r.error || "That didn't work. Try again.");
+      return;
+    }
     setState("checking");
     const result = await uploadLogin(user.trim(), password);
-    if (result === "ok") onDone({ user: user.trim(), password });
-    else setState(result);
+    if (result.status === "ok") onDone(result.auth);
+    else setState(result.status);
   };
 
+  if (state === "requested") {
+    return html`<div className="col" style=${{ gap: 12 }}>
+      <p className="form-note"><b>Request sent.</b> An admin needs to approve <b>${user.trim()}</b> before
+        you can sign in. Check back once they have.</p>
+      <${Btn} onClick=${() => switchMode("signin")}>Back to sign in</${Btn}>
+    </div>`;
+  }
+
   return html`<form className="col" style=${{ gap: 12 }} onSubmit=${submit}>
-    ${message && html`<p className="form-note">${message}</p>`}
+    ${registering
+      ? html`<p className="form-note">Choose a username and password. You can sign in once an admin approves the account.</p>`
+      : message && html`<p className="form-note">${message}</p>`}
     <label className="field-row"><span>Username</span>
       <input className="input" autoComplete="username" autoCapitalize="none" value=${user}
-        onInput=${(e) => setUser(e.target.value)} required />
+        onInput=${(e) => setUser(e.target.value)} required minLength=${registering ? 3 : undefined} maxLength=${registering ? 24 : undefined} />
     </label>
     <label className="field-row"><span>Password</span>
-      <input className="input" type="password" autoComplete="current-password" value=${password}
-        onInput=${(e) => setPassword(e.target.value)} required />
+      <input className="input" type="password" autoComplete=${registering ? "new-password" : "current-password"} value=${password}
+        onInput=${(e) => setPassword(e.target.value)} required minLength=${registering ? 8 : undefined} />
     </label>
+    ${registering && html`<label className="field-row"><span>Confirm password</span>
+      <input className="input" type="password" autoComplete="new-password" value=${confirm}
+        onInput=${(e) => setConfirm(e.target.value)} required />
+    </label>`}
     ${state === "denied" && html`<p className="form-error" role="alert">That username or password isn't right.</p>`}
+    ${state === "pending" && html`<p className="form-error" role="alert">This account is still waiting for an admin to approve it.</p>`}
     ${state === "limited" && html`<p className="form-error" role="alert">Too many tries. Wait a minute, then try again.</p>`}
     ${state === "error" && html`<p className="form-error" role="alert">Couldn't reach the server. Try again.</p>`}
-    <${Btn} variant="primary" disabled=${state === "checking"}>${state === "checking" ? "Checking…" : "Sign in"}</${Btn}>
+    ${error && html`<p className="form-error" role="alert">${error}</p>`}
+    <${Btn} variant="primary" disabled=${state === "checking"}>
+      ${state === "checking" ? "Checking…" : registering ? "Request account" : "Sign in"}
+    </${Btn}>
+    <p className="form-note center">
+      ${registering
+        ? html`Already have an account? <button type="button" className="linkbtn" onClick=${() => switchMode("signin")}>Sign in</button>`
+        : html`New here? <button type="button" className="linkbtn" onClick=${() => switchMode("register")}>Create an account</button>`}
+    </p>
   </form>`;
 }
 
@@ -279,7 +321,7 @@ function Picker({ auth, cameras, camName, buckNames, onUploaded, onSignedOut }) 
   </div>`;
 }
 
-// Signed in for as long as the page stays open; the password is never stored.
+// Signing in here keeps you signed in on this device; the password is never stored.
 export function UploadDialog({ cameras, camNames, buckNames, auth, setAuth, onClose, onUploaded }) {
   const camName = (raw) => displayCamera(raw, camNames);
   return html`<div className="modal" onClick=${onClose}>

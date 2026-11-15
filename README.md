@@ -199,6 +199,19 @@ Notes:
   and take notes, but those edits stay on their device and a toast says so with a
   **Sign in** button; the moment they sign in, everything saved on that device is
   shared for everyone. Sign in from the person icon in the top bar.
+- **Staying signed in.** Signing in keeps you signed in on that device for 30 days (or
+  until you choose **Sign out** from your name in the top bar). The device keeps a
+  signed session token, never the password. Changing `UPLOAD_PASSWORD` signs every
+  device out, unless you set a separate `SESSION_SECRET`.
+- **Personal accounts.** People can ask for their own login with **Create an account**
+  in the sign-in box. The request waits until an admin approves it under
+  **your name → Manage accounts**; the shared login is always an admin and can make
+  others admins. To turn this on, run `npx wrangler kv namespace create ACCOUNTS`,
+  paste the id into the commented `[[kv_namespaces]]` block in `wrangler.toml`, and
+  redeploy. For a phone alert on each sign-up, set `NOTIFY_URL` to an
+  [ntfy.sh](https://ntfy.sh) topic URL (`npx wrangler secret put NOTIFY_URL`) and
+  subscribe to that topic in the ntfy app. Pick a long random topic name, because anyone who
+  knows it can read the alerts.
 - Sign-in attempts are **rate limited per IP** (5 a minute on the login route, 20 every
   10 seconds on other writes) by the two Rate Limiting bindings in `wrangler.toml`.
   Use a long passphrase anyway: the limit slows a guesser down, it doesn't stop one.

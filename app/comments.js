@@ -12,7 +12,7 @@ export function Comments({ photo, list, auth, setAuth, onChange }) {
 
   const post = async () => {
     setSaving(true);
-    const saved = await onChange({ photo, text: text.trim(), author: author.trim() });
+    const saved = await onChange({ photo, text: text.trim(), author: author.trim() || auth.user });
     setSaving(false);
     if (saved) setText("");
   };
@@ -34,7 +34,7 @@ export function Comments({ photo, list, auth, setAuth, onChange }) {
     ${!hasUploads ? null : auth
       ? html`<textarea rows=${2} maxLength=${500} placeholder="Add a comment" aria-label="Add a comment"
             value=${text} onInput=${(e) => setText(e.target.value)} />
-          <input maxLength=${40} placeholder="Your name (optional)" aria-label="Your name"
+          <input maxLength=${40} placeholder=${"Your name (default: " + auth.user + ")"} aria-label="Your name"
             value=${author} onInput=${(e) => setAuthor(e.target.value)} />
           <${Btn} sm variant="primary" disabled=${!text.trim() || saving} onClick=${post}>
             ${saving ? "Saving…" : "Post"}

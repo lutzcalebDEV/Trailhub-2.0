@@ -6,12 +6,14 @@ import {
   loadCameraNames, remoteLoadCameraNames, remoteSaveCameraName, displayCamera,
   loadMetadata, remoteLoadMetadata, remoteSaveMetadata, applyMeta, metaOf, cameraLabels,
   remoteLoadComments, saveComment, updateUpload, NotSignedIn, TooManyAttempts,
+  loadSession, saveSession,
 } from "./core.js";
 import { filterCaptures, speciesList, reviewQueue } from "./analytics.js";
 import { Sidebar, Topbar, MobileTopbar, MobileNav, VIEWS, loadFilters } from "./shell.js";
 import { Lightbox, Toast } from "./ui.js";
 import { UploadDialog, SignInDialog } from "./upload.js";
 import { Comments } from "./comments.js";
+import { AccountsDialog, usePendingAccounts } from "./account.js";
 import { Overview } from "./views/overview.js";
 import { Gallery } from "./views/gallery.js";
 import { MapView } from "./views/mapview.js";
@@ -64,8 +66,10 @@ function App() {
 
   const [lightbox, setLightbox] = useState(null);
   const [uploadOpen, setUploadOpen] = useState(false);
-  // The family login for this page load. The password stays in memory only.
-  const [uploadAuth, setUploadAuth] = useState(null);
+  // The signed-in account. Its session token is kept on this device (30 days) so a
+  // refresh doesn't sign you out; the password itself is never stored.
+  const [uploadAuth, setUploadAuth] = useState(loadSession);
+  const [accountsOpen, setAccountsOpen] = useState(false);
   const [signIn, setSignIn] = useState(null);
   const [uploadEdits, setUploadEdits] = useState(loadUploadEdits);
   const [comments, setComments] = useState({});
@@ -174,7 +178,9 @@ function App() {
     setSignIn(null);
     if (auth) { showToast("ok", `Signed in as ${auth.user}`); pushLocalEdits(auth); }
   }, [showToast, pushLocalEdits]);
-  const signOut = useCallback(() => { setUploadAuth(null); showToast("ok", "Signed out"); }, [showToast]);
+  const signOut = useCallback(() => { setUploadAuth(null); setAccountsOpen(false); showToast("ok", "Signed out"); }, [showToast]);
+  const [pendingAccounts, refreshPending] = usePendingAccounts(uploadAuth, data);
+  useEffect(() => { saveSession(uploadAuth); }, [uploadAuth]);
 
   // Reload shared data with every refresh, so edits from other devices show up
   // on the same schedule as new photos.
@@ -427,7 +433,7 @@ function App() {
     gridSize, setGridSize,
     archived, reviewed, assignSpecies, keep, archive: archiveCap,
     openLightbox, reviewQ, counts, setView,
-    uploads, comments, openUpload: () => setUploadOpen(true),
+    uploads, allCaptures, comments, openUpload: () => setUploadOpen(true),
     camName, camNames, bulkAssign, renameCamera,
     metaMap, updateMeta, toggleFavorite,
     auth: uploadAuth, openSignIn,
@@ -440,15 +446,17 @@ function App() {
     theme, toggleTheme, onRefresh: manualRefresh, refreshing, status,
     onUpload: () => setUploadOpen(true),
     auth: uploadAuth, onSignIn: () => openSignIn(), onSignOut: signOut,
+    pending: pendingAccounts, onAccounts: () => setAccountsOpen(true),
   };
 
   return html`<${Fragment}>
     <div className=${sidebarCollapsed === "true" ? "app app--sidebar-collapsed" : "app"}>
       <${Sidebar} view=${view} setView=${setView} counts=${counts} status=${status}
-        collapsed=${sidebarCollapsed === "true"} onToggleCollapsed=${() => setSidebarCollapsed(sidebarCollapsed === "true" ? "false" : "true")} />
+        onCollapse=${() => setSidebarCollapsed("true")} />
       <main className="main">
         <${MobileTopbar} ...${chrome} />
-        <${Topbar} title=${meta.label} ...${chrome} />
+        <${Topbar} title=${meta.label} ...${chrome}
+          sidebarHidden=${sidebarCollapsed === "true"} onShowSidebar=${() => setSidebarCollapsed("false")} />
         <div className="view view__enter" key=${view}>
           <${View} ...${app} />
         </div>
@@ -488,6 +496,10 @@ function App() {
         if (!failed) setUploadOpen(false);
         showToast("ok", `${sent} file${sent === 1 ? "" : "s"} uploaded. They'll appear in a few minutes.`);
       }} />`}
+
+    ${accountsOpen && uploadAuth && html`<${AccountsDialog} auth=${uploadAuth} showToast=${showToast}
+      onClose=${() => setAccountsOpen(false)} onChanged=${refreshPending}
+      onSignedOut=${() => { setAccountsOpen(false); setUploadAuth(null); openSignIn("Your session ended. Sign in again."); }} />`}
 
     ${signIn && html`<${SignInDialog} message=${signIn.message} onDone=${signedIn} onClose=${() => setSignIn(null)} />`}
 

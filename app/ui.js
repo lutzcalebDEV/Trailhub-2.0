@@ -640,54 +640,68 @@ export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggle
   const zoomControls = useRef(null);
   const [zoomed, setZoomed] = useState(false);
   const [navIdle, setNavIdle] = useState(false);
-  const [fullscreen, setFullscreen] = useState(false);
-  const [fullscreenError, setFullscreenError] = useState("");
+  // Full screen is just the photo: details hidden, controls fading out when idle.
+  // The browser's Fullscreen API is used when there is one; iPhones don't offer it
+  // for photos, and there the same view simply fills the page.
+  const [immersive, setImmersive] = useState(false);
   const navTimer = useRef(null);
+  const root = useRef(null);
   const stage = useRef(null);
+  const lastPointer = useRef("mouse");
+  const tapTimer = useRef(null);
   const photoId = capture && capture.id;
   const wakeNavigation = () => {
     setNavIdle(false);
     if (navTimer.current) clearTimeout(navTimer.current);
-    navTimer.current = setTimeout(() => setNavIdle(true), 300);
+    navTimer.current = setTimeout(() => setNavIdle(true), 2500);
   };
   useEffect(() => {
     wakeNavigation();
-    return () => { if (navTimer.current) clearTimeout(navTimer.current); };
+    return () => {
+      if (navTimer.current) clearTimeout(navTimer.current);
+      if (tapTimer.current) clearTimeout(tapTimer.current);
+      if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    };
   }, []);
+  // Leaving the browser's full screen (Esc, a swipe, its own button) leaves ours too.
   useEffect(() => {
-    const syncFullscreen = () => setFullscreen(document.fullscreenElement === stage.current);
-    document.addEventListener("fullscreenchange", syncFullscreen);
-    return () => document.removeEventListener("fullscreenchange", syncFullscreen);
+    const sync = () => { if (!document.fullscreenElement) setImmersive(false); };
+    document.addEventListener("fullscreenchange", sync);
+    return () => document.removeEventListener("fullscreenchange", sync);
   }, []);
-  const toggleFullscreen = async () => {
-    setFullscreenError("");
-    const exiting = document.fullscreenElement === stage.current;
-    try {
-      if (exiting) {
-        await document.exitFullscreen();
-      } else if (stage.current && stage.current.requestFullscreen) {
-        await stage.current.requestFullscreen();
-      } else {
-        setFullscreenError("Fullscreen isn't supported by this browser.");
-      }
-    } catch {
-      setFullscreenError(exiting
-        ? "Couldn't exit fullscreen. Please use the browser's fullscreen control."
-        : "Couldn't enter fullscreen. Your browser may have blocked the request.");
+  const enterFullscreen = () => {
+    setImmersive(true);
+    wakeNavigation();
+    const el = root.current;
+    if (el && el.requestFullscreen && !document.fullscreenElement) {
+      el.requestFullscreen({ navigationUI: "hide" }).catch(() => { /* the in-page view still works */ });
     }
+  };
+  const exitFullscreen = () => {
+    setImmersive(false);
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  };
+  const toggleFullscreen = () => (immersive ? exitFullscreen() : enterFullscreen());
+  // In full screen a single tap on the photo shows or hides the controls. It waits a
+  // moment so a double-tap (zoom) isn't also read as two single taps.
+  const onStageClick = (e) => {
+    e.stopPropagation();
+    if (!immersive || lastPointer.current === "mouse" || !e.target.closest(".lb__zoom")) return;
+    if (tapTimer.current) { clearTimeout(tapTimer.current); tapTimer.current = null; return; }
+    tapTimer.current = setTimeout(() => {
+      tapTimer.current = null;
+      if (navTimer.current) clearTimeout(navTimer.current);
+      setNavIdle((idle) => !idle);
+    }, 280);
   };
   useEffect(() => {
     const onKey = (e) => {
       // Arrow keys belong to the field or video being used, not photo navigation.
       if (e.key !== "Escape" && /^(INPUT|TEXTAREA|SELECT|VIDEO)$/.test(e.target.tagName)) return;
-      if (e.key === "Escape" && document.fullscreenElement === stage.current) {
-        document.exitFullscreen().catch(() => {
-          setFullscreenError("Couldn't exit fullscreen. Please use the browser's fullscreen control.");
-        });
-        return;
-      }
       const zoom = zoomControls.current;
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape" && immersive) exitFullscreen();
+      else if ((e.key === "f" || e.key === "F") && !e.metaKey && !e.ctrlKey && capture && capture.media !== "video") toggleFullscreen();
+      else if (e.key === "Escape") onClose();
       else if ((e.key === "+" || e.key === "=") && zoom) zoom.zoomIn();
       else if ((e.key === "-" || e.key === "_") && zoom) zoom.zoomOut();
       else if (e.key === "0" && zoom) zoom.reset();
@@ -697,7 +711,7 @@ export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggle
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose, onPrev, onNext, hasPrev, hasNext]);
+  }, [onClose, onPrev, onNext, hasPrev, hasNext, immersive, capture]);
 
   // The page behind shouldn't scroll while a photo is open.
   useEffect(() => {
@@ -731,10 +745,10 @@ export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggle
 
   if (!capture) return null;
   const c = capture;
-  return html`<div className=${cx("lb", navIdle && "is-nav-idle")} onClick=${onClose}
-      onPointerMove=${(e) => { if (e.pointerType === "mouse") wakeNavigation(); }}
-      onPointerDown=${(e) => { if (e.pointerType === "mouse") wakeNavigation(); }}>
-    <div className=${cx("lb__stage", zoomed && "is-zoomed")} ref=${stage} onClick=${(e) => e.stopPropagation()}
+  return html`<div ref=${root} className=${cx("lb", navIdle && "is-nav-idle", immersive && "is-immersive")} onClick=${onClose}
+      onPointerMove=${(e) => { lastPointer.current = e.pointerType; if (e.pointerType === "mouse") wakeNavigation(); }}
+      onPointerDown=${(e) => { lastPointer.current = e.pointerType; if (e.pointerType === "mouse") wakeNavigation(); }}>
+    <div className=${cx("lb__stage", zoomed && "is-zoomed")} ref=${stage} onClick=${onStageClick}
       onTouchStart=${onTouchStart} onTouchMove=${onTouchMove} onTouchEnd=${onTouchEnd}>
       ${c.image && c.media === "video"
         ? html`<${Media} key=${c.id} className="lb__img" capture=${c} alt=${species} playable />`
@@ -743,13 +757,16 @@ export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggle
             onZoomChange=${setZoomed} controls=${zoomControls} />`
         : html`<div className="shot__noimg" style=${{ width: "60vw", height: "60vh" }}>No image available</div>`}
       <div className="lb__close"><${IconBtn} icon="x" onClick=${onClose} aria-label="Close" /></div>
-      ${c.image && c.media !== "video" && html`<div className="lb__fullscreen">
-        <${IconBtn} icon=${fullscreen ? "shrink" : "expand"} onClick=${toggleFullscreen}
-          aria-label=${fullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-          aria-pressed=${fullscreen}
-          title=${fullscreen ? "Exit fullscreen" : "Fullscreen"} />
+      ${c.image && (c.media !== "video" || immersive) && html`<div className="lb__fullscreen">
+        <${IconBtn} icon=${immersive ? "shrink" : "expand"} onClick=${toggleFullscreen}
+          aria-label=${immersive ? "Exit full screen" : "Full screen"}
+          aria-pressed=${immersive}
+          title=${immersive ? "Exit full screen (F)" : "Full screen (F)"} />
       </div>`}
-      ${fullscreenError && html`<div className="lb__fullscreen-error" role="status">${fullscreenError}</div>`}
+      ${immersive && html`<div className="lb__caption">
+        <${SpeciesDot} species=${species} size=${9} /><b>${species}</b>
+        <span>${cameraLabel || c.camera}</span><span>${fmtDateTime(c.date)}</span>
+      </div>`}
       ${hasPrev && html`<button className="lb__nav prev" onClick=${onPrev} aria-label="Previous"><${Icon} name="chevronLeft" size=${22} /></button>`}
       ${hasNext && html`<button className="lb__nav next" onClick=${onNext} aria-label="Next"><${Icon} name="chevronRight" size=${22} /></button>`}
       <div className="lb__panel">

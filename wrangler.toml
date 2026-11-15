@@ -25,6 +25,16 @@ crons = ["*/5 * * * *"]
 UPLOAD_USER = "valecrew"
 R2_PUBLIC_BASE_URL = "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev"
 
+# Personal accounts with admin approval. Create the namespace once:
+#   npx wrangler kv namespace create ACCOUNTS
+# then uncomment this block with the id it prints and redeploy. Without it, only the
+# shared login above works and the "Create an account" form says sign-ups are off.
+# Optional: npx wrangler secret put NOTIFY_URL   (e.g. https://ntfy.sh/<a-long-random-topic>)
+#           npx wrangler secret put SESSION_SECRET (any long random string)
+# [[kv_namespaces]]
+# binding = "ACCOUNTS"
+# id = "<paste the id here>"
+
 [[r2_buckets]]
 binding = "PHOTOS"
 bucket_name = "trailhub-photos"

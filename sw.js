@@ -6,7 +6,7 @@
 // Always trying the network first means a deploy is picked up on the next load
 // and the app's modules can never be served from two different versions. Photos
 // (R2), map tiles and fonts are other origins and are left to the browser cache.
-const VERSION = "vale-trails-v1";
+const VERSION = "vale-trails-v2";
 const SHELL = [
   "./",
   "./index.html",
@@ -23,6 +23,7 @@ const SHELL = [
   "./app/upload.js",
   "./app/exif.js",
   "./app/comments.js",
+  "./app/account.js",
   "./app/views/overview.js",
   "./app/views/gallery.js",
   "./app/views/uploads.js",

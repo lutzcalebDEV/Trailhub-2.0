@@ -4,6 +4,7 @@ import { Icon, BrandMark } from "./icons.js";
 import { IconBtn, Select, Segmented, Switch, Chip } from "./ui.js";
 import { speciesColor, LS, labelHour } from "./core.js";
 import { RANGE_OPTIONS, rangeLabel, WEEKDAY_PLURAL } from "./analytics.js";
+import { UserMenu } from "./account.js";
 
 const cx = (...xs) => xs.filter(Boolean).join(" ");
 
@@ -21,22 +22,23 @@ const badgeCount = (n) => (n > 99 ? "99+" : n);
 const feedTitle = (s) => (s.demo ? "Demo data" : s.stale ? "Sync delayed" : "Auto-sync on");
 
 /* ------------------------------- Sidebar -------------------------------- */
-export function Sidebar({ view, setView, counts, status, collapsed, onToggleCollapsed }) {
-  return html`<aside className=${cx("sidebar", collapsed && "is-collapsed")}>
-    <button className="sidebar__toggle" type="button" onClick=${onToggleCollapsed}
-      aria-label=${collapsed ? "Expand sidebar" : "Collapse sidebar"} aria-expanded=${!collapsed}
-      title=${collapsed ? "Expand sidebar" : "Collapse sidebar"}>
-      <${Icon} name=${collapsed ? "chevronRight" : "chevronLeft"} size=${18} />
-    </button>
+// Desktop only. The button beside the logo hides it; the menu button in the top
+// bar brings it back. Hidden, the page gets the full width.
+export function Sidebar({ view, setView, counts, status, onCollapse }) {
+  return html`<aside className="sidebar" id="sidebar">
     <div className="brand">
-      <${BrandMark} size=${38} />
+      <${BrandMark} size=${32} />
       <div className="brand__name">Vale Trails</div>
+      <button className="sidebar__collapse" type="button" onClick=${onCollapse}
+        aria-label="Hide sidebar" aria-controls="sidebar" title="Hide sidebar">
+        <${Icon} name="panelLeft" size=${18} />
+      </button>
     </div>
 
     <nav className="nav">
       ${VIEWS.map((v) => html`<a key=${v.id} role="button" tabindex="0"
         className=${cx("nav__item", view === v.id && "is-active")}
-        aria-label=${v.label} title=${collapsed ? v.label : undefined}
+        aria-label=${v.label}
         onClick=${() => setView(v.id)}
         onKeyDown=${(e) => (e.key === "Enter" || e.key === " ") && setView(v.id)}>
         <${Icon} name=${v.icon} size=${18} /><span className="sidebar__label">${v.label}</span>
@@ -58,9 +60,11 @@ export function Sidebar({ view, setView, counts, status, collapsed, onToggleColl
 }
 
 /* -------------------------------- Topbar -------------------------------- */
-// `auth` is the family login for this page; saving anything for everyone needs it.
-export function Topbar({ title, sub, theme, toggleTheme, onRefresh, refreshing, onUpload, auth, onSignIn, onSignOut, children }) {
+// `auth` is the signed-in account; saving anything for everyone needs it.
+export function Topbar({ title, sub, theme, toggleTheme, onRefresh, refreshing, onUpload, auth, pending, onSignIn, onSignOut, onAccounts, sidebarHidden, onShowSidebar, children }) {
   return html`<header className="topbar">
+    ${sidebarHidden && html`<${IconBtn} icon="menu" bare className="topbar__menu" onClick=${onShowSidebar}
+      aria-label="Show sidebar" aria-controls="sidebar" aria-expanded=${false} title="Show sidebar" />`}
     <div className="topbar__titles">
       <div className="h-page">${title}</div>
       ${sub && html`<div className="sub">${sub}</div>`}
@@ -68,13 +72,7 @@ export function Topbar({ title, sub, theme, toggleTheme, onRefresh, refreshing, 
     <div className="topbar__spacer" />
     <div className="topbar__actions">
       ${children}
-      ${auth
-        ? html`<button className="btn btn--sm btn--ghost authbtn is-on" onClick=${onSignOut} title="Signed in as ${auth.user}. Click to sign out.">
-            <${Icon} name="user" size=${15} /><span>${auth.user}</span>
-          </button>`
-        : html`<button className="btn btn--sm btn--ghost authbtn" onClick=${onSignIn} title="Sign in to save tags, names and notes for everyone">
-            <${Icon} name="user" size=${15} /><span>Sign in</span>
-          </button>`}
+      <${UserMenu} auth=${auth} pending=${pending} onSignIn=${onSignIn} onSignOut=${onSignOut} onAccounts=${onAccounts} />
       <button className="btn btn--sm" onClick=${onUpload}><${Icon} name="upload" size=${15} /><span>Upload</span></button>
       <${IconBtn} icon="refresh" bare onClick=${onRefresh} title="Refresh data"
         className=${refreshing ? "is-spin" : ""} aria-label="Refresh" />
@@ -85,7 +83,7 @@ export function Topbar({ title, sub, theme, toggleTheme, onRefresh, refreshing, 
 }
 
 /* ----------------------------- Mobile chrome ---------------------------- */
-export function MobileTopbar({ theme, toggleTheme, onRefresh, refreshing, status, onUpload, auth, onSignIn, onSignOut }) {
+export function MobileTopbar({ theme, toggleTheme, onRefresh, refreshing, status, onUpload, auth, pending, onSignIn, onSignOut, onAccounts }) {
   return html`<div className="mobile-top">
     <${BrandMark} size=${30} />
     <div className="brand__name">Vale Trails
@@ -94,8 +92,7 @@ export function MobileTopbar({ theme, toggleTheme, onRefresh, refreshing, status
       </small>
     </div>
     <div className="topbar__spacer" />
-    <${IconBtn} icon="user" bare className=${auth ? "is-on" : ""} onClick=${auth ? onSignOut : onSignIn}
-      aria-label=${auth ? "Signed in. Tap to sign out" : "Sign in"} />
+    <${UserMenu} compact auth=${auth} pending=${pending} onSignIn=${onSignIn} onSignOut=${onSignOut} onAccounts=${onAccounts} />
     <${IconBtn} icon="upload" bare onClick=${onUpload} aria-label="Upload photos" />
     <${IconBtn} icon="refresh" bare onClick=${onRefresh} className=${refreshing ? "is-spin" : ""} aria-label="Refresh" />
     <${IconBtn} icon=${theme === "light" ? "moon" : "sun"} bare onClick=${toggleTheme} aria-label="Toggle theme" />

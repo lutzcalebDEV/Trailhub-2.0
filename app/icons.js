@@ -50,6 +50,9 @@ const P = {
   tag: html`<g><path d="M3 12V4.5A1.5 1.5 0 0 1 4.5 3H12l8.5 8.5a1.5 1.5 0 0 1 0 2.1l-6.9 6.9a1.5 1.5 0 0 1-2.1 0L3 12Z"/><circle cx="7.5" cy="7.5" r="1.2" fill="currentColor"/></g>`,
   star: html`<path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.7l5.9-.9L12 3.5Z"/>`,
   user: html`<g><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20.5a7.5 7.5 0 0 1 15 0"/></g>`,
+  users: html`<g><circle cx="9" cy="8" r="3.4"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.6a3.4 3.4 0 0 1 0 6.8"/><path d="M18 14a6.5 6.5 0 0 1 3.5 6"/></g>`,
+  logout: html`<g><path d="M9 21H5.5A1.5 1.5 0 0 1 4 19.5v-15A1.5 1.5 0 0 1 5.5 3H9"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></g>`,
+  panelLeft: html`<g><rect x="3" y="3" width="18" height="18" rx="2.6"/><path d="M9 3v18"/><path d="m16 15-3-3 3-3"/></g>`,
   note: html`<g><path d="M5 3.5h9L19 8.5V19a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 19V5A1.5 1.5 0 0 1 5 3.5Z"/><path d="M13.5 3.5V9H19"/><path d="M7.5 12.5h7M7.5 15.5h5"/></g>`,
 };
 

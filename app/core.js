@@ -222,12 +222,15 @@ const basicAuth = ({ user, password }) => {
   const bytes = new TextEncoder().encode(`${user}:${password}`);
   return "Basic " + btoa(String.fromCharCode(...bytes));
 };
+// A session token from /login when the Worker issues one; an older Worker only
+// understands the password, which then stays in memory for this page load.
+const authHeader = (auth) => (auth.token ? "Bearer " + auth.token : basicAuth(auth));
 
 async function postJSON(url, body, auth) {
   if (!auth) throw new NotSignedIn("Sign in to save for everyone");
   const r = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: basicAuth(auth) },
+    headers: { "Content-Type": "application/json", Authorization: authHeader(auth) },
     body: JSON.stringify(body),
   });
   if (r.status === 401) throw new NotSignedIn("Sign in to save for everyone");
@@ -253,17 +256,68 @@ export async function remoteSaveTagsBatch(items, auth) {
 export const hasUploads = !!TAGS_API;
 export class StorageFull extends Error {}
 
-// Returns "ok", "denied" or "error".
+// Returns { status: "ok", auth } or { status: "denied" | "pending" | "limited" | "error" }.
+// `auth` is { user, token, exp, admin }: the token is what's kept, never the password.
 export async function uploadLogin(user, password) {
   try {
     const r = await fetch(TAGS_API + "/login", {
       method: "POST",
       headers: { Authorization: basicAuth({ user, password }) },
     });
-    return r.ok ? "ok" : r.status === 401 ? "denied" : r.status === 429 ? "limited" : "error";
+    if (r.status === 401) return { status: "denied" };
+    if (r.status === 403) return { status: "pending" };
+    if (r.status === 429) return { status: "limited" };
+    if (!r.ok) return { status: "error" };
+    const body = await r.json().catch(() => ({}));
+    if (!body.token) return { status: "ok", auth: { user, password, admin: false } };
+    return { status: "ok", auth: { user: body.user || user, token: body.token, exp: body.exp, admin: !!body.admin } };
   } catch (e) {
-    return "error";
+    return { status: "error" };
   }
+}
+
+// Ask for an account. Returns { status: "ok" } or { status, error } where status is
+// "invalid", "taken", "limited", "off" or "error".
+export async function registerAccount(user, password) {
+  try {
+    const r = await fetch(TAGS_API + "/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user, password }),
+    });
+    if (r.ok) return { status: "ok" };
+    const body = await r.json().catch(() => ({}));
+    const status = { 400: "invalid", 409: "taken", 429: "limited", 503: "off" }[r.status] || "error";
+    return { status, error: body.error || "" };
+  } catch (e) {
+    return { status: "error" };
+  }
+}
+
+// Admin only: the account list, and approve / remove / admin / unadmin.
+export async function loadAccounts(auth) {
+  if (!auth) throw new NotSignedIn("Sign in");
+  const r = await fetch(TAGS_API + "/accounts", { headers: { Authorization: authHeader(auth) }, cache: "no-store" });
+  if (r.status === 401) throw new NotSignedIn("Sign in");
+  if (!r.ok) throw new Error("Couldn't load accounts (" + r.status + ")");
+  return r.json();
+}
+export const accountAction = (auth, user, action) => postJSON(TAGS_API + "/accounts", { user, action }, auth);
+
+// The sign-in survives a refresh: the session token is kept on this device until
+// it expires (30 days) or you sign out. A password-only login is never stored.
+export function loadSession() {
+  try {
+    const s = JSON.parse(localStorage.getItem(LS.session) || "null");
+    if (s && s.token && s.user && s.exp > Date.now()) return s;
+  } catch (e) {}
+  return null;
+}
+export function saveSession(auth) {
+  try {
+    if (auth && auth.token) localStorage.setItem(LS.session, JSON.stringify(auth));
+    else localStorage.removeItem(LS.session);
+  } catch (e) {}
 }
 
 export const MAX_VIDEO_BYTES = 80 * 1024 * 1024;
@@ -275,7 +329,7 @@ function sendFile(url, blob, auth, onProgress) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("POST", url);
-    xhr.setRequestHeader("Authorization", basicAuth(auth));
+    xhr.setRequestHeader("Authorization", authHeader(auth));
     xhr.setRequestHeader("Content-Type", blob.type || "application/octet-stream");
     if (onProgress) {
       xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress(e.loaded / e.total); };
@@ -475,6 +529,7 @@ export const LS = {
   filters: "trailhub-filters",
   uploadEdits: "trailhub-upload-edits",
   sidebarCollapsed: "trailhub-sidebar-collapsed",
+  session: "trailhub-session",
 };
 
 // Local date helpers for the date-range filter and the upload date field.

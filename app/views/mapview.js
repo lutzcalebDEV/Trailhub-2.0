@@ -3,6 +3,7 @@ import { html, useEffect, useRef, useMemo, useState } from "../react.js";
 import { FilterBar } from "../shell.js";
 import { Icon } from "../icons.js";
 import { Empty, Btn, Chip } from "../ui.js";
+import { filterCaptures } from "../analytics.js";
 
 const cx = (...xs) => xs.filter(Boolean).join(" ");
 // OpenStreetMap's public tiles: open data, no API key or account. Its usage policy
@@ -11,7 +12,7 @@ const OSM_TILES = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 const OSM_CREDIT = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
 export function MapView(app) {
-  const { data, filtered, filters, setFilter, setView, spList, theme, camName, renameCamera, auth, openSignIn } = app;
+  const { data, captures, ov, filtered, filters, setFilter, setView, spList, theme, camName, renameCamera, auth, openSignIn } = app;
   const elRef = useRef(null);
   const mapRef = useRef(null);
   const layerRef = useRef(null);
@@ -26,11 +27,13 @@ export function MapView(app) {
     () => data.cameras.filter((c) => c.latitude != null && c.longitude != null),
     [data.cameras]
   );
+  // Each camera's count honors every filter except the camera one. Otherwise picking
+  // a camera would zero out all the others and the markers would jump in size.
   const countByCam = useMemo(() => {
     const m = new Map();
-    for (const c of filtered) m.set(c.camera, (m.get(c.camera) || 0) + 1);
+    for (const c of filterCaptures(captures, { ...filters, camera: "All" }, ov)) m.set(c.camera, (m.get(c.camera) || 0) + 1);
     return m;
-  }, [filtered]);
+  }, [captures, filters, ov]);
 
   // (Re)create the map — also re-runs on theme change to swap tile colors.
   useEffect(() => {
