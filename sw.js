@@ -6,7 +6,7 @@
 // Always trying the network first means a deploy is picked up on the next load
 // and the app's modules can never be served from two different versions. Photos
 // (R2), map tiles and fonts are other origins and are left to the browser cache.
-const VERSION = "vale-trails-v2";
+const VERSION = "vale-trails-v3";
 const SHELL = [
   "./",
   "./index.html",
@@ -76,7 +76,13 @@ self.addEventListener("fetch", (event) => {
     const cache = await caches.open(VERSION);
     const key = keyFor(request);
     try {
-      const res = await fetch(request);
+      // GitHub Pages lets browsers reuse files for 10 minutes, which would keep an
+      // old stylesheet after a deploy. "no-cache" asks the server every time (a tiny
+      // "not modified" reply when nothing changed). A page navigation can't take
+      // options on its Request, so it's fetched by URL.
+      const res = request.mode === "navigate"
+        ? await fetch(request.url, { cache: "no-cache", credentials: "same-origin" })
+        : await fetch(new Request(request, { cache: "no-cache" }));
       if (res.ok && (res.type === "basic" || res.type === "default")) {
         cache.put(key, res.clone()).catch(() => {});
       }
