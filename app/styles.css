@@ -1341,3 +1341,43 @@ button.actrow__name:hover { color: var(--accent); }
 .alerts__note { display: flex; gap: 10px; align-items: flex-start; padding: 12px; border-radius: var(--r-md); background: var(--surface-2); font-size: 13.5px; line-height: 1.45; }
 .alerts__note svg { flex: none; margin-top: 2px; color: var(--accent); }
 .alerts__note p { margin: 0; }
+
+/* ---------------------------- Install hint (phones) ---------------------------- */
+.installhint {
+  position: fixed; z-index: 46; left: 12px; right: 12px;
+  bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  display: flex; align-items: center; gap: 12px; padding: 12px 12px 12px 14px;
+  background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--r-lg);
+  box-shadow: var(--sh-pop); animation: sheetIn .35s var(--ease-out);
+}
+.installhint__icon { width: 42px; height: 42px; border-radius: 10px; flex: none; }
+.installhint__text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; font-size: 13px; line-height: 1.35; color: var(--text-muted); }
+.installhint__text > b { color: var(--text); font-size: 14px; }
+.installhint__share { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 6px;
+  background: var(--surface-3); color: var(--accent); vertical-align: -6px; margin: 0 2px; }
+.installhint__close { flex: none; width: 30px; height: 30px; border-radius: 999px; display: grid; place-items: center; color: var(--text-faint); }
+.installhint__close:hover { background: var(--surface-2); }
+@media (min-width: 901px) { .installhint { display: none; } }
+
+/* -------------------------------- Native feel -------------------------------- */
+/* No gray flash on taps, no accidental text selection or long-press menus on the
+   app's controls, no double-tap zoom delay, and a light press effect on touch. */
+html { -webkit-tap-highlight-color: transparent; }
+.mobilenav, .mobile-top, .morenav, .nav, .topbar, .filterbar, .filterchips, .segmented, .btn, .iconbtn,
+.qtag, .chip, .spbtn, .alerts__opt, .usermenu, .camrow, .camcard, .shot, .lb__sheethead, .lb__edit-head,
+.panel__head, .stat__label, .installhint, .bulkbar, .dayblock__head, .drawer__grip {
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+}
+button, a, [role="button"], .shot { touch-action: manipulation; }
+@media (hover: none) {
+  .btn, .iconbtn, .qtag, .spbtn, .alerts__opt, .chip, .camcard, .morenav__item, .usermenu__item, .lb__share,
+  .mobilenav button, .segmented button { transition: transform .1s ease, opacity .1s ease; }
+  .btn:active, .iconbtn:active, .qtag:active, .spbtn:active, .alerts__opt:active, .chip:active, .camcard:active,
+  .morenav__item:active, .usermenu__item:active, .lb__share:active, .segmented button:active { transform: scale(.96); }
+  .mobilenav button:active { opacity: .6; }
+  .shot:active .shot__thumb { transform: scale(.98); transition: transform .1s ease; }
+}
+/* The Home Screen app doesn't rubber-band past the top or bottom of the page. */
+@media (display-mode: standalone) {
+  html, body { overscroll-behavior: none; }
+}

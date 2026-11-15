@@ -15,6 +15,7 @@ import { UploadDialog, SignInDialog } from "./upload.js";
 import { Comments } from "./comments.js";
 import { AccountsDialog, usePendingAccounts } from "./account.js";
 import { AlertsDialog } from "./alerts.js";
+import { InstallHint } from "./install.js";
 import { Overview } from "./views/overview.js";
 import { Gallery } from "./views/gallery.js";
 import { MapView } from "./views/mapview.js";
@@ -279,6 +280,31 @@ function App() {
     newest: captures.length ? timeAgo(captures[0].date) : null,
   };
 
+  // Opening the app clears the number on its Home Screen icon (alerts since last open).
+  useEffect(() => {
+    const clear = () => {
+      if (document.visibilityState !== "visible") return;
+      if (navigator.clearAppBadge) navigator.clearAppBadge().catch(() => {});
+      if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({ type: "clear-badge" });
+      }
+    };
+    clear();
+    document.addEventListener("visibilitychange", clear);
+    return () => document.removeEventListener("visibilitychange", clear);
+  }, []);
+
+  // Ask the service worker to keep the last two days' small photo copies on the
+  // phone, so recent photos show without signal (see sw.js).
+  useEffect(() => {
+    if (!navigator.serviceWorker || !data.captures.length) return;
+    const since = Date.now() - 2 * 86400000;
+    const urls = data.captures.filter((c) => c.date.getTime() >= since && (c.thumb || c.image) && c.media !== "video")
+      .slice(0, 150).map((c) => c.thumb || c.image).filter((u) => /^https?:/.test(u));
+    if (!urls.length) return;
+    navigator.serviceWorker.ready.then((reg) => reg.active && reg.active.postMessage({ type: "keep-photos", urls })).catch(() => {});
+  }, [data]);
+
   // A link to one photo (a buck alert opens one): "#photo=<id>" opens it in the
   // viewer. If it's newer than the loaded data, this runs again once data refreshes.
   useEffect(() => {
@@ -486,6 +512,7 @@ function App() {
 
     <${MobileNav} view=${view} setView=${setView} counts=${counts} onAlerts=${() => setAlertsOpen(true)} />
     <${PullToRefresh} onRefresh=${manualRefresh} />
+    <${InstallHint} />
 
     ${lbItem && html`<${Lightbox}
       capture=${lbItem}

@@ -283,12 +283,14 @@ with no copy yet simply loads the full image.
 The next runs move existing photos to R2 and remove them from the repo. Older copies
 stay in git history until that history is rewritten.
 
-## 8. Sharing photos
+## 8. Sharing photos and photos without signal
 
 The **Share** button in the photo view opens the phone's share
 sheet. Out of the box it shares a link to the photo, which Messages shows as the
-picture. To share the photo file itself (so **Save to Photos** works), let the site
-download photos from the bucket once:
+picture. Letting the site download photos from the bucket turns on two more things:
+**Share** sends the photo file itself (so **Save to Photos** works), and phones keep
+the photos they've opened plus the last two days' small copies, so recent photos
+still show at camp or in the stand with no signal. Run this once:
 
 ```
 npx wrangler r2 bucket cors set trailhub-photos --file r2-cors.json
@@ -337,7 +339,14 @@ and `sw.js` is a small service worker that keeps the app files and the latest
 `data.js` in the browser's cache. On a phone, **Share → Add to Home Screen** (iOS) or
 **Install app** (Android/Chrome) puts a Vale Trails icon on the home screen that opens
 full-screen without the browser bar. Opening it with no signal still shows the last
-photos it saw; map tiles and the photos themselves still need a connection.
+photo list it saw (and recent photos, see section 8); map tiles need a connection.
+
+People who open the site in Safari on an iPhone see a small "Get the Vale Trails
+app" note with the two taps to install it (Android Chrome gets an **Install**
+button). "Not now" hides it for 30 days. The installed app starts on a dark launch
+screen with the logo (`icons/splash`, one image per iPhone size) instead of a white
+flash, and with alerts on (section 9) its icon shows how many alerts came in since
+it was last opened.
 
 The worker always tries the network first and only uses its cache when that fails,
 so a new deploy shows up on the next open and the app never mixes old and new files.

@@ -6,7 +6,10 @@
 // Always trying the network first means a deploy is picked up on the next load
 // and the app's modules can never be served from two different versions. Photos
 // (R2), map tiles and fonts are other origins and are left to the browser cache.
-const VERSION = "vale-trails-v4";
+const VERSION = "vale-trails-v5";
+// Kept across app updates (only "vale-trails-v*" caches are replaced on update).
+const PHOTO_CACHE = "vale-photos";
+const STATE_CACHE = "vale-state";
 const SHELL = [
   "./",
   "./index.html",
@@ -25,6 +28,7 @@ const SHELL = [
   "./app/comments.js",
   "./app/account.js",
   "./app/alerts.js",
+  "./app/install.js",
   "./app/views/overview.js",
   "./app/views/gallery.js",
   "./app/views/uploads.js",
@@ -62,7 +66,9 @@ self.addEventListener("install", (event) => {
 
 self.addEventListener("activate", (event) => {
   event.waitUntil((async () => {
-    for (const name of await caches.keys()) if (name !== VERSION) await caches.delete(name);
+    for (const name of await caches.keys()) {
+      if (name.startsWith("vale-trails-") && name !== VERSION) await caches.delete(name);
+    }
     await self.clients.claim();
   })());
 });
@@ -71,6 +77,7 @@ self.addEventListener("fetch", (event) => {
   const { request } = event;
   if (request.method !== "GET") return;
   const url = new URL(request.url);
+  if (isPhoto(url)) { event.respondWith(photo(request)); return; }
   if (url.origin !== self.location.origin) return;
 
   event.respondWith((async () => {
@@ -106,13 +113,13 @@ self.addEventListener("fetch", (event) => {
 self.addEventListener("push", (event) => {
   let msg = {};
   try { msg = event.data ? event.data.json() : {}; } catch (e) { msg = { title: "Vale Trails", body: event.data && event.data.text() }; }
-  event.waitUntil(self.registration.showNotification(msg.title || "Vale Trails", {
+  event.waitUntil(Promise.all([bumpBadge().catch(() => {}), self.registration.showNotification(msg.title || "Vale Trails", {
     body: msg.body || "",
     tag: msg.tag || undefined,
     icon: "icons/icon-192.png",
     badge: "icons/icon-192.png",
     data: { url: msg.url || "./" },
-  }));
+  })]));
 });
 
 // Tapping an alert opens that photo: in the app if it's already open, else fresh.
@@ -130,4 +137,89 @@ self.addEventListener("notificationclick", (event) => {
     }
     return self.clients.openWindow(target);
   })());
+});
+
+/* --------------------------- Photos without signal --------------------------
+   Photos (R2) are kept on the phone as they're seen, plus the small copies from the
+   last two days (the app asks for those), so recent photos still show at camp or in
+   the stand. A photo never changes once taken, so a kept copy is used as is.
+   This needs the bucket to allow the site to download photos (README: r2-cors.json).
+   Whether it does is checked once a day with a separate URL, so the check can never
+   get in the way of a photo on screen; until then photos load exactly as before. */
+const PHOTO_MAX = 600;
+const isPhoto = (url) => /.r2.dev$/.test(url.hostname) && /.(jpe?g|png|webp)$/i.test(url.pathname);
+
+async function readState(key) {
+  const hit = await (await caches.open(STATE_CACHE)).match("/state/" + key);
+  return hit ? hit.json() : null;
+}
+async function writeState(key, value) {
+  await (await caches.open(STATE_CACHE)).put("/state/" + key, new Response(JSON.stringify(value)));
+}
+
+let corsCheck = null;
+function photosAllowed(sampleUrl) {
+  if (!corsCheck) {
+    corsCheck = (async () => {
+      const saved = await readState("photo-cors");
+      if (saved && Date.now() - saved.at < 86400000) return saved.ok;
+      let ok = false;
+      try { ok = (await fetch(sampleUrl + "?offline-check=" + Date.now(), { mode: "cors", cache: "no-store" })).ok; } catch (e) {}
+      await writeState("photo-cors", { ok, at: Date.now() });
+      return ok;
+    })();
+  }
+  return corsCheck;
+}
+
+let puts = 0;
+async function keep(cache, url, res) {
+  await cache.put(url, res);
+  if (++puts % 25) return;
+  const keys = await cache.keys();
+  for (const k of keys.slice(0, Math.max(0, keys.length - PHOTO_MAX))) await cache.delete(k);
+}
+
+async function photo(request) {
+  if (new URL(request.url).search) return fetch(request); // checks like ?share-check: never kept
+  const cache = await caches.open(PHOTO_CACHE);
+  const hit = await cache.match(request.url);
+  if (hit) return hit;
+  if (await photosAllowed(request.url)) {
+    try {
+      const res = await fetch(request.url, { mode: "cors", credentials: "omit" });
+      if (res.ok) keep(cache, request.url, res.clone()).catch(() => {});
+      return res;
+    } catch (e) { /* offline or refused: fall through */ }
+  }
+  return fetch(request);
+}
+
+// The app sends the photos worth having offline (recent small copies).
+self.addEventListener("message", (event) => {
+  const msg = event.data || {};
+  if (msg.type !== "keep-photos" || !Array.isArray(msg.urls) || !msg.urls.length) return;
+  event.waitUntil((async () => {
+    if (!(await photosAllowed(msg.urls[0]))) return;
+    const cache = await caches.open(PHOTO_CACHE);
+    for (const u of msg.urls.slice(0, 200)) {
+      if (await cache.match(u)) continue;
+      try {
+        const res = await fetch(u, { mode: "cors", credentials: "omit" });
+        if (res.ok) await keep(cache, u, res);
+      } catch (e) { return; } // offline: try again next time
+    }
+  })());
+});
+
+/* ------------------------------ Icon badge ----------------------------------
+   The number on the Home Screen icon: alerts since the app was last opened.
+   The app clears it when it opens (iOS 16.4+ with notifications allowed). */
+async function bumpBadge() {
+  const n = ((await readState("badge")) || 0) + 1;
+  await writeState("badge", n);
+  if (self.navigator.setAppBadge) await self.navigator.setAppBadge(n).catch(() => {});
+}
+self.addEventListener("message", (event) => {
+  if ((event.data || {}).type === "clear-badge") event.waitUntil(writeState("badge", 0));
 });
