@@ -1214,3 +1214,26 @@ button.actrow__name:hover { color: var(--accent); }
   .shot__cam-full { display: none; }
   .shot__cam-short { display: inline; }
 }
+
+/* Zoom: click the photo (desktop), double-tap or pinch (phones), or the toolbar
+   button beside full screen. The level shows in a small chip while zoomed. */
+.lb__zoombar { display: none; }
+.lb__zoom { cursor: zoom-in; }
+.lb__zoom.is-zoomed { cursor: zoom-out; }
+.lb__zoom.is-zoomed.is-moving { cursor: grabbing; }
+.lb__zoomtoggle { position: absolute; top: 18px; right: 118px; z-index: 3; }
+.lb__zoomtoggle .iconbtn, .lb__close .iconbtn { color: #fff; background: rgba(8,12,10,.65); border-color: rgba(255,255,255,.16); }
+.lb__zoomtoggle .iconbtn:hover, .lb__close .iconbtn:hover { background: rgba(8,12,10,.9); color: #fff; }
+.lb__zoomlevel {
+  position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 2; min-width: 0;
+  padding: 5px 11px; border-radius: 999px; background: rgba(8,12,10,.72); color: #eef3ef;
+  font-size: 12.5px; line-height: 1.2; font-variant-numeric: tabular-nums; pointer-events: none;
+  animation: fade .15s var(--ease), zoomHintOut .4s 1.2s forwards;
+}
+.lb.is-immersive .lb__zoomtoggle { position: fixed; top: max(16px, env(safe-area-inset-top, 0px)); right: calc(max(16px, env(safe-area-inset-right, 0px)) + 100px); }
+.lb.is-immersive .lb__zoomtoggle { transition: opacity .3s ease; }
+.lb.is-immersive.is-nav-idle .lb__zoomtoggle { opacity: 0; pointer-events: none; }
+@media (max-width: 900px) {
+  .lb__zoomtoggle { position: fixed; top: calc(8px + env(safe-area-inset-top, 0px)); right: 108px; }
+  .lb.is-dragging .lb__zoomtoggle { opacity: 0; }
+}

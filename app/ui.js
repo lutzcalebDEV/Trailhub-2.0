@@ -481,7 +481,7 @@ const formatZoom = (s) => (Math.round(s * 10) / 10).toString().replace(/\.0$/, "
 
 // A photo you can pinch, double-tap, scroll or drag to zoom and pan. The frame keeps
 // its size and clips the enlarged photo, so zooming never covers the details panel.
-// `controls` receives zoomIn / zoomOut / reset for keyboard shortcuts.
+// `controls` receives zoomIn / zoomOut / reset / toggle for the keys and toolbar button.
 export function ZoomImage({ capture, alt, onZoomChange, controls }) {
   const frame = useRef(null);
   const [view, setView] = useState({ s: 1, x: 0, y: 0 });
@@ -492,7 +492,6 @@ export function ZoomImage({ capture, alt, onZoomChange, controls }) {
   const pointers = useRef(new Map());
   const gesture = useRef(null);
   const lastTap = useRef(null);
-  const lastTouchEnd = useRef(0);
 
   // Keep the photo covering the frame: no empty gaps at the edges while zoomed.
   const clamp = (s, x, y) => {
@@ -522,7 +521,8 @@ export function ZoomImage({ capture, alt, onZoomChange, controls }) {
   const zoomOut = () => { const m = middle(); zoomAt(viewRef.current.s / ZOOM_STEP, m.x, m.y); };
   const reset = () => setView({ s: 1, x: 0, y: 0 });
   const toggleAt = (p) => (viewRef.current.s > 1 ? reset() : zoomAt(TAP_ZOOM, p.x, p.y));
-  if (controls) controls.current = { zoomIn, zoomOut, reset };
+  const toggle = () => toggleAt(middle());
+  if (controls) controls.current = { zoomIn, zoomOut, reset, toggle };
 
   const zoomed = view.s > 1;
   useEffect(() => { if (onZoomChange) onZoomChange(zoomed); }, [zoomed]);
@@ -571,7 +571,7 @@ export function ZoomImage({ capture, alt, onZoomChange, controls }) {
     if (shown >= HINT_TIMES) return;
     try { localStorage.setItem(HINT_KEY, String(shown + 1)); } catch (e) {}
     const touch = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
-    setHint(touch ? "Pinch or double-tap to zoom" : "Scroll or double-click to zoom");
+    setHint(touch ? "Pinch or double-tap to zoom" : "Click to zoom, scroll for more");
     const t = setTimeout(() => setHint(null), 3200);
     return () => clearTimeout(t);
   }, []);
@@ -632,8 +632,12 @@ export function ZoomImage({ capture, alt, onZoomChange, controls }) {
     pointers.current.delete(e.pointerId);
     setMoving(false);
     startGesture(); // a pinch that drops to one finger carries on as a pan
-    if (e.pointerType === "mouse" || e.type !== "pointerup") return;
-    lastTouchEnd.current = e.timeStamp;
+    if (e.type !== "pointerup") return;
+    // Mouse: one click zooms in on that spot, or back out. A drag (to pan) isn't a click.
+    if (e.pointerType === "mouse") {
+      if (wasTap) { setHint(null); toggleAt(local(e)); }
+      return;
+    }
     if (!wasTap || pointers.current.size) { lastTap.current = null; return; }
     const p = local(e);
     const prev = lastTap.current;
@@ -646,26 +650,15 @@ export function ZoomImage({ capture, alt, onZoomChange, controls }) {
     }
   };
 
-  const onDoubleClick = (e) => {
-    // Phones can also send a double-click after a double-tap; that one is handled.
-    if (e.timeStamp - lastTouchEnd.current < 700) return;
-    setHint(null);
-    toggleAt(local(e));
-  };
-
-  const stop = (e) => e.stopPropagation();
+  // Zooming is done on the photo itself (click, double-tap, pinch, scroll) or with the
+  // zoom button in the viewer's top bar. The level shows briefly while it changes.
   return html`<div ref=${frame} className=${cx("lb__zoom", zoomed && "is-zoomed", moving && "is-moving")}
       onPointerDown=${onPointerDown} onPointerMove=${onPointerMove}
-      onPointerUp=${onPointerEnd} onPointerCancel=${onPointerEnd} onDoubleClick=${onDoubleClick}>
+      onPointerUp=${onPointerEnd} onPointerCancel=${onPointerEnd}>
     <img className="lb__img" src=${capture.image} alt=${alt} draggable=${false}
       style=${{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.s})` }} />
     ${hint && html`<span className="lb__zoomhint" role="status">${hint}</span>`}
-    <div className="lb__zoombar" onPointerDown=${stop} onDoubleClick=${stop}>
-      <button type="button" onClick=${zoomOut} disabled=${!zoomed} aria-label="Zoom out" title="Zoom out (−)">−</button>
-      <span className="lb__zoomlevel" aria-live="polite">${formatZoom(view.s)}</span>
-      <button type="button" onClick=${zoomIn} disabled=${view.s >= MAX_ZOOM} aria-label="Zoom in" title="Zoom in (+)">+</button>
-      ${zoomed && html`<button type="button" className="lb__zoomreset" onClick=${reset} title="Reset zoom (0)">Reset</button>`}
-    </div>
+    ${zoomed && html`<span className="lb__zoomlevel" key=${view.s} aria-live="polite">${formatZoom(view.s)}</span>`}
   </div>`;
 }
 
@@ -853,6 +846,11 @@ export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggle
             onZoomChange=${setZoomed} controls=${zoomControls} />`
         : html`<div className="shot__noimg" style=${{ width: "60vw", height: "60vh" }}>No image available</div>`}
       <div className="lb__close"><${IconBtn} icon="x" onClick=${onClose} aria-label="Close" /></div>
+      ${c.image && c.media !== "video" && html`<div className="lb__zoomtoggle">
+        <${IconBtn} icon=${zoomed ? "zoomOut" : "zoomIn"} onClick=${() => zoomControls.current && zoomControls.current.toggle()}
+          aria-label=${zoomed ? "Zoom out" : "Zoom in"} aria-pressed=${zoomed}
+          title=${zoomed ? "Zoom out (0)" : "Zoom in (+)"} />
+      </div>`}
       ${c.image && (c.media !== "video" || immersive) && html`<div className="lb__fullscreen">
         <${IconBtn} icon=${immersive ? "shrink" : "expand"} onClick=${toggleFullscreen}
           aria-label=${immersive ? "Exit full screen" : "Full screen"}
