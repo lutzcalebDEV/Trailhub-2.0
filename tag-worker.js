@@ -44,6 +44,7 @@
 //   POST /register    with { "user": "...", "password": "..." } -> a pending account
 //   GET  /accounts    (admin) -> { accounts: [{ name, status, admin, created }], enabled }
 //   POST /accounts    (admin) with { "user": "...", "action": "approve"|"remove"|"admin"|"unadmin" }
+//                     ("remove" with "uploads": true also deletes everything they uploaded)
 //   Writes take "Authorization: Bearer <token>" (or Basic, for older copies of the site).
 //   POST /thumb       ?id=up_<uuid>  body: a small JPEG preview, stored as <id>_t.jpg
 //   POST /upload      stores one JPEG or video in R2 and lists it in uploads.json;
@@ -51,6 +52,7 @@
 //                     camera, species, and optionally comment, author, buck, thumb=1
 //   POST /uploads     with { "id": "up_...", "camera": "...", "date": "...", "species": "..." }
 //                     to edit an upload, or { "id": "up_...", "remove": true } to delete it
+//                     (only the person who added it, or an admin)
 //   GET  /comments    -> { "<photoId>": [{ id, text, author, at }], ... }
 //   POST /comments    with { "photo": "...", "text": "...", "author": "..." }
 //                     or { "photo": "...", "remove": "<commentId>" }
@@ -415,7 +417,22 @@ async function listAccounts(env) {
   return out.sort((a, b) => (a.status === b.status ? a.name.localeCompare(b.name) : a.status === "pending" ? -1 : 1));
 }
 
-// Admins approve, decline/remove, and promote or demote accounts.
+// Turns off alerts on every phone that signed up for them under this account.
+async function dropPushFor(env, user) {
+  const name = String(user).toLowerCase();
+  let cursor;
+  do {
+    const page = await env.ACCOUNTS.list({ prefix: "push:", cursor });
+    for (const k of page.keys) {
+      const entry = await env.ACCOUNTS.get(k.name, "json");
+      if (entry && String(entry.user || "").toLowerCase() === name) await env.ACCOUNTS.delete(k.name);
+    }
+    cursor = page.list_complete ? undefined : page.cursor;
+  } while (cursor);
+}
+
+// Admins approve, decline/remove, and promote or demote accounts. Removing can
+// also delete everything that person uploaded ({ uploads: true }).
 async function handleAccounts(request, env, who) {
   if (!who.admin) return json({ error: "Only an admin can manage accounts." }, 403);
   if (!env.ACCOUNTS) return json({ accounts: [], enabled: false });
@@ -425,8 +442,17 @@ async function handleAccounts(request, env, who) {
   const action = payload && payload.action;
   const acct = await getAccount(env, user);
   if (!acct) return json({ error: "No such account." }, 404);
+  let removedUploads = [];
   if (action === "remove") {
+    if (payload.uploads) {
+      const name = acct.name.toLowerCase();
+      const result = await removeUploads(env, (r) => String(r.by || "").toLowerCase() === name,
+        `Remove uploads by ${acct.name}`);
+      if (!result.ok) return json({ error: result.error }, result.status);
+      removedUploads = result.ids;
+    }
     await env.ACCOUNTS.delete(accountKey(user));
+    await dropPushFor(env, acct.name);
   } else if (action === "approve" || action === "admin" || action === "unadmin") {
     if (action === "approve") { acct.status = "approved"; acct.approvedBy = who.user; }
     if (action === "admin") acct.admin = true;
@@ -435,7 +461,7 @@ async function handleAccounts(request, env, who) {
   } else {
     return json({ error: "Unknown action." }, 400);
   }
-  return json({ ok: true, accounts: await listAccounts(env), enabled: true });
+  return json({ ok: true, accounts: await listAccounts(env), enabled: true, removedUploads });
 }
 
 // Per-IP rate limiting through a Workers Rate Limiting binding (wrangler.toml).
@@ -534,7 +560,7 @@ async function handleThumb(request, env) {
   return json({ ok: true, id });
 }
 
-async function handleUpload(request, env) {
+async function handleUpload(request, env, who) {
   if (!env.PHOTOS || !env.R2_PUBLIC_BASE_URL) return json({ error: "Photo storage isn't set up." }, 503);
   const bytes = new Uint8Array(await request.arrayBuffer());
   const kind = sniffMedia(bytes);
@@ -563,6 +589,7 @@ async function handleUpload(request, env) {
     image: `${base}/${key}`,
     camera: cleanName(query.get("camera")) || "Other camera",
     species: buck ? "Buck" : cleanTags([query.get("species")])[0] || "Animal",
+    by: who.user,
   };
   // Only list a preview that really exists, so a tile can never point at nothing.
   if (query.get("thumb") === "1" && (await env.PHOTOS.head(`${id}_t.jpg`))) {
@@ -586,44 +613,77 @@ async function handleUpload(request, env) {
   return json({ ok: true, id, image: record.image, thumb: record.thumb || null });
 }
 
-// Fix an upload's camera, date or animal, or remove it (file, preview, and every
-// note, tag and comment attached to it). The login is shared, so anyone signed in
-// can edit any upload.
-async function handleUploadEdit(request, env) {
+// Who may change an upload: an admin, or the person who added it. Uploads from
+// before uploads were signed (no "by") belong to the shared login, so admins only.
+const mayEditUpload = (who, record) =>
+  who.admin || (!!record.by && String(record.by).toLowerCase() === String(who.user).toLowerCase());
+
+// Removes uploads (file, preview, and every note, tag and comment attached to them)
+// in one commit per file. `pick(record, id)` chooses which. Returns the removed ids.
+async function removeUploads(env, pick, message) {
+  const removed = [];
+  const result = await saveEntry(env, UPLOADS_FILE, (data) => {
+    removed.length = 0;
+    for (const [id, record] of Object.entries(data)) {
+      if (record && pick(record, id)) { removed.push({ id, image: record.image }); delete data[id]; }
+    }
+    if (!removed.length) return false;
+  }, message);
+  if (!result.ok) return result;
+  if (!removed.length) return { ok: true, ids: [] };
+  if (env.PHOTOS) {
+    const keys = [];
+    for (const r of removed) {
+      keys.push(`${r.id}_t.jpg`);
+      try { keys.push(decodeURIComponent(new URL(r.image).pathname.slice(1))); } catch (_) {}
+    }
+    await Promise.all(keys.map((k) => env.PHOTOS.delete(k).catch(() => {})));
+  }
+  const ids = removed.map((r) => r.id);
+  const drop = (data) => {
+    let changed = false;
+    for (const id of ids) if (id in data) { delete data[id]; changed = true; }
+    if (!changed) return false;
+  };
+  const label = ids.length === 1 ? ids[0] : `${ids.length} uploads`;
+  await saveEntry(env, COMMENTS_FILE, drop, `Remove comments on ${label}`);
+  await saveEntry(env, TAGS_FILE, drop, `Remove tags on ${label}`);
+  await saveEntry(env, META_FILE, drop, `Remove metadata on ${label}`);
+  await dispatchUpdate(env).catch(() => {});
+  return { ok: true, ids };
+}
+
+// Fix an upload's camera, date or animal, or remove it. Members can change only
+// their own uploads; admins can change any.
+async function handleUploadEdit(request, env, who) {
   const payload = await request.json().catch(() => null);
   const id = payload && String(payload.id || "");
   if (!UPLOAD_ID.test(id)) return json({ error: "Missing id." }, 400);
+  const notYours = json({ error: "Only an admin or the person who added this can change it." }, 403);
 
   if (payload.remove) {
-    let record = null;
-    const result = await saveEntry(env, UPLOADS_FILE, (data) => {
-      record = data[id] || null;
-      if (!record) return false;
-      delete data[id];
+    let denied = false;
+    const result = await removeUploads(env, (record, key) => {
+      if (key !== id) return false;
+      if (!mayEditUpload(who, record)) { denied = true; return false; }
+      return true;
     }, `Remove uploaded photo ${id}`);
+    if (denied) return notYours;
     if (!result.ok) return json({ error: result.error }, result.status);
-    if (record && env.PHOTOS) {
-      const keys = [`${id}_t.jpg`];
-      try { keys.push(decodeURIComponent(new URL(record.image).pathname.slice(1))); } catch (_) {}
-      await Promise.all(keys.map((k) => env.PHOTOS.delete(k).catch(() => {})));
-    }
-    const drop = (data) => { if (!(id in data)) return false; delete data[id]; };
-    await saveEntry(env, COMMENTS_FILE, drop, `Remove comments on ${id}`);
-    await saveEntry(env, TAGS_FILE, drop, `Remove tags on ${id}`);
-    await saveEntry(env, META_FILE, drop, `Remove metadata on ${id}`);
-    await dispatchUpdate(env).catch(() => {});
     return json({ ok: true, id, removed: true });
   }
 
-  let record = null;
+  let record = null, denied = false;
   const result = await saveEntry(env, UPLOADS_FILE, (data) => {
     const cur = data[id];
     if (!cur) return false;
+    if (!mayEditUpload(who, cur)) { denied = true; return false; }
     if (payload.camera != null) cur.camera = cleanName(payload.camera) || "Other camera";
     if (payload.date != null) cur.date = cleanDate(payload.date, Date.parse(cur.date) || Date.now());
     if (payload.species != null) cur.species = cleanTags([payload.species])[0] || "Animal";
     record = cur;
   }, `Edit uploaded photo ${id}`);
+  if (denied) return notYours;
   if (!result.ok) return json({ error: result.error }, result.status);
   if (!record) return json({ error: "No such upload." }, 404);
   await dispatchUpdate(env).catch(() => {});
@@ -840,8 +900,8 @@ export default {
       }
       if (request.method !== "POST") return json({ error: "Method not allowed." }, 405);
       if (path === "/thumb") return await handleThumb(request, env);
-      if (path === "/upload") return await handleUpload(request, env);
-      if (path === "/uploads") return await handleUploadEdit(request, env);
+      if (path === "/upload") return await handleUpload(request, env, who);
+      if (path === "/uploads") return await handleUploadEdit(request, env, who);
       if (path === "/comments") return await handleComment(request, env);
 
       const payload = await request.json().catch(() => null);

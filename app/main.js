@@ -732,8 +732,13 @@ function App() {
       onSignIn=${() => { setAlertsOpen(false); openSignIn("Sign in to turn on alerts."); }}
       onSignedOut=${() => { setAlertsOpen(false); setUploadAuth(null); openSignIn("Your session ended. Sign in again."); }} />`}
 
-    ${accountsOpen && uploadAuth && html`<${AccountsDialog} auth=${uploadAuth} showToast=${showToast}
+    ${accountsOpen && uploadAuth && html`<${AccountsDialog} auth=${uploadAuth} showToast=${showToast} uploads=${uploads}
       onClose=${() => setAccountsOpen(false)} onChanged=${refreshPending}
+      onUploadsRemoved=${(ids) => setUploadEdits((m) => {
+        const next = { ...m };
+        for (const id of ids) next[String(id)] = { removed: true, at: Date.now() };
+        return next;
+      })}
       onSignedOut=${() => { setAccountsOpen(false); setUploadAuth(null); openSignIn("Your session ended. Sign in again."); }} />`}
 
     ${signIn && html`<${SignInDialog} message=${signIn.message} onDone=${signedIn} onClose=${() => setSignIn(null)} />`}

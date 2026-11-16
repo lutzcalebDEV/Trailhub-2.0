@@ -4,7 +4,7 @@
 import { html, useEffect, useRef, useState, Fragment } from "./react.js";
 import { Icon } from "./icons.js";
 import {
-  speciesColor, fmtDate, fmtDateTime, timeAgo, labelHour, isoDay, TAG_OPTIONS, toLocalInput,
+  speciesColor, fmtDate, fmtDateTime, timeAgo, labelHour, isoDay, TAG_OPTIONS, toLocalInput, canEditUpload,
 } from "./core.js";
 
 const cx = (...xs) => xs.filter(Boolean).join(" ");
@@ -416,11 +416,12 @@ export function LightboxEdit({ capture, species, meta, onMeta, onToggleFavorite,
   </div>`;
 }
 
-// Fix or remove a photo someone added with the Upload button. The login is shared,
-// so anyone signed in can edit any upload; the Animal field above handles species.
+// Fix or remove a photo someone added with the Upload button. The person who added
+// it and admins can edit or delete it; the Animal field above handles species.
 const OTHER_CAMERA = "Other camera";
 export function UploadEdit({ capture, cameras, camName, auth, onSignIn, onEdit, onDelete }) {
   const c = capture;
+  const mine = canEditUpload(auth, c);
   const [camera, setCamera] = useState(c.camera);
   const [when, setWhen] = useState(toLocalInput(c.date));
   const [busy, setBusy] = useState(false);
@@ -444,10 +445,11 @@ export function UploadEdit({ capture, cameras, camName, auth, onSignIn, onEdit, 
 
   return html`<div className="lb__edit lb__upload">
     <div className="lb__edit-head">
-      <span className="lb__edit-title"><${Icon} name="upload" size=${14} />Upload</span>
+      <span className="lb__edit-title"><${Icon} name="upload" size=${14} />${c.uploadedBy ? `Added by ${c.uploadedBy}` : "Upload"}</span>
       ${!auth && html`<button className="lb__link" onClick=${onSignIn}>Sign in to edit or delete</button>`}
     </div>
-    ${auth && html`<${Fragment}>
+    ${auth && !mine && html`<p className="form-note">Only ${c.uploadedBy || "an admin"}${c.uploadedBy ? " or an admin" : ""} can change this upload.</p>`}
+    ${mine && html`<${Fragment}>
       <div className="lb__corrections">
         <label className="lb__field">
           <span><${Icon} name="camera" size=${13} />Camera</span>

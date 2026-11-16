@@ -83,9 +83,17 @@ export function usePendingAccounts(auth, tick) {
 }
 
 /* ---------------------------- Accounts dialog ---------------------------- */
-export function AccountsDialog({ auth, onClose, onChanged, onSignedOut, showToast }) {
+export function AccountsDialog({ auth, uploads = [], onClose, onChanged, onUploadsRemoved, onSignedOut, showToast }) {
   const [state, setState] = useState({ loading: true, accounts: [], enabled: true, error: "" });
   const [busy, setBusy] = useState("");
+  const [confirming, setConfirming] = useState("");
+  // How many photos and videos each person has added, by lowercased name.
+  const added = {};
+  for (const u of uploads) {
+    if (u.uploadedBy) added[u.uploadedBy.toLowerCase()] = (added[u.uploadedBy.toLowerCase()] || 0) + 1;
+  }
+  const addedBy = (name) => added[name.toLowerCase()] || 0;
+  const plural = (n) => `${n} upload${n === 1 ? "" : "s"}`;
 
   useEffect(() => {
     let alive = true;
@@ -99,12 +107,14 @@ export function AccountsDialog({ auth, onClose, onChanged, onSignedOut, showToas
     return () => { alive = false; };
   }, [auth]);
 
-  const act = async (name, action, done) => {
-    if (action === "remove" && !window.confirm(`Remove ${name}? They won't be able to sign in any more.`)) return;
+  const act = async (name, action, done, extra) => {
+    if (action === "remove" && !extra && !window.confirm(`Remove ${name}? They won't be able to sign in any more.`)) return;
     setBusy(name);
     try {
-      const r = await accountAction(auth, name, action);
+      const r = await accountAction(auth, name, action, extra);
       setState((s) => ({ ...s, accounts: r.accounts || s.accounts }));
+      setConfirming("");
+      if (r.removedUploads && r.removedUploads.length && onUploadsRemoved) onUploadsRemoved(r.removedUploads);
       showToast("ok", done);
       onChanged();
     } catch (e) {
@@ -145,18 +155,38 @@ export function AccountsDialog({ auth, onClose, onChanged, onSignedOut, showToas
               <div className="acctrow">
                 <div className="acctrow__body"><b>${auth.user}</b><small>You${auth.admin ? " · admin" : ""}</small></div>
               </div>
-              ${approved.filter((a) => a.name.toLowerCase() !== auth.user.toLowerCase()).map((a) => html`<div key=${a.name} className="acctrow">
-                <div className="acctrow__body">
-                  <b>${a.name}</b>
-                  <small>${a.admin ? "Admin" : "Member"}${a.approvedBy ? ` · approved by ${a.approvedBy}` : ""}</small>
-                </div>
-                <${Btn} sm variant="ghost" disabled=${busy === a.name}
-                  onClick=${() => act(a.name, a.admin ? "unadmin" : "admin", a.admin ? `${a.name} is a member now` : `${a.name} is an admin now`)}>
-                  ${a.admin ? "Make member" : "Make admin"}
-                </${Btn}>
-                <${Btn} sm className="lb__danger" icon="trash" disabled=${busy === a.name} aria-label=${`Remove ${a.name}`}
-                  onClick=${() => act(a.name, "remove", `Removed ${a.name}`)} />
-              </div>`)}
+              ${approved.filter((a) => a.name.toLowerCase() !== auth.user.toLowerCase()).map((a) => {
+                const n = addedBy(a.name);
+                if (confirming === a.name) {
+                  return html`<div key=${a.name} className="acctrow is-pending" style=${{ flexWrap: "wrap" }}>
+                    <div className="acctrow__body">
+                      <b>Remove ${a.name}?</b>
+                      <small>They won't be able to sign in any more${n ? `. They've added ${plural(n)}.` : "."}</small>
+                    </div>
+                    <div className="row" style=${{ gap: 6, flexWrap: "wrap" }}>
+                      ${n > 0 && html`<${Btn} sm className="lb__danger" icon="trash" disabled=${busy === a.name}
+                        onClick=${() => act(a.name, "remove", `Removed ${a.name} and ${plural(n)}`, { uploads: true })}>
+                        Remove and delete ${plural(n)}</${Btn}>`}
+                      <${Btn} sm variant=${n ? "ghost" : undefined} className=${n ? "" : "lb__danger"} disabled=${busy === a.name}
+                        onClick=${() => act(a.name, "remove", `Removed ${a.name}`, { uploads: false })}>
+                        ${n ? "Remove, keep uploads" : "Remove"}</${Btn}>
+                      <${Btn} sm variant="ghost" disabled=${busy === a.name} onClick=${() => setConfirming("")}>Cancel</${Btn}>
+                    </div>
+                  </div>`;
+                }
+                return html`<div key=${a.name} className="acctrow">
+                  <div className="acctrow__body">
+                    <b>${a.name}</b>
+                    <small>${a.admin ? "Admin" : "Member"}${n ? ` · ${plural(n)}` : ""}${a.approvedBy ? ` · approved by ${a.approvedBy}` : ""}</small>
+                  </div>
+                  <${Btn} sm variant="ghost" disabled=${busy === a.name}
+                    onClick=${() => act(a.name, a.admin ? "unadmin" : "admin", a.admin ? `${a.name} is a member now` : `${a.name} is an admin now`)}>
+                    ${a.admin ? "Make member" : "Make admin"}
+                  </${Btn}>
+                  <${Btn} sm className="lb__danger" icon="trash" disabled=${busy === a.name} aria-label=${`Remove ${a.name}`}
+                    onClick=${() => setConfirming(a.name)} />
+                </div>`;
+              })}
             </section>
             <p className="form-note">Admins can approve sign-ups and manage accounts. The shared login is always an admin.</p>
           </div>`}

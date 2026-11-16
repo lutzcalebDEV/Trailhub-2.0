@@ -1101,6 +1101,7 @@ def load_uploads():
             "confidence": None,
             "moon": None,
             "uploadedBySite": True,
+            "uploadedBy": str(item.get("by") or "") or None,
             "media": "video" if item.get("media") == "video" else "photo",
         })
     return out

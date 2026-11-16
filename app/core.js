@@ -124,6 +124,7 @@ function normalizePayload(d) {
         tempEstimated: !!c.tempEstimated,
         media: c.media === "video" ? "video" : "photo",
         uploadedBySite: !!c.uploadedBySite,
+        uploadedBy: c.uploadedBy || null,
         weather: c.weather || null,
         temp: c.temp == null ? null : c.temp,
         moon: c.moon || moonFromDate(date),
@@ -302,7 +303,12 @@ export async function loadAccounts(auth) {
   if (!r.ok) throw new Error("Couldn't load accounts (" + r.status + ")");
   return r.json();
 }
-export const accountAction = (auth, user, action) => postJSON(TAGS_API + "/accounts", { user, action }, auth);
+export const accountAction = (auth, user, action, extra) => postJSON(TAGS_API + "/accounts", { user, action, ...extra }, auth);
+
+// Who may edit or delete an upload: an admin, or the person who added it. Uploads
+// from before names were recorded belong to the shared login, so admins only.
+export const canEditUpload = (auth, capture) =>
+  !!auth && (!!auth.admin || (!!capture.uploadedBy && capture.uploadedBy.toLowerCase() === String(auth.user || "").toLowerCase()));
 
 /* ----------------------------- Push alerts ------------------------------ */
 // { enabled, publicKey } from the Worker; enabled is false until it's set up.
