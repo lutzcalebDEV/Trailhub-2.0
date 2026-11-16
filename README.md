@@ -206,12 +206,10 @@ Notes:
 - **Personal accounts.** People can ask for their own login with **Create an account**
   in the sign-in box. The request waits until an admin approves it under
   **your name → Manage accounts**; the shared login is always an admin and can make
-  others admins. To turn this on, run `npx wrangler kv namespace create ACCOUNTS`,
-  paste the id into the commented `[[kv_namespaces]]` block in `wrangler.toml`, and
-  redeploy. For a phone alert on each sign-up, set `NOTIFY_URL` to an
-  [ntfy.sh](https://ntfy.sh) topic URL (`npx wrangler secret put NOTIFY_URL`) and
-  subscribe to that topic in the ntfy app. Pick a long random topic name, because anyone who
-  knows it can read the alerts.
+  others admins. This needs the `ACCOUNTS` KV namespace in `wrangler.toml` (already
+  set up; to make a new one, run `npx wrangler kv namespace create ACCOUNTS`, put its
+  id in the `[[kv_namespaces]]` block and redeploy). Each new sign-up also sends a
+  push alert (section 9) to every admin's phone that has alerts turned on.
 - Sign-in attempts are **rate limited per IP** (5 a minute on the login route, 20 every
   10 seconds on other writes) by the two Rate Limiting bindings in `wrangler.toml`.
   Use a long passphrase anyway: the limit slows a guesser down, it doesn't stop one.

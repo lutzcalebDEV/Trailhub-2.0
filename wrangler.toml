@@ -24,18 +24,15 @@ crons = ["*/5 * * * *"]
 [vars]
 UPLOAD_USER = "valecrew"
 R2_PUBLIC_BASE_URL = "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev"
-# Push alerts: paste the public key from `node make-vapid-keys.mjs` (README section 9).
-# VAPID_PUBLIC_KEY = ""
+# Push alerts: the public key from `node make-vapid-keys.mjs` (README section 9).
+VAPID_PUBLIC_KEY = "BEaL4TNlirDj1S_DX5W7fgO9LuLlLr4eLfc2kNGMeA3ACsUdwOG0Oqel2KOgy7-SEe38xTPYTmCP7XIbIudNWvs"
 
-# Personal accounts with admin approval. Create the namespace once:
+# Personal accounts with admin approval, and each phone's alert choices. Made with:
 #   npx wrangler kv namespace create ACCOUNTS
-# then uncomment this block with the id it prints and redeploy. Without it, only the
-# shared login above works and the "Create an account" form says sign-ups are off.
-# Optional: npx wrangler secret put NOTIFY_URL   (e.g. https://ntfy.sh/<a-long-random-topic>)
-#           npx wrangler secret put SESSION_SECRET (any long random string)
-# [[kv_namespaces]]
-# binding = "ACCOUNTS"
-# id = "<paste the id here>"
+# Optional: npx wrangler secret put SESSION_SECRET (any long random string)
+[[kv_namespaces]]
+binding = "ACCOUNTS"
+id = "563e6d48ace848849a4218377eb01c5a"
 
 [[r2_buckets]]
 binding = "PHOTOS"

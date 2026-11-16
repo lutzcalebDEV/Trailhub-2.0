@@ -20,7 +20,6 @@
 //     UPLOAD_USER                the shared username (wrangler.toml [vars])
 //     UPLOAD_PASSWORD  (secret)  the shared password (this login is always an admin)
 //     SESSION_SECRET   (secret, optional) signs sign-in sessions; defaults to UPLOAD_PASSWORD
-//     NOTIFY_URL       (secret, optional) e.g. https://ntfy.sh/<topic>, pinged on new sign-ups
 //     ACCOUNTS         (KV binding, optional) turns on personal accounts + sign-up approval
 //   Then copy the Worker URL into config.js:  window.TRAILHUB_TAGS_API = "https://...workers.dev";
 //
@@ -357,11 +356,29 @@ async function handleLogin(request, env) {
   return json({ ok: true, user: who.user, admin: who.admin, token, exp });
 }
 
-// Best effort: a push to the admin's phone (e.g. an ntfy.sh topic URL) so a new
-// sign-up doesn't sit unnoticed. Set NOTIFY_URL as a Worker secret to turn it on.
+// Best effort: a push alert to every admin's phone that has alerts turned on, so a
+// new sign-up doesn't sit unnoticed. Uses the same Web Push as sighting alerts.
 async function notifyAdmins(env, text) {
-  if (!env.NOTIFY_URL) return;
-  await fetch(env.NOTIFY_URL, { method: "POST", body: text, headers: { Title: "Vale Trails" } }).catch(() => {});
+  if (!pushReady(env)) return;
+  const isAdmin = {};
+  let cursor;
+  do {
+    const page = await env.ACCOUNTS.list({ prefix: "push:", cursor });
+    for (const k of page.keys) {
+      const entry = await env.ACCOUNTS.get(k.name, "json");
+      if (!entry || !entry.sub || !entry.user) continue;
+      const name = String(entry.user).toLowerCase();
+      if (!(name in isAdmin)) {
+        const shared = await isShared(env, name);
+        const acct = shared ? null : await getAccount(env, name);
+        isAdmin[name] = shared || !!(acct && acct.status === "approved" && acct.admin);
+      }
+      if (!isAdmin[name]) continue;
+      const r = await sendPush(env, entry.sub, { title: "New account request", body: text, url: "./", tag: "signup" }).catch(() => "error");
+      if (r === "gone") await env.ACCOUNTS.delete(k.name);
+    }
+    cursor = page.list_complete ? undefined : page.cursor;
+  } while (cursor);
 }
 
 async function handleRegister(request, env) {
@@ -380,7 +397,7 @@ async function handleRegister(request, env) {
     name: user, salt: b64url(salt), hash: b64url(hash), iter: PBKDF2_ITER,
     status: "pending", admin: false, created: new Date().toISOString(),
   }));
-  await notifyAdmins(env, `${user} asked for a Vale Trails account. Open the site to approve or decline.`);
+  await notifyAdmins(env, `${user} asked for an account. Open the app to approve or decline.`);
   return json({ ok: true, pending: true });
 }
 
