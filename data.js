@@ -1,5 +1,5 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-11-16T23:01:20+00:00",
+  "generatedAt": "2026-11-16T23:46:15+00:00",
   "demo": false,
   "cameras": [
     {
@@ -2611,6 +2611,7 @@ window.TRAILHUB_DATA = {
       "confidence": null,
       "moon": null,
       "uploadedBySite": true,
+      "uploadedBy": null,
       "media": "photo",
       "tags": [
         "Buck"
@@ -2639,6 +2640,7 @@ window.TRAILHUB_DATA = {
       "confidence": null,
       "moon": null,
       "uploadedBySite": true,
+      "uploadedBy": null,
       "media": "video",
       "tags": [
         "Buck"
@@ -2667,6 +2669,7 @@ window.TRAILHUB_DATA = {
       "confidence": null,
       "moon": null,
       "uploadedBySite": true,
+      "uploadedBy": null,
       "media": "video",
       "tags": [
         "Buck"
@@ -2751,6 +2754,7 @@ window.TRAILHUB_DATA = {
       "confidence": null,
       "moon": null,
       "uploadedBySite": true,
+      "uploadedBy": null,
       "media": "video",
       "tags": [
         "Deer"
@@ -2778,6 +2782,7 @@ window.TRAILHUB_DATA = {
       "confidence": null,
       "moon": null,
       "uploadedBySite": true,
+      "uploadedBy": null,
       "media": "video",
       "tags": [
         "Buck"
@@ -2806,6 +2811,7 @@ window.TRAILHUB_DATA = {
       "confidence": null,
       "moon": null,
       "uploadedBySite": true,
+      "uploadedBy": null,
       "media": "video",
       "tags": [
         "Buck"
@@ -2833,6 +2839,7 @@ window.TRAILHUB_DATA = {
       "confidence": null,
       "moon": null,
       "uploadedBySite": true,
+      "uploadedBy": null,
       "media": "video",
       "tags": [
         "Buck"
@@ -2860,6 +2867,7 @@ window.TRAILHUB_DATA = {
       "confidence": null,
       "moon": null,
       "uploadedBySite": true,
+      "uploadedBy": null,
       "media": "video",
       "tags": [
         "Buck"
@@ -2887,6 +2895,7 @@ window.TRAILHUB_DATA = {
       "confidence": null,
       "moon": null,
       "uploadedBySite": true,
+      "uploadedBy": null,
       "media": "video",
       "tags": [
         "Buck"
@@ -2914,6 +2923,7 @@ window.TRAILHUB_DATA = {
       "confidence": null,
       "moon": null,
       "uploadedBySite": true,
+      "uploadedBy": null,
       "media": "video",
       "tags": [
         "Buck"
@@ -2941,6 +2951,7 @@ window.TRAILHUB_DATA = {
       "confidence": null,
       "moon": null,
       "uploadedBySite": true,
+      "uploadedBy": null,
       "media": "video",
       "tags": [
         "Buck"
@@ -2969,6 +2980,7 @@ window.TRAILHUB_DATA = {
       "confidence": null,
       "moon": null,
       "uploadedBySite": true,
+      "uploadedBy": null,
       "media": "video",
       "tags": [
         "Buck"
@@ -3110,6 +3122,7 @@ window.TRAILHUB_DATA = {
       "confidence": null,
       "moon": null,
       "uploadedBySite": true,
+      "uploadedBy": null,
       "media": "photo",
       "tags": [
         "Buck"
@@ -3137,6 +3150,7 @@ window.TRAILHUB_DATA = {
       "confidence": null,
       "moon": null,
       "uploadedBySite": true,
+      "uploadedBy": null,
       "media": "photo",
       "tags": [
         "Buck"
@@ -3164,6 +3178,7 @@ window.TRAILHUB_DATA = {
       "confidence": null,
       "moon": null,
       "uploadedBySite": true,
+      "uploadedBy": null,
       "media": "photo",
       "tags": [
         "Buck"
@@ -4621,6 +4636,7 @@ window.TRAILHUB_DATA = {
       "confidence": null,
       "moon": null,
       "uploadedBySite": true,
+      "uploadedBy": null,
       "media": "photo",
       "tags": [
         "Animal"
@@ -5165,6 +5181,7 @@ window.TRAILHUB_DATA = {
       "confidence": null,
       "moon": null,
       "uploadedBySite": true,
+      "uploadedBy": null,
       "media": "photo",
       "tags": [
         "Animal"
@@ -5599,6 +5616,7 @@ window.TRAILHUB_DATA = {
       "confidence": null,
       "moon": null,
       "uploadedBySite": true,
+      "uploadedBy": null,
       "media": "photo",
       "tags": [
         "Buck"
@@ -5626,6 +5644,7 @@ window.TRAILHUB_DATA = {
       "confidence": null,
       "moon": null,
       "uploadedBySite": true,
+      "uploadedBy": null,
       "media": "photo",
       "tags": [
         "Buck"
@@ -5653,6 +5672,7 @@ window.TRAILHUB_DATA = {
       "confidence": null,
       "moon": null,
       "uploadedBySite": true,
+      "uploadedBy": null,
       "media": "photo",
       "tags": [
         "Buck"
@@ -5680,6 +5700,7 @@ window.TRAILHUB_DATA = {
       "confidence": null,
       "moon": null,
       "uploadedBySite": true,
+      "uploadedBy": null,
       "media": "photo",
       "tags": [
         "Buck"
