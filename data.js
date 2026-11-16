@@ -1,5 +1,5 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-11-16T21:57:01+00:00",
+  "generatedAt": "2026-11-16T23:01:20+00:00",
   "demo": false,
   "cameras": [
     {
@@ -30,9 +30,9 @@ window.TRAILHUB_DATA = {
       "confidence": 0.85,
       "moon": null,
       "id": "sp_6afb7b656e3d8d8f12c30541",
+      "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6afb7b656e3d8d8f12c30541.jpg",
       "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6afb7b656e3d8d8f12c30541_t.jpg",
-      "overlayRead": 2,
       "tags": [
         "Doe"
       ],
@@ -59,9 +59,9 @@ window.TRAILHUB_DATA = {
       "confidence": 0.95,
       "moon": null,
       "id": "sp_6afb7b656e3d8d8f12c30543",
+      "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6afb7b656e3d8d8f12c30543.jpg",
       "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6afb7b656e3d8d8f12c30543_t.jpg",
-      "overlayRead": 2,
       "tags": [
         "Doe"
       ],
@@ -88,9 +88,9 @@ window.TRAILHUB_DATA = {
       "confidence": 0.85,
       "moon": null,
       "id": "sp_6afb7b4418f21e14711949a5",
+      "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6afb7b4418f21e14711949a5.jpg",
       "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6afb7b4418f21e14711949a5_t.jpg",
-      "overlayRead": 2,
       "tags": [
         "Doe"
       ],
@@ -117,9 +117,9 @@ window.TRAILHUB_DATA = {
       "confidence": 0.95,
       "moon": null,
       "id": "sp_6afb7b4418f21e14711949a7",
+      "overlayRead": 2,
       "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6afb7b4418f21e14711949a7.jpg",
       "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6afb7b4418f21e14711949a7_t.jpg",
-      "overlayRead": 2,
       "tags": [
         "Doe"
       ],
