@@ -4003,5 +4003,55 @@
   "confidence": 0.98,
   "label": "Squirrel",
   "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6afb79d38a904a8b7604b75b": {
+  "confidence": 0.95,
+  "label": "Squirrel",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6afb7a753f8b187975374afb": {
+  "confidence": 0.85,
+  "label": "Doe",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6afb7a753f8b187975374afd": {
+  "confidence": 0.8,
+  "label": "Doe",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6afb7a9a6e3d8d8f12c2f503": {
+  "confidence": 0.95,
+  "label": "Squirrel",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6afb7a9af2e21e5c25c3da1b": {
+  "confidence": 0.8,
+  "label": "Doe",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6afb7a9af2e21e5c25c3da1d": {
+  "confidence": 0.95,
+  "label": "Deer",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6afb7abb3665bfac5aef539c": {
+  "confidence": 0.95,
+  "label": "Doe",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6afb7abb3665bfac5aef539e": {
+  "confidence": 0.95,
+  "label": "Doe",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6afb7ad28a904a8b7604cf38": {
+  "confidence": 0.85,
+  "label": "Deer",
+  "model": "gemini-3.5-flash-lite"
+ },
+ "sp_6afb7ad28a904a8b7604cf3a": {
+  "confidence": 0.85,
+  "label": "Deer",
+  "model": "gemini-3.5-flash-lite"
  }
 }

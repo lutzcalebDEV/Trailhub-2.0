@@ -1,5 +1,5 @@
 window.TRAILHUB_DATA = {
-  "generatedAt": "2026-11-16T21:36:44+00:00",
+  "generatedAt": "2026-11-16T21:55:13+00:00",
   "demo": false,
   "cameras": [
     {
@@ -18,6 +18,206 @@ window.TRAILHUB_DATA = {
     }
   ],
   "captures": [
+    {
+      "species": "Deer",
+      "camera": "Camera 6a309e41bdc62e4448c0a370",
+      "date": "2026-11-16T21:50:55+00:00",
+      "uploaded": "2026-11-16T21:51:14.200000+00:00",
+      "timeSource": "camera",
+      "isNight": false,
+      "todSource": "tag",
+      "temp": 53,
+      "confidence": 0.85,
+      "moon": null,
+      "id": "sp_6afb7ad28a904a8b7604cf38",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6afb7ad28a904a8b7604cf38.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6afb7ad28a904a8b7604cf38_t.jpg",
+      "overlayRead": 2,
+      "tags": [
+        "Deer"
+      ],
+      "aiTagged": true
+    },
+    {
+      "species": "Deer",
+      "camera": "Camera 6a309e41bdc62e4448c0a370",
+      "date": "2026-11-16T21:50:54+00:00",
+      "uploaded": "2026-11-16T21:51:14.200000+00:00",
+      "timeSource": "camera",
+      "isNight": false,
+      "todSource": "tag",
+      "temp": 53,
+      "confidence": 0.85,
+      "moon": null,
+      "id": "sp_6afb7ad28a904a8b7604cf3a",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6afb7ad28a904a8b7604cf3a.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6afb7ad28a904a8b7604cf3a_t.jpg",
+      "overlayRead": 2,
+      "tags": [
+        "Deer"
+      ],
+      "aiTagged": true
+    },
+    {
+      "species": "Doe",
+      "camera": "Camera 6a309e41bdc62e4448c0a370",
+      "date": "2026-11-16T21:50:32+00:00",
+      "uploaded": "2026-11-16T21:50:51.434000+00:00",
+      "timeSource": "camera",
+      "isNight": false,
+      "todSource": "tag",
+      "temp": 53,
+      "confidence": 0.95,
+      "moon": null,
+      "id": "sp_6afb7abb3665bfac5aef539c",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6afb7abb3665bfac5aef539c.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6afb7abb3665bfac5aef539c_t.jpg",
+      "overlayRead": 2,
+      "tags": [
+        "Doe"
+      ],
+      "aiTagged": true
+    },
+    {
+      "species": "Doe",
+      "camera": "Camera 6a309e41bdc62e4448c0a370",
+      "date": "2026-11-16T21:50:31+00:00",
+      "uploaded": "2026-11-16T21:50:51.434000+00:00",
+      "timeSource": "camera",
+      "isNight": false,
+      "todSource": "tag",
+      "temp": 53,
+      "confidence": 0.95,
+      "moon": null,
+      "id": "sp_6afb7abb3665bfac5aef539e",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6afb7abb3665bfac5aef539e.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6afb7abb3665bfac5aef539e_t.jpg",
+      "overlayRead": 2,
+      "tags": [
+        "Doe"
+      ],
+      "aiTagged": true
+    },
+    {
+      "species": "Doe",
+      "camera": "Camera 6a309e41bdc62e4448c0a370",
+      "date": "2026-11-16T21:50:00+00:00",
+      "uploaded": "2026-11-16T21:50:18.030000+00:00",
+      "timeSource": "camera",
+      "isNight": false,
+      "todSource": "tag",
+      "temp": 53,
+      "confidence": 0.8,
+      "moon": null,
+      "id": "sp_6afb7a9af2e21e5c25c3da1b",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6afb7a9af2e21e5c25c3da1b.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6afb7a9af2e21e5c25c3da1b_t.jpg",
+      "overlayRead": 2,
+      "tags": [
+        "Doe"
+      ],
+      "aiTagged": true
+    },
+    {
+      "species": "Deer",
+      "camera": "Camera 6a309e41bdc62e4448c0a370",
+      "date": "2026-11-16T21:49:59+00:00",
+      "uploaded": "2026-11-16T21:50:18.030000+00:00",
+      "timeSource": "camera",
+      "isNight": false,
+      "todSource": "tag",
+      "temp": 53,
+      "confidence": 0.95,
+      "moon": null,
+      "id": "sp_6afb7a9af2e21e5c25c3da1d",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6afb7a9af2e21e5c25c3da1d.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6afb7a9af2e21e5c25c3da1d_t.jpg",
+      "overlayRead": 2,
+      "tags": [
+        "Deer"
+      ],
+      "aiTagged": true
+    },
+    {
+      "species": "Squirrel",
+      "camera": "Camera 6a30af992e5969f7ed9fdc5c",
+      "date": "2026-11-16T21:49:54+00:00",
+      "uploaded": "2026-11-16T21:50:18.244000+00:00",
+      "timeSource": "camera",
+      "isNight": false,
+      "todSource": "tag",
+      "temp": 56,
+      "confidence": 0.95,
+      "moon": null,
+      "id": "sp_6afb7a9a6e3d8d8f12c2f503",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6afb7a9a6e3d8d8f12c2f503.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6afb7a9a6e3d8d8f12c2f503_t.jpg",
+      "overlayRead": 2,
+      "tags": [
+        "Squirrel"
+      ],
+      "aiTagged": true
+    },
+    {
+      "species": "Doe",
+      "camera": "Camera 6a309e41bdc62e4448c0a370",
+      "date": "2026-11-16T21:49:16+00:00",
+      "uploaded": "2026-11-16T21:49:41.162000+00:00",
+      "timeSource": "camera",
+      "isNight": false,
+      "todSource": "tag",
+      "temp": 53,
+      "confidence": 0.85,
+      "moon": null,
+      "id": "sp_6afb7a753f8b187975374afb",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6afb7a753f8b187975374afb.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6afb7a753f8b187975374afb_t.jpg",
+      "overlayRead": 2,
+      "tags": [
+        "Doe"
+      ],
+      "aiTagged": true
+    },
+    {
+      "species": "Doe",
+      "camera": "Camera 6a309e41bdc62e4448c0a370",
+      "date": "2026-11-16T21:49:15+00:00",
+      "uploaded": "2026-11-16T21:49:41.162000+00:00",
+      "timeSource": "camera",
+      "isNight": false,
+      "todSource": "tag",
+      "temp": 53,
+      "confidence": 0.8,
+      "moon": null,
+      "id": "sp_6afb7a753f8b187975374afd",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6afb7a753f8b187975374afd.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6afb7a753f8b187975374afd_t.jpg",
+      "overlayRead": 2,
+      "tags": [
+        "Doe"
+      ],
+      "aiTagged": true
+    },
+    {
+      "species": "Squirrel",
+      "camera": "Camera 6a30af992e5969f7ed9fdc5c",
+      "date": "2026-11-16T21:46:17+00:00",
+      "uploaded": "2026-11-16T21:46:59.245000+00:00",
+      "timeSource": "camera",
+      "isNight": false,
+      "todSource": "tag",
+      "temp": null,
+      "confidence": 0.95,
+      "moon": null,
+      "id": "sp_6afb79d38a904a8b7604b75b",
+      "image": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6afb79d38a904a8b7604b75b.jpg",
+      "thumb": "https://pub-efcd649d08574ab882ee1e05ca5bd9b7.r2.dev/sp_6afb79d38a904a8b7604b75b_t.jpg",
+      "overlayRead": 2,
+      "tags": [
+        "Squirrel"
+      ],
+      "aiTagged": true
+    },
     {
       "species": "Squirrel",
       "camera": "Camera 6a30af992e5969f7ed9fdc5c",
