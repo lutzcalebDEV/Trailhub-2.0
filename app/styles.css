@@ -553,7 +553,26 @@ h1,h2,h3,h4 { line-height: 1.18; letter-spacing: -0.015em; font-weight: 700; }
 
 /* ------------------------------ Map view -------------------------------- */
 .mapwrap { display: grid; grid-template-columns: 300px 1fr; gap: 16px; }
-.map { height: 600px; width: 100%; border-radius: var(--r-lg); overflow: hidden; border: 1px solid var(--border); background: var(--surface-2); }
+.map { height: 600px; width: 100%; border-radius: var(--r-lg); overflow: hidden; border: 1px solid var(--border); background: var(--surface-2); isolation: isolate; }
+/* isolation keeps Leaflet's layers (z-index 400-1000) inside the map, so the map
+   scrolls under the top bar and tab bar instead of over them. */
+.mapbox { position: relative; min-width: 0; }
+.mapbox__toggle {
+  position: absolute; top: 10px; right: 10px; z-index: 2; width: 34px; height: 34px;
+  display: grid; place-items: center; border-radius: var(--r-sm); cursor: pointer;
+  background: var(--surface); color: var(--text); border: 1px solid var(--border-strong); box-shadow: var(--sh-1);
+}
+.mapbox.is-full { position: fixed; inset: 0; z-index: 55; background: var(--bg); }
+.mapbox.is-full .map { height: 100%; border: 0; border-radius: 0; }
+/* Keep Leaflet's zoom buttons and credit clear of the status bar and home indicator. */
+.mapbox.is-full .leaflet-top { top: env(safe-area-inset-top, 0px); }
+.mapbox.is-full .leaflet-bottom { bottom: env(safe-area-inset-bottom, 0px); }
+.mapbox.is-full .leaflet-left { left: env(safe-area-inset-left, 0px); }
+.mapbox.is-full .leaflet-right { right: env(safe-area-inset-right, 0px); }
+.mapbox.is-full .mapbox__toggle {
+  top: calc(12px + env(safe-area-inset-top, 0px)); right: calc(12px + env(safe-area-inset-right, 0px));
+  width: 40px; height: 40px; border-radius: 999px;
+}
 .camlist { display: flex; flex-direction: column; gap: 8px; max-height: 600px; overflow: auto; padding-right: 2px; }
 .camrow { display: flex; align-items: stretch; border-radius: var(--r-md); background: var(--surface); border: 1px solid var(--border); transition: border-color .15s, background .15s; overflow: hidden; }
 .camrow:hover { border-color: var(--border-strong); background: var(--surface-2); }
@@ -1261,6 +1280,8 @@ button.actrow__name:hover { color: var(--accent); }
   .camrow { min-width: 0; flex: none; }
   .camrow__meta { display: none; }
   .camrow__hit { padding-block: 8px; }
+  /* A shorter map leaves room to scroll; the button above it opens the full map. */
+  .mapbox:not(.is-full) .map { height: clamp(240px, 42vh, 360px); }
   .grid--stats .stat__sub { display: block; }
   .grid--stats .delta { display: inline-flex; margin-right: 3px; }
 }

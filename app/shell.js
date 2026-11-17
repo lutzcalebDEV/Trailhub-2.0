@@ -203,9 +203,11 @@ export function useSheetDrag(open, onClose) {
 
 // Phones get five tabs: four main screens and "More", a list of everything else.
 // Seven tabs at phone width made every label tiny and easy to mis-tap.
-export const MOBILE_MAIN = ["overview", "gallery", "bucks", "map", "more"];
-export const MOBILE_MORE = ["uploads", "insights", "review"];
-const TABS = [...VIEWS.filter((v) => MOBILE_MAIN.includes(v.id)), { id: "more", label: "More", icon: "grid" }];
+// Phone tab bar, in this order, then More; everything else is listed on More, also in order.
+export const MOBILE_MAIN = ["overview", "gallery", "insights", "bucks", "more"];
+export const MOBILE_MORE = ["map", "uploads", "review"];
+const viewsIn = (ids) => ids.map((id) => VIEWS.find((v) => v.id === id)).filter(Boolean);
+const TABS = [...viewsIn(MOBILE_MAIN), { id: "more", label: "More", icon: "grid" }];
 
 // The tab bar. `onTab` switches tabs, scrolls the current one to the top, or closes
 // whatever is open on top of it. Its height is shared as --tab-bar-h so pages, photos
@@ -287,13 +289,13 @@ function MoreRow({ icon, tint, label, value, badge, chevron = true, tone, onClic
   </button>`;
 }
 
-const MORE_TINT = { uploads: "#2f7de1", insights: "#e8892b", review: "#8e5bd8" };
+const MORE_TINT = { map: "#2a9d6f", uploads: "#2f7de1", review: "#8e5bd8" };
 export function MoreScreen({ more, counts, auth }) {
   const m = more || {};
   const status = m.status || {};
   return html`<div className="morepage">
     <section className="ios-group" aria-label="Pages">
-      ${VIEWS.filter((v) => MOBILE_MORE.includes(v.id)).map((v) => html`<${MoreRow} key=${v.id}
+      ${viewsIn(MOBILE_MORE).map((v) => html`<${MoreRow} key=${v.id}
         icon=${v.icon} tint=${MORE_TINT[v.id]} label=${v.label}
         badge=${v.id === "review" ? counts.review : 0} onClick=${() => m.onPush(v.id)} />`)}
     </section>

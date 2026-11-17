@@ -717,7 +717,7 @@ function App() {
     if (v !== view) clearFilters();
     setView(v);
   };
-  // Swipe from the left edge goes back from Uploads, Patterns and Identify.
+  // Swipe from the left edge goes back from the pages on More (Map, Uploads, Identify).
   useEdgeBack(MOBILE_MORE.includes(view) && !overlayOpen, swipeBack);
   const app = {
     more: {

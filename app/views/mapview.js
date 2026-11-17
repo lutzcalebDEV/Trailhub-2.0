@@ -35,6 +35,10 @@ function loadLeaflet() {
   return leafletLoad;
 }
 
+// On a touch screen one finger scrolls the page, even over the map, and two fingers
+// zoom it. Dragging the map is for the full-screen map, where nothing else scrolls.
+const coarse = () => window.matchMedia("(pointer: coarse)").matches;
+
 export function MapView(app) {
   const { data, captures, ov, filtered, filters, setFilter, setView, spList, theme, camName, renameCamera, auth, openSignIn } = app;
   const [leafletReady, setLeafletReady] = useState(() => !!window.L);
@@ -47,6 +51,7 @@ export function MapView(app) {
   const elRef = useRef(null);
   const mapRef = useRef(null);
   const layerRef = useRef(null);
+  const [full, setFull] = useState(false);
   const [editing, setEditing] = useState(null);
   const [draft, setDraft] = useState("");
 
@@ -70,7 +75,7 @@ export function MapView(app) {
   useEffect(() => {
     const L = window.L;
     if (!auth || !L || !elRef.current || !cams.length) return;
-    const map = L.map(elRef.current, { zoomControl: true, scrollWheelZoom: true });
+    const map = L.map(elRef.current, { zoomControl: true, scrollWheelZoom: true, dragging: !coarse() });
     L.tileLayer(OSM_TILES, {
       maxZoom: 19,
       attribution: OSM_CREDIT,
@@ -104,6 +109,20 @@ export function MapView(app) {
       mk.on("click", () => setFilter({ camera: filters.camera === cam.name ? "All" : cam.name }));
     });
   }, [auth, cams, countByCam, filters.camera, camName, leafletReady]);
+
+  // Full-screen map: dragging on, the page held still, Escape or the X to close.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (map && coarse()) { if (full) map.dragging.enable(); else map.dragging.disable(); }
+    requestAnimationFrame(() => { const m = mapRef.current; if (m) m.invalidateSize(); });
+    if (!full) return;
+    const root = document.documentElement;
+    const before = root.style.overflow;
+    root.style.overflow = "hidden";
+    const onKey = (e) => { if (e.key === "Escape") setFull(false); };
+    window.addEventListener("keydown", onKey);
+    return () => { root.style.overflow = before; window.removeEventListener("keydown", onKey); };
+  }, [full, leafletReady]);
 
   // Keep Leaflet sized to its container when the viewport changes — rotating a
   // phone (portrait<->landscape) or resizing the window otherwise leaves gray,
@@ -180,7 +199,14 @@ export function MapView(app) {
               </button>
             </div>`)}
       </div>
-      <div className="map" ref=${elRef} />
+      <div className=${cx("mapbox", full && "is-full")}>
+        <div className="map" ref=${elRef} />
+        <button className="mapbox__toggle" onClick=${() => setFull(!full)}
+          title=${full ? "Close the full-screen map" : "Full-screen map"}
+          aria-label=${full ? "Close the full-screen map" : "Full-screen map"}>
+          <${Icon} name=${full ? "x" : "expand"} size=${17} />
+        </button>
+      </div>
     </div>
   </div>`;
 }
