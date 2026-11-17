@@ -7,6 +7,7 @@ const P = {
   map: html`<g><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="2.6"/></g>`,
   chart: html`<g><path d="M3 3v18h18"/><rect x="7" y="11" width="3" height="6" rx="1"/><rect x="12" y="6.5" width="3" height="10.5" rx="1"/><rect x="17" y="13" width="3" height="4" rx="1"/></g>`,
   scan: html`<g><path d="M4 7V5.5A1.5 1.5 0 0 1 5.5 4H7"/><path d="M17 4h1.5A1.5 1.5 0 0 1 20 5.5V7"/><path d="M20 17v1.5a1.5 1.5 0 0 1-1.5 1.5H17"/><path d="M7 20H5.5A1.5 1.5 0 0 1 4 18.5V17"/><circle cx="12" cy="12" r="3.2"/></g>`,
+  faceid: html`<g><path d="M4 7V5.5A1.5 1.5 0 0 1 5.5 4H7"/><path d="M17 4h1.5A1.5 1.5 0 0 1 20 5.5V7"/><path d="M20 17v1.5a1.5 1.5 0 0 1-1.5 1.5H17"/><path d="M7 20H5.5A1.5 1.5 0 0 1 4 18.5V17"/><path d="M9 9v1.2M15 9v1.2"/><path d="M12.2 9v3.6h-1"/><path d="M9.3 15.2a3.8 3.8 0 0 0 5.4 0"/></g>`,
   camera: html`<g><path d="M3 8.5A2 2 0 0 1 5 6.5h1.6l1.1-2h8.6l1.1 2H19a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><circle cx="12" cy="13" r="3.2"/></g>`,
   sun: html`<g><circle cx="12" cy="12" r="4"/><path d="M12 2v2.2M12 19.8V22M4.2 4.2l1.6 1.6M18.2 18.2l1.6 1.6M2 12h2.2M19.8 12H22M4.2 19.8l1.6-1.6M18.2 5.8l1.6-1.6"/></g>`,
   moon: html`<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/>`,

@@ -28,8 +28,27 @@ function loadChosen() {
   return DEFAULT_SPECIES;
 }
 
-export function AlertsDialog({ auth, onClose, onSignIn, onSignedOut, showToast }) {
+// Which cameras alert ([] = all of them) and quiet hours, both kept per phone.
+function loadJSON(key, fallback) {
+  try { const v = JSON.parse(localStorage.getItem(key) || "null"); return v == null ? fallback : v; } catch (e) { return fallback; }
+}
+const DEFAULT_QUIET = { on: false, from: "22:00", to: "05:00" };
+const phoneTimeZone = () => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "America/New_York"; } catch (e) { return "America/New_York"; } };
+const fmtClock = (hhmm) => {
+  const [h, m] = String(hhmm).split(":").map(Number);
+  return `${h % 12 || 12}${m ? ":" + String(m).padStart(2, "0") : ""} ${h < 12 ? "am" : "pm"}`;
+};
+
+export function AlertsDialog({ auth, cameras = [], camName, onClose, onSignIn, onSignedOut, showToast }) {
   const [chosen, setChosen] = useState(loadChosen);
+  const camList = cameras.map((c) => c.name).filter(Boolean);
+  const [cams, setCams] = useState(() => (loadJSON(LS.alertCameras, []) || []).filter((c) => camList.includes(c)));
+  const [quiet, setQuiet] = useState(() => ({ ...DEFAULT_QUIET, ...loadJSON(LS.alertQuiet, {}) }));
+  useEffect(() => { try { localStorage.setItem(LS.alertCameras, JSON.stringify(cams)); } catch (e) {} }, [cams]);
+  useEffect(() => { try { localStorage.setItem(LS.alertQuiet, JSON.stringify(quiet)); } catch (e) {} }, [quiet]);
+  const toggleCam = (name) => setCams((cur) => (cur.includes(name) ? cur.filter((x) => x !== name) : [...cur, name]));
+  const quietPayload = () => (quiet.on && quiet.from !== quiet.to ? { from: quiet.from, to: quiet.to, tz: phoneTimeZone() } : null);
+  const saveSub = (s) => savePushSubscription(auth, s.toJSON(), chosen, cams, quietPayload());
   const [server, setServer] = useState(null); // { enabled, publicKey }
   const [sub, setSub] = useState(undefined); // undefined = checking, null = off
   const [busy, setBusy] = useState(false);
@@ -61,7 +80,7 @@ export function AlertsDialog({ auth, onClose, onSignIn, onSignedOut, showToast }
       const reg = await navigator.serviceWorker.ready;
       const s = (await reg.pushManager.getSubscription()) ||
         (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(server.publicKey) }));
-      await savePushSubscription(auth, s.toJSON(), chosen);
+      await saveSub(s);
       setSub(s);
       showToast("ok", "Alerts are on for this phone");
     } catch (e) { failed(e); } finally { setBusy(false); }
@@ -69,7 +88,7 @@ export function AlertsDialog({ auth, onClose, onSignIn, onSignedOut, showToast }
   const save = async () => {
     setBusy(true);
     try {
-      await savePushSubscription(auth, sub.toJSON(), chosen);
+      await saveSub(sub);
       showToast("ok", chosen.length ? "Alert choices saved" : "No species chosen: alerts paused");
     } catch (e) { failed(e); } finally { setBusy(false); }
   };
@@ -119,6 +138,30 @@ export function AlertsDialog({ auth, onClose, onSignIn, onSignedOut, showToast }
           <span className="alerts__check">${chosen.includes(sp) && html`<${Icon} name="check" size=${14} />`}</span>
         </button>`)}
       </div>
+      ${camList.length > 1 && html`<section className="col" style=${{ gap: 8 }}>
+        <div className="eyebrow">Cameras</div>
+        <div className="alerts__cams" role="group" aria-label="Cameras">
+          <button type="button" role="checkbox" aria-checked=${!cams.length}
+            className=${cx("alerts__cam", !cams.length && "is-on")} onClick=${() => setCams([])}>All cameras</button>
+          ${camList.map((c) => html`<button key=${c} type="button" role="checkbox" aria-checked=${cams.includes(c)}
+            className=${cx("alerts__cam", cams.includes(c) && "is-on")} onClick=${() => toggleCam(c)}>
+            ${camName ? camName(c) : c}</button>`)}
+        </div>
+      </section>`}
+      <section className="col" style=${{ gap: 8 }}>
+        <div className="eyebrow">Quiet hours</div>
+        <div className="alerts__quiet">
+          <label><input type="checkbox" checked=${quiet.on} onChange=${(e) => setQuiet((q) => ({ ...q, on: e.target.checked }))} />
+            No alerts from</label>
+          <input className="input" type="time" value=${quiet.from} disabled=${!quiet.on}
+            onChange=${(e) => setQuiet((q) => ({ ...q, from: e.target.value || q.from }))} aria-label="Quiet from" />
+          <span>to</span>
+          <input className="input" type="time" value=${quiet.to} disabled=${!quiet.on}
+            onChange=${(e) => setQuiet((q) => ({ ...q, to: e.target.value || q.to }))} aria-label="Quiet until" />
+        </div>
+        ${quiet.on && html`<p className="form-note faint">Sightings between ${fmtClock(quiet.from)} and ${fmtClock(quiet.to)} are skipped, not saved
+          for later. They're still in the app.</p>`}
+      </section>
       ${on
         ? html`<div className="row" style=${{ gap: 8 }}>
             <${Btn} variant="primary" disabled=${busy} onClick=${save}>${busy ? "Saving…" : "Save"}</${Btn}>

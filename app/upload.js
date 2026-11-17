@@ -5,8 +5,10 @@ import { Icon } from "./icons.js";
 import {
   hasUploads, uploadLogin, registerAccount, uploadPhoto, uploadThumb, newUploadId, displayCamera, TAG_OPTIONS,
   StorageFull, NotSignedIn, TooManyAttempts, MAX_VIDEO_BYTES, LS, usePersistent, toLocalInput,
+  passkeySignIn, passkeyCreate, passkeyTicketFresh, faceIdName,
 } from "./core.js";
 import { captureDate } from "./exif.js";
+import { usePasskeySupport, usePasskeyTicket } from "./faceid.js";
 
 const cx = (...xs) => xs.filter(Boolean).join(" ");
 const MAX_EDGE = 1600;
@@ -81,6 +83,41 @@ export function SignIn({ onDone, message }) {
   const [error, setError] = useState("");
   const registering = mode === "register";
 
+  // Face ID: a challenge is kept ready so the tap can go straight to it.
+  const faceId = usePasskeySupport();
+  const fid = faceIdName();
+  const typedUser = user.trim();
+  const validUser = /^[a-z0-9][a-z0-9_.-]{2,23}$/i.test(typedUser);
+  const [loginTicket, renewLogin] = usePasskeyTicket("login", { enabled: faceId && !registering });
+  const [signupTicket, renewSignup] = usePasskeyTicket("signup", { enabled: faceId && registering && validUser, user: typedUser });
+  const signupReady = passkeyTicketFresh(signupTicket) && signupTicket.user === typedUser;
+
+  const faceSignIn = async () => {
+    setError("");
+    setState("checking");
+    const r = await passkeySignIn(loginTicket);
+    renewLogin();
+    if (r.status === "ok") { onDone(r.auth); return; }
+    if (r.status === "cancelled") { setState("idle"); return; }
+    if (r.status === "unknown") {
+      setState("idle");
+      setError(`That ${fid} isn't linked to an account here. Sign in with your password once, then turn on ${fid} from your name in the top bar.`);
+      return;
+    }
+    setState(r.status === "pending" || r.status === "limited" ? r.status : "error");
+  };
+
+  const faceSignup = async () => {
+    setError("");
+    setState("checking");
+    const r = await passkeyCreate(signupTicket, "signup");
+    renewSignup();
+    if (r.status === "ok") { setState("requested"); return; }
+    setState("idle");
+    if (r.status === "cancelled") return;
+    setError(r.status === "limited" ? "Too many tries. Wait a minute, then try again." : r.error || "That didn't work. Try again.");
+  };
+
   const switchMode = (m) => { setMode(m); setState("idle"); setError(""); setPassword(""); setConfirm(""); };
 
   const submit = async (e) => {
@@ -111,14 +148,28 @@ export function SignIn({ onDone, message }) {
     </div>`;
   }
 
+  const busy = state === "checking";
   return html`<form className="col" style=${{ gap: 12 }} onSubmit=${submit}>
     ${registering
-      ? html`<p className="form-note">Choose a username and password. You can sign in once an admin approves the account.</p>`
+      ? html`<p className="form-note">${faceId
+          ? `Choose a username, then create the account with ${fid} or a password. You can sign in once an admin approves it.`
+          : "Choose a username and password. You can sign in once an admin approves the account."}</p>`
       : message && html`<p className="form-note">${message}</p>`}
+    ${faceId && !registering && html`
+      <${Btn} type="button" variant="primary" icon="faceid" disabled=${busy || !passkeyTicketFresh(loginTicket)} onClick=${faceSignIn}>
+        ${busy ? "Checking…" : `Sign in with ${fid}`}
+      </${Btn}>
+      <div className="or-divider">or use your password</div>`}
     <label className="field-row"><span>Username</span>
       <input className="input" autoComplete="username" autoCapitalize="none" value=${user}
         onInput=${(e) => setUser(e.target.value)} required minLength=${registering ? 3 : undefined} maxLength=${registering ? 24 : undefined} />
     </label>
+    ${faceId && registering && html`
+      ${validUser && signupTicket && signupTicket.error && html`<p className="form-error" role="alert">${signupTicket.error}</p>`}
+      <${Btn} type="button" variant="primary" icon="faceid" disabled=${busy || !signupReady} onClick=${faceSignup}>
+        ${busy ? "Checking…" : `Create with ${fid}`}
+      </${Btn}>
+      <div className="or-divider">or choose a password</div>`}
     <label className="field-row"><span>Password</span>
       <input className="input" type="password" autoComplete=${registering ? "new-password" : "current-password"} value=${password}
         onInput=${(e) => setPassword(e.target.value)} required minLength=${registering ? 8 : undefined} />
@@ -132,8 +183,8 @@ export function SignIn({ onDone, message }) {
     ${state === "limited" && html`<p className="form-error" role="alert">Too many tries. Wait a minute, then try again.</p>`}
     ${state === "error" && html`<p className="form-error" role="alert">Couldn't reach the server. Try again.</p>`}
     ${error && html`<p className="form-error" role="alert">${error}</p>`}
-    <${Btn} variant="primary" disabled=${state === "checking"}>
-      ${state === "checking" ? "Checking…" : registering ? "Request account" : "Sign in"}
+    <${Btn} variant=${faceId ? undefined : "primary"} disabled=${busy}>
+      ${busy ? "Checking…" : registering ? "Request account" : "Sign in"}
     </${Btn}>
     <p className="form-note center">
       ${registering

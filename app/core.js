@@ -321,9 +321,148 @@ export async function loadPushKey() {
     return { enabled: false, offline: true };
   }
 }
-// Save this phone's subscription with the species it wants (or remove it).
-export const savePushSubscription = (auth, subscription, species) =>
-  postJSON(TAGS_API + "/push/subscribe", { subscription, species }, auth);
+// Save this phone's subscription with the species it wants (or remove it), and
+// optionally which cameras ([] = all) and quiet hours ({ from, to, tz } or null).
+export const savePushSubscription = (auth, subscription, species, cameras = [], quiet = null) =>
+  postJSON(TAGS_API + "/push/subscribe", { subscription, species, cameras, quiet }, auth);
+
+/* --------------------------- Face ID (passkeys) -------------------------- */
+// Sign in with Face ID (Touch ID on a Mac) instead of a password. The phone keeps
+// the key in its keychain; the Worker only ever sees the public half.
+const toB64url = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+const fromB64urlBytes = (s) => {
+  const b = String(s).replace(/-/g, "+").replace(/_/g, "/");
+  return Uint8Array.from(atob(b + "===".slice((b.length + 3) % 4)), (c) => c.charCodeAt(0));
+};
+export const isAppleTouch = () => /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+  (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+// What the phone calls it, for button labels.
+export const faceIdName = () => (isAppleTouch() ? "Face ID" : /Macintosh/.test(navigator.userAgent) ? "Touch ID" : "passkey");
+const deviceLabel = () => {
+  const ua = navigator.userAgent;
+  if (/iPhone/.test(ua)) return "iPhone";
+  if (/iPad/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)) return "iPad";
+  if (/Macintosh/.test(ua)) return "Mac";
+  if (/Android/.test(ua)) return "Android";
+  if (/Windows/.test(ua)) return "Windows";
+  return "Device";
+};
+
+// Whether this device can do it at all (an iPhone with Face ID or a passcode can).
+export async function passkeyAvailable() {
+  try {
+    return !!TAGS_API && !!window.PublicKeyCredential &&
+      (await window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable());
+  } catch (e) { return false; }
+}
+
+async function passkeyPost(path, body, auth) {
+  const headers = { "Content-Type": "application/json" };
+  if (auth) headers.Authorization = authHeader(auth);
+  const r = await fetch(TAGS_API + path, { method: "POST", headers, body: JSON.stringify(body) });
+  return { status: r.status, ok: r.ok, data: await r.json().catch(() => ({})) };
+}
+
+// The one-time challenge, fetched BEFORE the tap: iPhones only show Face ID
+// straight from a tap, with no time to ask the server first. Good for ~3 minutes.
+// Returns the ticket, or { error } (e.g. a taken username), or null when offline.
+export async function getPasskeyTicket(purpose, { auth, user } = {}) {
+  try {
+    const r = await passkeyPost("/passkey/options", { purpose, user }, auth);
+    if (r.status === 401) throw new NotSignedIn("Sign in");
+    if (r.ok) return r.data;
+    return { error: r.status === 429 ? "Too many tries. Wait a minute, then try again." : r.data.error || "That didn't work." };
+  } catch (e) {
+    if (e instanceof NotSignedIn) throw e;
+    return null;
+  }
+}
+export const passkeyTicketFresh = (t) => !!t && !t.error && t.expires > Date.now();
+
+// Remember which accounts have Face ID on this device, so the app only offers to
+// set it up where it isn't yet.
+export function faceIdOn(user) {
+  try { return (JSON.parse(localStorage.getItem(LS.faceIdUsers) || "[]")).includes(String(user).toLowerCase()); } catch (e) { return false; }
+}
+export function setFaceIdOn(user, on = true) {
+  try {
+    const name = String(user).toLowerCase();
+    const list = (JSON.parse(localStorage.getItem(LS.faceIdUsers) || "[]")).filter((u) => u !== name);
+    if (on) list.push(name);
+    localStorage.setItem(LS.faceIdUsers, JSON.stringify(list));
+  } catch (e) {}
+}
+
+// Call straight from the tap with a fresh ticket. Returns like uploadLogin, plus
+// "cancelled" and "unknown" (a passkey this site doesn't know).
+export async function passkeySignIn(t) {
+  let cred;
+  try {
+    cred = await navigator.credentials.get({ publicKey: {
+      challenge: fromB64urlBytes(t.challenge), rpId: t.rpId, userVerification: "required", timeout: 60000,
+    } });
+  } catch (e) { return { status: "cancelled" }; }
+  if (!cred) return { status: "cancelled" };
+  try {
+    const r = await passkeyPost("/passkey/login", { ticket: t.ticket, credential: {
+      id: cred.id,
+      clientDataJSON: toB64url(cred.response.clientDataJSON),
+      authenticatorData: toB64url(cred.response.authenticatorData),
+      signature: toB64url(cred.response.signature),
+    } });
+    if (r.ok && r.data.token) {
+      setFaceIdOn(r.data.user);
+      return { status: "ok", auth: { user: r.data.user, token: r.data.token, exp: r.data.exp, admin: !!r.data.admin } };
+    }
+    if (r.status === 403) return { status: "pending" };
+    if (r.status === 429) return { status: "limited" };
+    if (r.status === 401) return { status: "unknown", error: r.data.error };
+    return { status: "error", error: r.data.error };
+  } catch (e) { return { status: "error" }; }
+}
+
+// Make a passkey: for the signed-in account (purpose "add", needs auth) or for a
+// new account request (purpose "signup"). Call straight from the tap.
+export async function passkeyCreate(t, purpose, auth) {
+  const user = t.user;
+  let cred;
+  try {
+    cred = await navigator.credentials.create({ publicKey: {
+      challenge: fromB64urlBytes(t.challenge),
+      rp: { id: t.rpId, name: "Vale Trails" },
+      user: { id: t.userId ? fromB64urlBytes(t.userId) : crypto.getRandomValues(new Uint8Array(16)), name: user, displayName: user },
+      pubKeyCredParams: [{ type: "public-key", alg: -7 }],
+      authenticatorSelection: { authenticatorAttachment: "platform", residentKey: "required", requireResidentKey: true, userVerification: "required" },
+      excludeCredentials: (t.exclude || []).map((id) => ({ type: "public-key", id: fromB64urlBytes(id) })),
+      attestation: "none",
+      timeout: 60000,
+    } });
+  } catch (e) {
+    return { status: e && e.name === "InvalidStateError" ? "exists" : "cancelled" };
+  }
+  if (!cred) return { status: "cancelled" };
+  try {
+    const r = await passkeyPost("/passkey/register", { purpose, ticket: t.ticket, label: deviceLabel(), credential: {
+      id: cred.id,
+      clientDataJSON: toB64url(cred.response.clientDataJSON),
+      attestationObject: toB64url(cred.response.attestationObject),
+    } }, auth);
+    if (r.ok) { setFaceIdOn(user); return { status: "ok", passkeys: r.data.passkeys || [] }; }
+    if (r.status === 401) return { status: "signedout" };
+    if (r.status === 429) return { status: "limited" };
+    return { status: "error", error: r.data.error };
+  } catch (e) { return { status: "error" }; }
+}
+
+// The signed-in account's Face ID sign-ins: [{ id, label, created }].
+export async function loadPasskeys(auth) {
+  if (!auth || !auth.token) throw new NotSignedIn("Sign in");
+  const r = await fetch(TAGS_API + "/passkeys", { headers: { Authorization: authHeader(auth) }, cache: "no-store" });
+  if (r.status === 401) throw new NotSignedIn("Sign in");
+  if (!r.ok) throw new Error("Couldn't load (" + r.status + ")");
+  return (await r.json()).passkeys || [];
+}
+export const removePasskey = (auth, id) => postJSON(TAGS_API + "/passkeys", { remove: id }, auth).then((r) => r.passkeys || []);
 export const removePushSubscription = (auth, subscription) =>
   postJSON(TAGS_API + "/push/unsubscribe", { subscription }, auth);
 
@@ -554,6 +693,9 @@ export const LS = {
   sidebarCollapsed: "trailhub-sidebar-collapsed",
   session: "trailhub-session",
   alertSpecies: "trailhub-alert-species",
+  alertCameras: "trailhub-alert-cameras",
+  alertQuiet: "trailhub-alert-quiet",
+  faceIdUsers: "trailhub-faceid-users",
 };
 
 // Local date helpers for the date-range filter and the upload date field.

@@ -45,6 +45,10 @@
 //   GET  /accounts    (admin) -> { accounts: [{ name, status, admin, created }], enabled }
 //   POST /accounts    (admin) with { "user": "...", "action": "approve"|"remove"|"admin"|"unadmin" }
 //                     ("remove" with "uploads": true also deletes everything they uploaded)
+//   POST /passkey/options   { purpose: "login"|"signup"|"add", user? } -> a Face ID challenge + ticket
+//   POST /passkey/register  { purpose, ticket, credential, label } saves a passkey
+//   POST /passkey/login     { ticket, credential } -> same answer as /login
+//   GET  /passkeys          this account's Face ID sign-ins; POST { remove: id } removes one
 //   Writes take "Authorization: Bearer <token>" (or Basic, for older copies of the site).
 //   POST /thumb       ?id=up_<uuid>  body: a small JPEG preview, stored as <id>_t.jpg
 //   POST /upload      stores one JPEG or video in R2 and lists it in uploads.json;
@@ -312,7 +316,7 @@ async function checkPassword(env, user, password) {
       ? { user: env.UPLOAD_USER, admin: true } : null;
   }
   const acct = await getAccount(env, user);
-  if (!acct) return null;
+  if (!acct || !acct.hash) return null; // no account, or one that only uses Face ID
   const hash = await hashPassword(password, fromB64url(acct.salt), acct.iter || PBKDF2_ITER);
   if (!sameBytes(hash, fromB64url(acct.hash))) return null;
   if (acct.status !== "approved") return { pending: true };
@@ -368,7 +372,7 @@ async function notifyAdmins(env, text) {
     const page = await env.ACCOUNTS.list({ prefix: "push:", cursor });
     for (const k of page.keys) {
       const entry = await env.ACCOUNTS.get(k.name, "json");
-      if (!entry || !entry.sub || !entry.user) continue;
+      if (!entry || !entry.sub || !entry.user || inQuietHours(entry.quiet)) continue;
       const name = String(entry.user).toLowerCase();
       if (!(name in isAdmin)) {
         const shared = await isShared(env, name);
@@ -403,6 +407,280 @@ async function handleRegister(request, env) {
   return json({ ok: true, pending: true });
 }
 
+/* --------------------------- Face ID (passkeys) ---------------------------
+   Sign in with Face ID / Touch ID instead of a password (WebAuthn passkeys). The
+   phone makes a key pair: the private half stays in its keychain (and syncs with
+   iCloud Keychain), and the Worker keeps the public half in ACCOUNTS as
+   "cred:<id>" -> { user, jwk, counter, label, created }. Signing in means the
+   phone signs a one-time challenge after Face ID.
+   Challenges need no storage: each comes with a short-lived "ticket" signed like a
+   session token, which the phone sends back with its answer.
+   The site's address decides which passkeys belong to it. It defaults to the
+   GitHub Pages address; set SITE_ORIGIN (and PASSKEY_RP_ID) if the site moves. */
+const PASSKEY_TTL_MS = 3 * 60000;
+const credKey = (id) => "cred:" + id;
+const passkeyOrigins = (env) => (env.SITE_ORIGIN
+  ? String(env.SITE_ORIGIN).split(",").map((s) => s.trim().replace(/\/+$/, "")).filter(Boolean)
+  : [`https://${String(env.GITHUB_OWNER).toLowerCase()}.github.io`]);
+const passkeyRpId = (env) => env.PASSKEY_RP_ID || new URL(passkeyOrigins(env)[0]).hostname;
+const sha256 = async (bytes) => new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
+
+async function makeTicket(env, purpose, user) {
+  const challenge = b64url(crypto.getRandomValues(new Uint8Array(32)));
+  const body = b64url(new TextEncoder().encode(JSON.stringify({ c: challenge, p: purpose, u: user || "", exp: Date.now() + PASSKEY_TTL_MS })));
+  return { challenge, ticket: `pk1.${body}.${b64url(await hmac(env, "pk:" + body))}` };
+}
+
+async function readTicket(env, ticket, purpose) {
+  const [v, body, sig] = String(ticket || "").split(".");
+  if (v !== "pk1" || !body || !sig) return null;
+  try {
+    if (!sameBytes(fromB64url(sig), await hmac(env, "pk:" + body))) return null;
+    const t = JSON.parse(new TextDecoder().decode(fromB64url(body)));
+    return t && t.p === purpose && t.exp > Date.now() ? t : null;
+  } catch (_) { return null; }
+}
+
+// Just enough CBOR (RFC 8949) to read a passkey's registration data.
+function cborDecode(bytes) {
+  let pos = 0;
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const len = (info) => {
+    if (info < 24) return info;
+    if (info === 24) return bytes[pos++];
+    if (info === 25) { const v = view.getUint16(pos); pos += 2; return v; }
+    if (info === 26) { const v = view.getUint32(pos); pos += 4; return v; }
+    throw new Error("CBOR length not supported");
+  };
+  const item = () => {
+    if (pos >= bytes.length) throw new Error("CBOR ended early");
+    const first = bytes[pos++];
+    const major = first >> 5, info = first & 31;
+    if (major === 0) return len(info);
+    if (major === 1) return -1 - len(info);
+    if (major === 2 || major === 3) {
+      const n = len(info);
+      const v = bytes.slice(pos, pos + n);
+      pos += n;
+      return major === 2 ? v : new TextDecoder().decode(v);
+    }
+    if (major === 4) { const n = len(info); const a = []; for (let i = 0; i < n; i++) a.push(item()); return a; }
+    if (major === 5) {
+      const n = len(info);
+      const m = new Map();
+      for (let i = 0; i < n; i++) { const k = item(); m.set(k, item()); }
+      return m;
+    }
+    if (major === 7 && (info === 20 || info === 21 || info === 22)) return info === 21 ? true : info === 20 ? false : null;
+    throw new Error("CBOR type not supported");
+  };
+  return item();
+}
+
+// authenticatorData: rpIdHash(32) flags(1) counter(4) [aaguid(16) idLen(2) id key].
+const UP = 0x01, UV = 0x04, AT = 0x40;
+function parseAuthData(a) {
+  if (a.length < 37) throw new Error("authData too short");
+  const out = { rpIdHash: a.slice(0, 32), flags: a[32], counter: new DataView(a.buffer, a.byteOffset + 33, 4).getUint32(0) };
+  if (out.flags & AT) {
+    const idLen = (a[53] << 8) | a[54];
+    out.credId = a.slice(55, 55 + idLen);
+    out.cose = cborDecode(a.slice(55 + idLen));
+  }
+  return out;
+}
+
+// Only ES256 on P-256, which is what iPhones, Macs and Android phones make.
+function coseToJwk(cose) {
+  if (!(cose instanceof Map) || cose.get(1) !== 2 || cose.get(3) !== -7 || cose.get(-1) !== 1) return null;
+  const x = cose.get(-2), y = cose.get(-3);
+  if (!(x instanceof Uint8Array) || !(y instanceof Uint8Array) || x.length !== 32 || y.length !== 32) return null;
+  return { kty: "EC", crv: "P-256", x: b64url(x), y: b64url(y) };
+}
+
+// WebAuthn signatures are DER; WebCrypto wants r and s as 32 bytes each.
+function derToRaw(der) {
+  if (der[0] !== 0x30) throw new Error("Bad signature");
+  let p = der[1] & 0x80 ? 2 + (der[1] & 0x7f) : 2;
+  const int = () => {
+    if (der[p++] !== 0x02) throw new Error("Bad signature");
+    const n = der[p++];
+    let v = der.slice(p, p + n);
+    p += n;
+    while (v.length > 32 && v[0] === 0) v = v.slice(1);
+    if (v.length > 32) throw new Error("Bad signature");
+    const out = new Uint8Array(32);
+    out.set(v, 32 - v.length);
+    return out;
+  };
+  const r = int(), s = int();
+  return concat(r, s);
+}
+
+// The parts every passkey answer must get right: the kind of request, our own
+// challenge, this site's address, and Face ID actually used.
+async function checkPasskeyAnswer(env, clientDataBytes, authData, type, challenge) {
+  let cd;
+  try { cd = JSON.parse(new TextDecoder().decode(clientDataBytes)); } catch (_) { return "Bad response."; }
+  if (cd.type !== type || cd.challenge !== challenge) return "That sign-in expired. Try again.";
+  if (!passkeyOrigins(env).includes(cd.origin)) return "Wrong site.";
+  if (!sameBytes(authData.rpIdHash, await sha256(new TextEncoder().encode(passkeyRpId(env))))) return "Wrong site.";
+  if (!(authData.flags & UP) || !(authData.flags & UV)) return "Face ID wasn't confirmed.";
+  return null;
+}
+
+const passkeyUserId = async (user) => b64url((await sha256(new TextEncoder().encode("vt:" + String(user).toLowerCase()))).slice(0, 16));
+
+async function listCreds(env, user) {
+  const name = String(user).toLowerCase();
+  const out = [];
+  let cursor;
+  do {
+    const page = await env.ACCOUNTS.list({ prefix: "cred:", cursor });
+    for (const k of page.keys) {
+      const c = await env.ACCOUNTS.get(k.name, "json");
+      if (c && String(c.user).toLowerCase() === name) out.push({ id: k.name.slice(5), label: c.label || "", created: c.created || null });
+    }
+    cursor = page.list_complete ? undefined : page.cursor;
+  } while (cursor);
+  return out.sort((a, b) => String(a.created).localeCompare(String(b.created)));
+}
+
+// Step 1 of everything: a challenge. "login" and "signup" need no sign-in; "add"
+// (turn on Face ID for the signed-in account) does.
+async function handlePasskeyOptions(request, env) {
+  if (!env.ACCOUNTS) return json({ error: "Face ID needs the ACCOUNTS namespace." }, 503);
+  const payload = await request.json().catch(() => null);
+  const purpose = payload && payload.purpose;
+  const base = { rpId: passkeyRpId(env), expires: Date.now() + PASSKEY_TTL_MS - 15000 };
+  if (purpose === "login") return json({ ...base, ...(await makeTicket(env, "login", "")) });
+  if (purpose === "signup") {
+    // The username is checked now, before the phone makes a passkey for it.
+    const user = String(payload.user || "").trim();
+    if (!USERNAME.test(user)) return json({ error: "Usernames are 3–24 letters, numbers, dots, dashes or underscores." }, 400);
+    if ((await isShared(env, user)) || (await getAccount(env, user))) return json({ error: "That username is taken." }, 409);
+    return json({ ...base, ...(await makeTicket(env, "signup", user)), user });
+  }
+  if (purpose !== "add") return json({ error: "Unknown purpose." }, 400);
+  const who = await authenticate(request, env);
+  if (!who) return json({ error: "Sign in first." }, 401);
+  return json({
+    ...base, ...(await makeTicket(env, "add", who.user)),
+    user: who.user, userId: await passkeyUserId(who.user),
+    exclude: (await listCreds(env, who.user)).map((c) => c.id),
+  });
+}
+
+// Step 2a: save a new passkey, for the signed-in account ("add") or for a new
+// account that waits for approval like any other sign-up ("signup").
+async function handlePasskeyRegister(request, env) {
+  if (!env.ACCOUNTS) return json({ error: "Face ID needs the ACCOUNTS namespace." }, 503);
+  const payload = await request.json().catch(() => null);
+  const cred = payload && payload.credential;
+  const signup = payload && payload.purpose === "signup";
+  const ticket = await readTicket(env, payload && payload.ticket, signup ? "signup" : "add");
+  if (!ticket || !cred) return json({ error: "That took too long. Try again." }, 400);
+
+  let user;
+  if (signup) {
+    user = String(ticket.u || "");
+    if (!USERNAME.test(user)) return json({ error: "Usernames are 3–24 letters, numbers, dots, dashes or underscores." }, 400);
+    if ((await isShared(env, user)) || (await getAccount(env, user))) return json({ error: "That username is taken." }, 409);
+  } else {
+    const who = await authenticate(request, env);
+    if (!who || who.user.toLowerCase() !== String(ticket.u).toLowerCase()) return json({ error: "Sign in first." }, 401);
+    user = who.user;
+  }
+
+  let authData, jwk;
+  try {
+    const att = cborDecode(fromB64url(String(cred.attestationObject)));
+    authData = parseAuthData(att.get("authData"));
+    const problem = await checkPasskeyAnswer(env, fromB64url(String(cred.clientDataJSON)), authData, "webauthn.create", ticket.c);
+    if (problem) return json({ error: problem }, 400);
+    jwk = authData.cose && coseToJwk(authData.cose);
+  } catch (_) {
+    return json({ error: "That passkey couldn't be read." }, 400);
+  }
+  if (!jwk || !authData.credId) return json({ error: "This device's passkey type isn't supported." }, 400);
+  const id = b64url(authData.credId);
+  if (await env.ACCOUNTS.get(credKey(id))) return json({ error: "That passkey is already saved." }, 409);
+
+  if (signup) {
+    await env.ACCOUNTS.put(accountKey(user), JSON.stringify({
+      name: user, status: "pending", admin: false, created: new Date().toISOString(),
+    }));
+  }
+  await env.ACCOUNTS.put(credKey(id), JSON.stringify({
+    user, jwk, counter: authData.counter, label: cleanName(payload.label).slice(0, 40) || "Device",
+    created: new Date().toISOString(),
+  }));
+  if (signup) {
+    await notifyAdmins(env, `${user} asked for an account (Face ID). Open the app to approve or decline.`);
+    return json({ ok: true, pending: true });
+  }
+  return json({ ok: true, passkeys: await listCreds(env, user) });
+}
+
+// Step 2b: sign in with a passkey. Answers like /login.
+async function handlePasskeyLogin(request, env) {
+  if (!env.ACCOUNTS) return json({ error: "Face ID needs the ACCOUNTS namespace." }, 503);
+  const payload = await request.json().catch(() => null);
+  const cred = payload && payload.credential;
+  const ticket = await readTicket(env, payload && payload.ticket, "login");
+  if (!ticket || !cred) return json({ error: "That took too long. Try again." }, 400);
+  const id = String(cred.id || "");
+  const saved = id && (await env.ACCOUNTS.get(credKey(id), "json"));
+  if (!saved) return json({ error: "This Face ID isn't linked to an account here." }, 401);
+
+  try {
+    const authBytes = fromB64url(String(cred.authenticatorData));
+    const clientBytes = fromB64url(String(cred.clientDataJSON));
+    const authData = parseAuthData(authBytes);
+    const problem = await checkPasskeyAnswer(env, clientBytes, authData, "webauthn.get", ticket.c);
+    if (problem) return json({ error: problem }, 400);
+    const key = await crypto.subtle.importKey("jwk", saved.jwk, { name: "ECDSA", namedCurve: "P-256" }, false, ["verify"]);
+    const signed = concat(authBytes, await sha256(clientBytes));
+    const ok = await crypto.subtle.verify({ name: "ECDSA", hash: "SHA-256" }, key, derToRaw(fromB64url(String(cred.signature))), signed);
+    if (!ok) return json({ error: "Face ID didn't match." }, 401);
+    // Synced passkeys (iCloud Keychain) always report 0; a device key that counts
+    // must only go up, or the key was copied.
+    if (authData.counter || saved.counter) {
+      if (authData.counter <= (saved.counter || 0)) return json({ error: "Face ID didn't match." }, 401);
+      saved.counter = authData.counter;
+      await env.ACCOUNTS.put(credKey(id), JSON.stringify(saved));
+    }
+  } catch (_) {
+    return json({ error: "That sign-in couldn't be read." }, 400);
+  }
+
+  let who;
+  if (await isShared(env, saved.user)) {
+    who = { user: env.UPLOAD_USER, admin: true };
+  } else {
+    const acct = await getAccount(env, saved.user);
+    if (!acct) { await env.ACCOUNTS.delete(credKey(id)); return json({ error: "This account was removed." }, 401); }
+    if (acct.status !== "approved") return json({ error: "This account is waiting for approval.", pending: true }, 403);
+    who = { user: acct.name, admin: !!acct.admin };
+  }
+  const { token, exp } = await makeToken(env, who.user);
+  return json({ ok: true, user: who.user, admin: who.admin, token, exp });
+}
+
+// The signed-in account's Face ID sign-ins, and removing one (an admin can remove
+// anyone's). For the shared login this lists every phone that added Face ID to it.
+async function handlePasskeys(request, env, who) {
+  if (!env.ACCOUNTS) return json({ passkeys: [] });
+  if (request.method === "GET") return json({ passkeys: await listCreds(env, who.user) });
+  const payload = await request.json().catch(() => null);
+  const id = String((payload && payload.remove) || "");
+  const saved = id && (await env.ACCOUNTS.get(credKey(id), "json"));
+  if (!saved) return json({ error: "Not found." }, 404);
+  if (!who.admin && String(saved.user).toLowerCase() !== who.user.toLowerCase()) return json({ error: "Not yours." }, 403);
+  await env.ACCOUNTS.delete(credKey(id));
+  return json({ ok: true, passkeys: await listCreds(env, who.user) });
+}
+
 async function listAccounts(env) {
   const out = [];
   let cursor;
@@ -410,19 +688,20 @@ async function listAccounts(env) {
     const page = await env.ACCOUNTS.list({ prefix: "user:", cursor });
     const rows = await Promise.all(page.keys.map((k) => env.ACCOUNTS.get(k.name, "json")));
     for (const a of rows) {
-      if (a) out.push({ name: a.name, status: a.status, admin: !!a.admin, created: a.created, approvedBy: a.approvedBy || null });
+      if (a) out.push({ name: a.name, status: a.status, admin: !!a.admin, created: a.created, approvedBy: a.approvedBy || null, faceIdOnly: !a.hash });
     }
     cursor = page.list_complete ? undefined : page.cursor;
   } while (cursor);
   return out.sort((a, b) => (a.status === b.status ? a.name.localeCompare(b.name) : a.status === "pending" ? -1 : 1));
 }
 
-// Turns off alerts on every phone that signed up for them under this account.
-async function dropPushFor(env, user) {
+// Deletes everything an account left on phones: alerts ("push:") or Face ID
+// sign-ins ("cred:").
+async function dropEntriesFor(env, prefix, user) {
   const name = String(user).toLowerCase();
   let cursor;
   do {
-    const page = await env.ACCOUNTS.list({ prefix: "push:", cursor });
+    const page = await env.ACCOUNTS.list({ prefix, cursor });
     for (const k of page.keys) {
       const entry = await env.ACCOUNTS.get(k.name, "json");
       if (entry && String(entry.user || "").toLowerCase() === name) await env.ACCOUNTS.delete(k.name);
@@ -452,7 +731,8 @@ async function handleAccounts(request, env, who) {
       removedUploads = result.ids;
     }
     await env.ACCOUNTS.delete(accountKey(user));
-    await dropPushFor(env, acct.name);
+    await dropEntriesFor(env, "push:", acct.name);
+    await dropEntriesFor(env, "cred:", acct.name);
   } else if (action === "approve" || action === "admin" || action === "unadmin") {
     if (action === "approve") { acct.status = "approved"; acct.approvedBy = who.user; }
     if (action === "admin") acct.admin = true;
@@ -798,8 +1078,33 @@ async function handlePushPrefs(request, env, who, path) {
     return json({ ok: true });
   }
   const species = cleanTags(Array.isArray(payload.species) ? payload.species : []).slice(0, PUSH_SPECIES_MAX);
-  await env.ACCOUNTS.put(key, JSON.stringify({ sub, species, user: who.user, updated: new Date().toISOString() }));
-  return json({ ok: true, species });
+  // Optional: only some cameras (none listed = every camera), and quiet hours in
+  // the phone's own time zone.
+  const cameras = [...new Set((Array.isArray(payload.cameras) ? payload.cameras : []).map(cleanName).filter(Boolean))].slice(0, 40);
+  const quiet = cleanQuiet(payload.quiet);
+  await env.ACCOUNTS.put(key, JSON.stringify({
+    sub, species, cameras, quiet, user: who.user, updated: new Date().toISOString(),
+  }));
+  return json({ ok: true, species, cameras, quiet });
+}
+
+// { from: "22:00", to: "05:30", tz: "America/New_York" } or null.
+const HHMM = /^([01]\d|2[0-3]):([0-5]\d)$/;
+function cleanQuiet(q) {
+  if (!q || !HHMM.test(String(q.from)) || !HHMM.test(String(q.to)) || q.from === q.to) return null;
+  const tz = String(q.tz || "America/New_York");
+  try { new Intl.DateTimeFormat("en-US", { timeZone: tz }); } catch (_) { return null; }
+  return { from: q.from, to: q.to, tz };
+}
+
+// True while a phone's quiet hours are on. A window can run past midnight.
+function inQuietHours(quiet, now = new Date()) {
+  if (!quiet) return false;
+  const parts = new Intl.DateTimeFormat("en-US", { timeZone: quiet.tz, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(now);
+  const get = (t) => Number((parts.find((p) => p.type === t) || {}).value || 0);
+  const mins = (s) => Number(s.slice(0, 2)) * 60 + Number(s.slice(3, 5));
+  const cur = (get("hour") % 24) * 60 + get("minute"), from = mins(quiet.from), to = mins(quiet.to);
+  return from < to ? cur >= from && cur < to : cur >= from || cur < to;
 }
 
 // From the workflow: { sightings: [{ species, title, body, url, tag }] }. Sends each
@@ -813,6 +1118,7 @@ async function handlePushNotify(request, env) {
     .map((s) => ({
       species: String(s.species || ""), title: String(s.title || "").slice(0, 120),
       body: String(s.body || "").slice(0, 200), url: String(s.url || ""), tag: String(s.tag || "").slice(0, 80),
+      camera: cleanName(s.camera),
     }))
     .filter((s) => s.species && s.title);
   if (!sightings.length) return json({ ok: true, sent: 0 });
@@ -824,8 +1130,10 @@ async function handlePushNotify(request, env) {
     for (const k of page.keys) {
       const entry = await env.ACCOUNTS.get(k.name, "json");
       if (!entry || !entry.sub) continue;
+      if (inQuietHours(entry.quiet)) continue;
       const wanted = new Set(entry.species || []);
-      const mine = sightings.filter((s) => wanted.has(s.species));
+      const cams = entry.cameras && entry.cameras.length ? new Set(entry.cameras) : null;
+      const mine = sightings.filter((s) => wanted.has(s.species) && (!cams || cams.has(s.camera)));
       if (!mine.length) continue;
       let messages = mine;
       if (mine.length > PUSH_MAX_PER_PHONE) {
@@ -873,7 +1181,7 @@ export default {
       if (request.method === "GET" && path === "/push/key") {
         return json({ enabled: pushReady(env), publicKey: pushReady(env) ? env.VAPID_PUBLIC_KEY : null });
       }
-      if (request.method === "GET" && path !== "/accounts") {
+      if (request.method === "GET" && path !== "/accounts" && path !== "/passkeys") {
         const file = path === "/comments" ? COMMENTS_FILE : isCameras ? CAMERA_FILE : isMeta ? META_FILE : TAGS_FILE;
         const { data } = await readFile(env, file);
         return json(data);
@@ -882,12 +1190,17 @@ export default {
       if (request.method !== "POST" && request.method !== "GET") return json({ error: "Method not allowed." }, 405);
 
       // Every write is signed in. Reads above stay public.
-      const strict = path === "/login" || path === "/register";
+      // Challenges check no password, so they get the looser limit (a sign-up asks
+      // for one as the username is typed).
+      const strict = path === "/login" || path === "/register" || path === "/passkey/register" || path === "/passkey/login";
       if (await overLimit(env, strict ? "LOGIN_LIMITER" : "WRITE_LIMITER", request)) {
         return json({ error: "Too many attempts. Wait a minute and try again." }, 429);
       }
       if (path === "/login") return await handleLogin(request, env);
       if (path === "/register") return await handleRegister(request, env);
+      if (path === "/passkey/options") return await handlePasskeyOptions(request, env);
+      if (path === "/passkey/register") return await handlePasskeyRegister(request, env);
+      if (path === "/passkey/login") return await handlePasskeyLogin(request, env);
       // The workflow's own key (PUSH_SECRET), not a person's sign-in.
       if (path === "/push/notify" && request.method === "POST") return await handlePushNotify(request, env);
 
@@ -895,6 +1208,7 @@ export default {
       if (!who) return json({ error: "Sign in to save changes." }, 401);
 
       if (path === "/accounts") return await handleAccounts(request, env, who);
+      if (path === "/passkeys") return await handlePasskeys(request, env, who);
       if ((path === "/push/subscribe" || path === "/push/unsubscribe") && request.method === "POST") {
         return await handlePushPrefs(request, env, who, path);
       }

@@ -6,7 +6,7 @@ import {
   loadCameraNames, remoteLoadCameraNames, remoteSaveCameraName, displayCamera,
   loadMetadata, remoteLoadMetadata, remoteSaveMetadata, applyMeta, metaOf, cameraLabels,
   remoteLoadComments, saveComment, updateUpload, NotSignedIn, TooManyAttempts,
-  loadSession, saveSession,
+  loadSession, saveSession, faceIdOn, faceIdName,
 } from "./core.js";
 import { filterCaptures, speciesList, reviewQueue } from "./analytics.js";
 import { Sidebar, Topbar, MobileTopbar, LargeTitle, MobileNav, PullToRefresh, VIEWS, MOBILE_MAIN, MOBILE_MORE, loadFilters } from "./shell.js";
@@ -15,6 +15,7 @@ import { UploadDialog, SignInDialog } from "./upload.js";
 import { Comments } from "./comments.js";
 import { AccountsDialog, usePendingAccounts } from "./account.js";
 import { AlertsDialog } from "./alerts.js";
+import { FaceIdDialog, usePasskeySupport } from "./faceid.js";
 import { InstallHint } from "./install.js";
 import { Overview } from "./views/overview.js";
 import { Gallery } from "./views/gallery.js";
@@ -117,6 +118,8 @@ function App() {
   const [uploadAuth, setUploadAuth] = useState(loadSession);
   const [accountsOpen, setAccountsOpen] = useState(false);
   const [alertsOpen, setAlertsOpen] = useState(false);
+  const [faceIdOpen, setFaceIdOpen] = useState(false);
+  const faceIdSupported = usePasskeySupport();
   const [signIn, setSignIn] = useState(null);
   const [uploadEdits, setUploadEdits] = useState(loadUploadEdits);
   const [comments, setComments] = useState({});
@@ -295,8 +298,14 @@ function App() {
   const signedIn = useCallback((auth) => {
     setUploadAuth(auth);
     setSignIn(null);
-    if (auth) { showToast("ok", `Signed in as ${auth.user}`); pushLocalEdits(auth); }
-  }, [showToast, pushLocalEdits]);
+    if (auth) {
+      // After a password sign-in on a phone that could use Face ID, offer it once.
+      const offer = faceIdSupported && auth.token && !faceIdOn(auth.user);
+      showToast("ok", `Signed in as ${auth.user}`,
+        offer ? { label: `Use ${faceIdName()}`, onClick: () => setFaceIdOpen(true) } : undefined);
+      pushLocalEdits(auth);
+    }
+  }, [showToast, pushLocalEdits, faceIdSupported]);
   const signOut = useCallback(() => { setUploadAuth(null); setAccountsOpen(false); showToast("ok", "Signed out"); }, [showToast]);
   const [pendingAccounts, refreshPending] = usePendingAccounts(uploadAuth, data);
   useEffect(() => { saveSession(uploadAuth); }, [uploadAuth]);
@@ -673,6 +682,7 @@ function App() {
     auth: uploadAuth, onSignIn: () => openSignIn(), onSignOut: signOut,
     pending: pendingAccounts, onAccounts: () => setAccountsOpen(true),
     onAlerts: () => setAlertsOpen(true),
+    onFaceId: faceIdSupported ? () => setFaceIdOpen(true) : null,
   };
 
   return html`<${Fragment}>
@@ -727,7 +737,12 @@ function App() {
         showToast("ok", `${sent} file${sent === 1 ? "" : "s"} uploaded. They'll appear in a few minutes.`);
       }} />`}
 
+    ${faceIdOpen && uploadAuth && html`<${FaceIdDialog} auth=${uploadAuth} showToast=${showToast}
+      onClose=${() => setFaceIdOpen(false)}
+      onSignedOut=${() => { setFaceIdOpen(false); setUploadAuth(null); openSignIn("Your session ended. Sign in again."); }} />`}
+
     ${alertsOpen && html`<${AlertsDialog} auth=${uploadAuth} showToast=${showToast}
+      cameras=${data.cameras || []} camName=${camName}
       onClose=${() => setAlertsOpen(false)}
       onSignIn=${() => { setAlertsOpen(false); openSignIn("Sign in to turn on alerts."); }}
       onSignedOut=${() => { setAlertsOpen(false); setUploadAuth(null); openSignIn("Your session ended. Sign in again."); }} />`}

@@ -145,6 +145,7 @@ def build_sightings(before, after, now=None, hours=RECENT_HOURS):
             "body": fmt_time(when(lead)) + (f" · {n} photos" if n > 1 else ""),
             "url": f"{base}#photo={quote(str(lead.get('id')))}" if base else "",
             "tag": str(lead.get("id")),
+            "camera": str(lead.get("camera") or ""),
             "_when": when(lead),
         })
     out.sort(key=lambda s: s["_when"], reverse=True)

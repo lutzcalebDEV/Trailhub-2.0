@@ -61,7 +61,7 @@ export function Sidebar({ view, setView, counts, status, onCollapse }) {
 
 /* -------------------------------- Topbar -------------------------------- */
 // `auth` is the signed-in account; saving anything for everyone needs it.
-export function Topbar({ title, sub, theme, toggleTheme, onRefresh, refreshing, onUpload, auth, pending, onSignIn, onSignOut, onAccounts, onAlerts, sidebarHidden, onShowSidebar, children }) {
+export function Topbar({ title, sub, theme, toggleTheme, onRefresh, refreshing, onUpload, auth, pending, onSignIn, onSignOut, onAccounts, onAlerts, onFaceId, sidebarHidden, onShowSidebar, children }) {
   return html`<header className="topbar">
     ${sidebarHidden && html`<${IconBtn} icon="menu" bare className="topbar__menu" onClick=${onShowSidebar}
       aria-label="Show sidebar" aria-controls="sidebar" aria-expanded=${false} title="Show sidebar" />`}
@@ -72,7 +72,7 @@ export function Topbar({ title, sub, theme, toggleTheme, onRefresh, refreshing, 
     <div className="topbar__spacer" />
     <div className="topbar__actions">
       ${children}
-      <${UserMenu} auth=${auth} pending=${pending} onSignIn=${onSignIn} onSignOut=${onSignOut} onAccounts=${onAccounts} onAlerts=${onAlerts} />
+      <${UserMenu} auth=${auth} pending=${pending} onSignIn=${onSignIn} onSignOut=${onSignOut} onAccounts=${onAccounts} onAlerts=${onAlerts} onFaceId=${onFaceId} />
       <button className="btn btn--sm" onClick=${onUpload}><${Icon} name="upload" size=${15} /><span>Upload</span></button>
       <${IconBtn} icon="refresh" bare onClick=${onRefresh} title="Refresh data"
         className=${refreshing ? "is-spin" : ""} aria-label="Refresh" />
@@ -101,7 +101,7 @@ function useScrolledPast(px) {
 
 // The phone's header. A pushed screen (from "More") gets a back button in place of
 // the logo; the page name fades in once the large title scrolls away.
-export function MobileTopbar({ title, onBack, theme, toggleTheme, onRefresh, refreshing, onUpload, auth, pending, onSignIn, onSignOut, onAccounts, onAlerts }) {
+export function MobileTopbar({ title, onBack, theme, toggleTheme, onRefresh, refreshing, onUpload, auth, pending, onSignIn, onSignOut, onAccounts, onAlerts, onFaceId }) {
   const collapsed = useScrolledPast(LARGE_TITLE_PX);
   return html`<div className=${cx("mobile-top", collapsed && "is-collapsed")}>
     ${onBack
@@ -110,7 +110,7 @@ export function MobileTopbar({ title, onBack, theme, toggleTheme, onRefresh, ref
       : html`<${BrandMark} size=${30} />`}
     <div className="mobile-top__title" aria-hidden=${!collapsed}>${title}</div>
     <div className="topbar__spacer" />
-    <${UserMenu} compact auth=${auth} pending=${pending} onSignIn=${onSignIn} onSignOut=${onSignOut} onAccounts=${onAccounts} onAlerts=${onAlerts} />
+    <${UserMenu} compact auth=${auth} pending=${pending} onSignIn=${onSignIn} onSignOut=${onSignOut} onAccounts=${onAccounts} onAlerts=${onAlerts} onFaceId=${onFaceId} />
     <${IconBtn} icon="upload" bare onClick=${onUpload} aria-label="Upload photos" />
     <${IconBtn} icon="refresh" bare onClick=${onRefresh} className=${refreshing ? "is-spin" : ""} aria-label="Refresh" />
     <${IconBtn} icon=${theme === "light" ? "moon" : "sun"} bare onClick=${toggleTheme} aria-label="Toggle theme" />

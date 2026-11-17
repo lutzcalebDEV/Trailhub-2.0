@@ -2,14 +2,14 @@
 import { html, useState, useEffect, useRef, useCallback } from "./react.js";
 import { Icon } from "./icons.js";
 import { Btn, IconBtn } from "./ui.js";
-import { loadAccounts, accountAction, timeAgo, NotSignedIn } from "./core.js";
+import { loadAccounts, accountAction, timeAgo, NotSignedIn, faceIdName } from "./core.js";
 
 const cx = (...xs) => xs.filter(Boolean).join(" ");
 
 /* ------------------------------ Account menu ----------------------------- */
 // Signed out it's a plain "Sign in" button. Signed in it opens a small menu, so a
 // stray tap on your name never signs you out.
-export function UserMenu({ auth, pending = 0, onSignIn, onSignOut, onAccounts, onAlerts, compact }) {
+export function UserMenu({ auth, pending = 0, onSignIn, onSignOut, onAccounts, onAlerts, onFaceId, compact }) {
   const [open, setOpen] = useState(false);
   const wrap = useRef(null);
 
@@ -58,6 +58,9 @@ export function UserMenu({ auth, pending = 0, onSignIn, onSignOut, onAccounts, o
       </button>`}
       ${onAlerts && html`<button role="menuitem" className="usermenu__item" onClick=${pick(onAlerts)}>
         <${Icon} name="bell" size=${16} /><span>Alerts</span>
+      </button>`}
+      ${onFaceId && auth.token && html`<button role="menuitem" className="usermenu__item" onClick=${pick(onFaceId)}>
+        <${Icon} name="faceid" size=${16} /><span>${faceIdName()}</span>
       </button>`}
       <button role="menuitem" className="usermenu__item" onClick=${pick(onSignOut)}>
         <${Icon} name="logout" size=${16} /><span>Sign out</span>

@@ -210,6 +210,13 @@ Notes:
   set up; to make a new one, run `npx wrangler kv namespace create ACCOUNTS`, put its
   id in the `[[kv_namespaces]]` block and redeploy). Each new sign-up also sends a
   push alert (section 9) to every admin's phone that has alerts turned on.
+- **Face ID.** On a phone or Mac that supports passkeys, the sign-in box has **Sign in with
+  Face ID**, and **Create an account** can use Face ID with no password. Anyone signed in
+  turns it on for their device from **their name → Face ID**, which also lists and removes
+  the devices that can sign in. The Worker keeps only each device's public key (in the
+  `ACCOUNTS` namespace), and passkeys belong to the site's address: if the site moves, set
+  `SITE_ORIGIN` (e.g. `https://example.com`) in `wrangler.toml` and everyone sets Face ID
+  up again. Removing an account removes its Face ID sign-ins too.
 - Sign-in attempts are **rate limited per IP** (5 a minute on the login route, 20 every
   10 seconds on other writes) by the two Rate Limiting bindings in `wrangler.toml`.
   Use a long passphrase anyway: the limit slows a guesser down, it doesn't stop one.
@@ -307,7 +314,9 @@ changed or turned off there any time. Tapping an alert opens that photo.
 On iPhone this works from the Home Screen app (iOS 16.4 or newer): in Safari tap
 **Share → Add to Home Screen**, open Vale Trails from the Home Screen, then turn on
 alerts. Android phones and desktop Chrome, Edge and Firefox work from the browser too.
-Turning on alerts needs a sign-in.
+Turning on alerts needs a sign-in. Each phone can also limit alerts to some cameras and
+set quiet hours (no alerts between two times, in the phone's time zone); sightings in
+quiet hours are skipped, not saved for later.
 
 How it works: after each publish, `push_alerts.py` (in the workflow) finds photos
 from the last 48 hours whose animal is new since the previous publish, counting a
