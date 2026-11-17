@@ -73,6 +73,10 @@ function videoPoster(file) {
   });
 }
 
+// The same rule the Worker uses for usernames.
+const USERNAME_RE = /^[a-z0-9][a-z0-9_.-]{2,23}$/i;
+const USERNAME_RULE = "Usernames are 3–24 letters or numbers (dots, dashes and underscores are OK), with no spaces.";
+
 // Sign in, or ask for an account (which an admin approves before it can sign in).
 export function SignIn({ onDone, message }) {
   const [mode, setMode] = useState("signin");
@@ -82,13 +86,22 @@ export function SignIn({ onDone, message }) {
   // next redraw would wipe them. They're read from the form when it's sent.
   const [state, setState] = useState("idle");
   const [error, setError] = useState("");
+  // A Face ID sign-up problem shows by its button, not at the bottom of the form.
+  const [faceError, setFaceError] = useState("");
   const registering = mode === "register";
+  // On a phone the message can be below the fold or under the keyboard: bring it in.
+  const formRef = useRef(null);
+  useEffect(() => {
+    if (!error && !faceError) return;
+    const el = formRef.current && formRef.current.querySelector(".form-error");
+    if (el && el.scrollIntoView) el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [error, faceError]);
 
   // Face ID: a challenge is kept ready so the tap can go straight to it.
   const faceId = usePasskeySupport();
   const fid = faceIdName();
   const typedUser = user.trim();
-  const validUser = /^[a-z0-9][a-z0-9_.-]{2,23}$/i.test(typedUser);
+  const validUser = USERNAME_RE.test(typedUser);
   const [loginTicket, renewLogin] = usePasskeyTicket("login", { enabled: faceId && !registering });
   const [signupTicket, renewSignup] = usePasskeyTicket("signup", { enabled: faceId && registering && validUser, user: typedUser });
   const signupReady = passkeyTicketFresh(signupTicket) && signupTicket.user === typedUser;
@@ -110,27 +123,38 @@ export function SignIn({ onDone, message }) {
 
   const faceSignup = async () => {
     setError("");
+    if (!validUser) { setFaceError(typedUser ? USERNAME_RULE : "Choose a username first."); return; }
+    if (!signupReady) return;
+    setFaceError("");
     setState("checking");
     const r = await passkeyCreate(signupTicket, "signup");
     renewSignup();
     if (r.status === "ok") { setState("requested"); return; }
     setState("idle");
     if (r.status === "cancelled") return;
-    setError(r.status === "limited" ? "Too many tries. Wait a minute, then try again." : r.error || "That didn't work. Try again.");
+    setFaceError(r.status === "limited" ? "Too many tries. Wait a minute, then try again." : r.error || "That didn't work. Try again.");
   };
 
-  const switchMode = (m) => { setMode(m); setState("idle"); setError(""); };
+  const switchMode = (m) => { setMode(m); setState("idle"); setError(""); setFaceError(""); };
 
   const submit = async (e) => {
     e.preventDefault();
     setError("");
+    setFaceError("");
     const form = new FormData(e.currentTarget);
     const name = String(form.get("username") || user).trim();
     const password = String(form.get("password") || "");
     const confirm = String(form.get("confirm") || "");
     if (name !== user) setUser(name);
+    // Checked here, not by the browser: on an iPhone the browser's own warning is a
+    // small bubble that's easy to miss (or hidden by the keyboard), so the button
+    // seemed to do nothing.
+    setState("idle");
+    if (!name || !password) { setError("Enter a username and a password."); return; }
     if (registering) {
-      if (password !== confirm) { setState("idle"); setError("The passwords don't match."); return; }
+      if (!USERNAME_RE.test(name)) { setError(USERNAME_RULE); return; }
+      if (password.length < 8) { setError(`The password is only ${password.length} character${password.length === 1 ? "" : "s"}. Use at least 8.`); return; }
+      if (password !== confirm) { setError("The passwords don't match."); return; }
       setState("checking");
       const r = await registerAccount(name, password);
       if (r.status === "ok") { setState("requested"); return; }
@@ -155,7 +179,7 @@ export function SignIn({ onDone, message }) {
   }
 
   const busy = state === "checking";
-  return html`<form className="col" style=${{ gap: 12 }} onSubmit=${submit}>
+  return html`<form className="col" style=${{ gap: 12 }} onSubmit=${submit} noValidate ref=${formRef}>
     ${registering
       ? html`<p className="form-note">${faceId
           ? `Choose a username, then create the account with ${fid} or a password. You can sign in once an admin approves it.`
@@ -168,17 +192,20 @@ export function SignIn({ onDone, message }) {
       <div className="or-divider">or use your password</div>`}
     <label className="field-row"><span>Username</span>
       <input className="input" name="username" autoComplete="username" autoCapitalize="none" autoCorrect="off" spellCheck=${false} value=${user}
-        onChange=${(e) => setUser(e.target.value)} required minLength=${registering ? 3 : undefined} maxLength=${registering ? 24 : undefined} />
+        onChange=${(e) => setUser(e.target.value)} required maxLength=${registering ? 24 : undefined} />
+      ${registering && html`<small className="form-note faint">3–24 letters or numbers; dots, dashes and underscores are OK. No spaces.</small>`}
     </label>
     ${faceId && registering && html`
       ${validUser && signupTicket && signupTicket.error && html`<p className="form-error" role="alert">${signupTicket.error}</p>`}
-      <${Btn} type="button" variant="primary" icon="faceid" disabled=${busy || !signupReady} onClick=${faceSignup}>
+      <${Btn} type="button" variant="primary" icon="faceid" disabled=${busy || (validUser && !signupReady)} onClick=${faceSignup}>
         ${busy ? "Checking…" : `Create with ${fid}`}
       </${Btn}>
+      ${faceError && html`<p className="form-error" role="alert">${faceError}</p>`}
       <div className="or-divider">or choose a password</div>`}
     <label className="field-row"><span>Password</span>
       <input className="input" type="password" name="password" key=${mode} autoComplete=${registering ? "new-password" : "current-password"}
-        required minLength=${registering ? 8 : undefined} />
+        required />
+      ${registering && html`<small className="form-note faint">At least 8 characters.</small>`}
     </label>
     ${registering && html`<label className="field-row"><span>Confirm password</span>
       <input className="input" type="password" name="confirm" autoComplete="new-password" required />

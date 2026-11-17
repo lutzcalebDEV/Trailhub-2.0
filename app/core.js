@@ -450,7 +450,12 @@ export async function passkeyCreate(t, purpose, auth) {
       timeout: 60000,
     } });
   } catch (e) {
-    return { status: e && e.name === "InvalidStateError" ? "exists" : "cancelled" };
+    const why = e && e.name;
+    if (why === "InvalidStateError") return { status: "exists" };
+    // Closing the Face ID sheet is NotAllowedError (or AbortError); anything else is a
+    // real failure, worth showing instead of silently doing nothing.
+    if (why === "NotAllowedError" || why === "AbortError") return { status: "cancelled" };
+    return { status: "error", error: `${faceIdName()} couldn't make a sign-in here (${why || "unknown error"}). Use a password instead.` };
   }
   if (!cred) return { status: "cancelled" };
   try {
