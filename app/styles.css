@@ -1605,3 +1605,7 @@ html[data-nav="pop"]::view-transition-new(root) { animation-name: navFromUnder; 
 .ios-switch.is-on { background: var(--accent); }
 .ios-switch.is-on > span { transform: translateX(20px); }
 .ios-foot { margin: 0; text-align: center; font-size: 12.5px; color: var(--text-faint); line-height: 1.5; }
+
+/* The sign-up form's bot trap (tag-worker.js, "Guarding new sign-ups"): off screen,
+   never focused, so only a bot that fills in every box finds it. */
+.hp-field { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }

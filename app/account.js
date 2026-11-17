@@ -2,7 +2,7 @@
 import { html, useState, useEffect, useRef, useCallback } from "./react.js";
 import { Icon } from "./icons.js";
 import { Btn, IconBtn } from "./ui.js";
-import { loadAccounts, accountAction, timeAgo, NotSignedIn, faceIdName, loadPasswordInfo, changePassword } from "./core.js";
+import { loadAccounts, accountAction, timeAgo, NotSignedIn, faceIdName, loadPasswordInfo, changePassword, passwordProblem } from "./core.js";
 
 const cx = (...xs) => xs.filter(Boolean).join(" ");
 
@@ -107,10 +107,8 @@ export function PasswordDialog({ auth, onClose, onChanged, onSignedOut, showToas
     const confirm = String(form.get("confirm") || "");
     setError("");
     if (needsCurrent && !current) { setError("Enter your current password."); return; }
-    if (password.length < 8) {
-      setError(password ? `The new password is only ${password.length} character${password.length === 1 ? "" : "s"}. Use at least 8.` : "Enter a new password.");
-      return;
-    }
+    const weak = passwordProblem(password, "new password");
+    if (weak) { setError(weak); return; }
     if (password !== confirm) { setError("The new passwords don't match."); return; }
     if (needsCurrent && password === current) { setError("That's the same as your current password."); return; }
     setBusy(true);
@@ -153,7 +151,7 @@ export function PasswordDialog({ auth, onClose, onChanged, onSignedOut, showToas
             </label>`}
             <label className="field-row"><span>New password</span>
               <input className="input" type="password" name="password" autoComplete="new-password" />
-              <small className="form-note faint">At least 8 characters.</small>
+              <small className="form-note faint">At least 8 characters. Spaces, symbols and emoji are fine.</small>
             </label>
             <label className="field-row"><span>Confirm new password</span>
               <input className="input" type="password" name="confirm" autoComplete="new-password" />

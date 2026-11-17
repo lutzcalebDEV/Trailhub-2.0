@@ -5,7 +5,7 @@ import { Icon } from "./icons.js";
 import {
   hasUploads, uploadLogin, registerAccount, uploadPhoto, uploadThumb, newUploadId, displayCamera, TAG_OPTIONS,
   StorageFull, NotSignedIn, TooManyAttempts, MAX_VIDEO_BYTES, LS, usePersistent, toLocalInput,
-  passkeySignIn, passkeyCreate, passkeyTicketFresh, faceIdName,
+  passkeySignIn, passkeyCreate, passkeyTicketFresh, faceIdName, passwordProblem,
 } from "./core.js";
 import { captureDate } from "./exif.js";
 import { usePasskeySupport, usePasskeyTicket } from "./faceid.js";
@@ -74,8 +74,12 @@ function videoPoster(file) {
 }
 
 // The same rule the Worker uses for usernames.
-const USERNAME_RE = /^[a-z0-9][a-z0-9_.-]{2,23}$/i;
-const USERNAME_RULE = "Usernames are 3–24 letters or numbers (dots, dashes and underscores are OK), with no spaces.";
+const USERNAME_RE = /^[a-z0-9][a-z0-9 ._@'-]{2,31}$/i;
+const USERNAME_RULE = "Usernames are 3–32 letters, numbers or spaces (. _ - @ ' are OK too), starting with a letter or number.";
+// Cleaned like the Worker does: curly apostrophes and long dashes from the iPhone
+// keyboard become plain ones, and runs of spaces one space.
+const cleanUsername = (s) => String(s || "").normalize("NFC")
+  .replace(/[‘’ʼ]/g, "'").replace(/[‐-―]/g, "-").replace(/\s+/g, " ").trim();
 
 // Sign in, or ask for an account (which an admin approves before it can sign in).
 export function SignIn({ onDone, message }) {
@@ -100,7 +104,7 @@ export function SignIn({ onDone, message }) {
   // Face ID: a challenge is kept ready so the tap can go straight to it.
   const faceId = usePasskeySupport();
   const fid = faceIdName();
-  const typedUser = user.trim();
+  const typedUser = cleanUsername(user);
   const validUser = USERNAME_RE.test(typedUser);
   const [loginTicket, renewLogin] = usePasskeyTicket("login", { enabled: faceId && !registering });
   const [signupTicket, renewSignup] = usePasskeyTicket("signup", { enabled: faceId && registering && validUser, user: typedUser });
@@ -142,7 +146,7 @@ export function SignIn({ onDone, message }) {
     setError("");
     setFaceError("");
     const form = new FormData(e.currentTarget);
-    const name = String(form.get("username") || user).trim();
+    const name = cleanUsername(form.get("username") || user);
     const password = String(form.get("password") || "");
     const confirm = String(form.get("confirm") || "");
     if (name !== user) setUser(name);
@@ -153,10 +157,11 @@ export function SignIn({ onDone, message }) {
     if (!name || !password) { setError("Enter a username and a password."); return; }
     if (registering) {
       if (!USERNAME_RE.test(name)) { setError(USERNAME_RULE); return; }
-      if (password.length < 8) { setError(`The password is only ${password.length} character${password.length === 1 ? "" : "s"}. Use at least 8.`); return; }
+      const weak = passwordProblem(password);
+      if (weak) { setError(weak); return; }
       if (password !== confirm) { setError("The passwords don't match."); return; }
       setState("checking");
-      const r = await registerAccount(name, password);
+      const r = await registerAccount(name, password, String(form.get("website") || ""));
       if (r.status === "ok") { setState("requested"); return; }
       setState("idle");
       setError(r.status === "limited" ? "Too many tries. Wait a minute, then try again."
@@ -192,9 +197,12 @@ export function SignIn({ onDone, message }) {
       <div className="or-divider">or use your password</div>`}
     <label className="field-row"><span>Username</span>
       <input className="input" name="username" autoComplete="username" autoCapitalize="none" autoCorrect="off" spellCheck=${false} value=${user}
-        onChange=${(e) => setUser(e.target.value)} required maxLength=${registering ? 24 : undefined} />
-      ${registering && html`<small className="form-note faint">3–24 letters or numbers; dots, dashes and underscores are OK. No spaces.</small>`}
+        onChange=${(e) => setUser(e.target.value)} required maxLength=${registering ? 40 : undefined} />
+      ${registering && html`<small className="form-note faint">3–32 letters, numbers or spaces. Your name or email works.</small>`}
     </label>
+    ${registering && html`<label className="hp-field" aria-hidden="true">Leave this empty
+      <input name="website" type="text" tabIndex=${-1} autoComplete="off" defaultValue="" />
+    </label>`}
     ${faceId && registering && html`
       ${validUser && signupTicket && signupTicket.error && html`<p className="form-error" role="alert">${signupTicket.error}</p>`}
       <${Btn} type="button" variant="primary" icon="faceid" disabled=${busy || (validUser && !signupReady)} onClick=${faceSignup}>
@@ -205,7 +213,7 @@ export function SignIn({ onDone, message }) {
     <label className="field-row"><span>Password</span>
       <input className="input" type="password" name="password" key=${mode} autoComplete=${registering ? "new-password" : "current-password"}
         required />
-      ${registering && html`<small className="form-note faint">At least 8 characters.</small>`}
+      ${registering && html`<small className="form-note faint">At least 8 characters. Spaces, symbols and emoji are fine.</small>`}
     </label>
     ${registering && html`<label className="field-row"><span>Confirm password</span>
       <input className="input" type="password" name="confirm" autoComplete="new-password" required />

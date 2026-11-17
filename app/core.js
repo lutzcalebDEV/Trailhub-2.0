@@ -279,12 +279,23 @@ export async function uploadLogin(user, password) {
 
 // Ask for an account. Returns { status: "ok" } or { status, error } where status is
 // "invalid", "taken", "limited", "off" or "error".
-export async function registerAccount(user, password) {
+// `website` is the sign-up form's hidden field: only a bot fills it in (tag-worker.js).
+// Passwords: any characters, 8 to 256 of them, counted as characters (an emoji is
+// one), the same rule the Worker uses. Returns a message, or "" when it's fine.
+export function passwordProblem(pw, what = "password") {
+  const n = [...String(pw || "")].length;
+  if (!n) return `Enter a ${what}.`;
+  if (n < 8) return `The ${what} is only ${n} character${n === 1 ? "" : "s"}. Use at least 8.`;
+  if (n > 256) return `The ${what} is ${n} characters. Use at most 256.`;
+  return "";
+}
+
+export async function registerAccount(user, password, website = "") {
   try {
     const r = await fetch(TAGS_API + "/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user, password }),
+      body: JSON.stringify({ user, password, website }),
     });
     if (r.ok) return { status: "ok" };
     const body = await r.json().catch(() => ({}));

@@ -270,8 +270,16 @@ const SESSION_DAYS = 30;
 // Workers' free plan allows ~10 ms of CPU per request, so the hash cost is modest.
 // Logins are rate limited per IP and the hashes are private, which carries the rest.
 const PBKDF2_ITER = 20000;
-const USERNAME = /^[a-z0-9][a-z0-9_.-]{2,23}$/i;
-const accountKey = (name) => "user:" + String(name).toLowerCase();
+// Usernames: 3–32 letters, numbers, spaces and . _ - @ ' (so a full name or an
+// email address works), starting with a letter or number. Plain ASCII only, so no
+// lookalike letters from other alphabets. The iPhone keyboard's curly apostrophes
+// and long dashes count as plain ones, and runs of spaces as one. Names are
+// case-insensitive: the key is the cleaned, lowercased name.
+const USERNAME = /^[a-z0-9][a-z0-9 ._@'-]{2,31}$/i;
+const USERNAME_RULE = "Usernames are 3–32 letters, numbers or spaces (. _ - @ ' are OK too), starting with a letter or number.";
+const cleanUsername = (s) => String(s || "").normalize("NFC")
+  .replace(/[‘’ʼ]/g, "'").replace(/[‐-―]/g, "-").replace(/\s+/g, " ").trim();
+const accountKey = (name) => "user:" + cleanUsername(name).toLowerCase();
 
 const b64url = (bytes) => btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 const fromB64url = (s) => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0));
@@ -312,6 +320,30 @@ async function getAccount(env, user) {
   return env.ACCOUNTS.get(accountKey(user), "json");
 }
 
+/* Passwords: any characters at all (spaces, symbols, emoji, any language), 8 to
+   PASSWORD_MAX of them, counted as characters (an emoji is one). Nothing is
+   trimmed or changed except Unicode normalization (NFC), so an accented letter
+   typed on another device or keyboard still matches. Hashes made before that are
+   checked against the password exactly as typed too. */
+const PASSWORD_MIN = 8;
+const PASSWORD_MAX = 256;
+const passwordProblem = (pw) => {
+  const n = [...pw].length;
+  if (n < PASSWORD_MIN) return `Use a password of at least ${PASSWORD_MIN} characters.`;
+  if (n > PASSWORD_MAX) return `Use a password of at most ${PASSWORD_MAX} characters.`;
+  return null;
+};
+const hashNewPassword = async (pw) => {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const hash = await hashPassword(pw.normalize("NFC"), salt, PBKDF2_ITER);
+  return { salt: b64url(salt), hash: b64url(hash), iter: PBKDF2_ITER };
+};
+async function passwordMatches(acct, pw) {
+  const salt = fromB64url(acct.salt), want = fromB64url(acct.hash), iter = acct.iter || PBKDF2_ITER;
+  if (sameBytes(await hashPassword(pw.normalize("NFC"), salt, iter), want)) return true;
+  return pw.normalize("NFC") !== pw && sameBytes(await hashPassword(pw, salt, iter), want);
+}
+
 // Checks a username and password. Returns { user, admin } or { pending: true } or null.
 async function checkPassword(env, user, password) {
   if (await isShared(env, user)) {
@@ -320,8 +352,7 @@ async function checkPassword(env, user, password) {
   }
   const acct = await getAccount(env, user);
   if (!acct || !acct.hash) return null; // no account, or one that only uses Face ID
-  const hash = await hashPassword(password, fromB64url(acct.salt), acct.iter || PBKDF2_ITER);
-  if (!sameBytes(hash, fromB64url(acct.hash))) return null;
+  if (!(await passwordMatches(acct, password))) return null;
   if (acct.status !== "approved") return { pending: true };
   return { user: acct.name, admin: !!acct.admin };
 }
@@ -385,15 +416,10 @@ async function handlePassword(request, env, who) {
   const payload = await request.json().catch(() => null);
   const current = String((payload && payload.current) || "");
   const password = String((payload && payload.password) || "");
-  if (acct.hash) {
-    const hash = await hashPassword(current, fromB64url(acct.salt), acct.iter || PBKDF2_ITER);
-    if (!sameBytes(hash, fromB64url(acct.hash))) return json({ error: "Your current password isn't right." }, 403);
-  }
-  if (password.length < 8 || password.length > 200) return json({ error: "Use a password of at least 8 characters." }, 400);
-  const salt = crypto.getRandomValues(new Uint8Array(16));
-  acct.salt = b64url(salt);
-  acct.hash = b64url(await hashPassword(password, salt, PBKDF2_ITER));
-  acct.iter = PBKDF2_ITER;
+  if (acct.hash && !(await passwordMatches(acct, current))) return json({ error: "Your current password isn't right." }, 403);
+  const problem = passwordProblem(password);
+  if (problem) return json({ error: problem }, 400);
+  Object.assign(acct, await hashNewPassword(password));
   acct.sessionsFrom = Date.now();
   await env.ACCOUNTS.put(accountKey(acct.name), JSON.stringify(acct));
   const { token, exp } = await makeToken(env, acct.name);
@@ -425,23 +451,72 @@ async function notifyAdmins(env, text) {
   } while (cursor);
 }
 
+/* ------------------------- Guarding new sign-ups --------------------------
+   A new account can't sign in or change anything until an admin approves it.
+   On top of that, so nobody can flood the list or the admins' phones:
+   - names an admin could be mistaken for, or that only differ from an existing
+     account by case, spaces or punctuation ("deer.hunter" vs "Deer Hunter"), are taken;
+   - at most SIGNUP_PENDING_MAX requests wait at once;
+   - a request nobody approves is deleted after SIGNUP_PENDING_DAYS;
+   - admins get at most one sign-up alert per SIGNUP_ALERT_GAP_MS (the list in
+     Manage accounts shows everyone waiting);
+   - a form field people never see catches bots that fill in every box;
+   - sign-ups share the login rate limit (5 a minute per address). */
+const SIGNUP_PENDING_MAX = 25;
+const SIGNUP_PENDING_DAYS = 14;
+const SIGNUP_ALERT_GAP_MS = 10 * 60000;
+const RESERVED_NAMES = new Set(["administrator", "root", "support", "system", "owner", "moderator", "mod",
+  "help", "security", "staff", "official", "valetrails", "trailhub", "everyone", "null", "undefined"]);
+const squashName = (name) => cleanUsername(name).toLowerCase().replace(/[^a-z0-9]/g, "");
+
+// Whether a new account may take this (cleaned) name: null, or [error, status].
+async function signupBlocked(env, user) {
+  if (!USERNAME.test(user)) return [USERNAME_RULE, 400];
+  const sq = squashName(user);
+  if (RESERVED_NAMES.has(sq) || sq.startsWith("admin") || (await isShared(env, user)) ||
+      (env.UPLOAD_USER && squashName(env.UPLOAD_USER) === sq)) return ["That username is taken.", 409];
+  const all = await listAccounts(env);
+  if (all.some((a) => squashName(a.name) === sq)) return ["That username is taken.", 409];
+  if (all.filter((a) => a.status === "pending").length >= SIGNUP_PENDING_MAX) {
+    return ["Too many account requests are waiting right now. Ask an admin, or try again later.", 503];
+  }
+  return null;
+}
+
+// Saves a new account request. It expires unless an admin approves it (approving
+// saves it again, which drops the expiry). Any Face ID sign-in left from an
+// earlier, expired request for the same name is removed first, so it can never
+// open this account.
+async function savePending(env, record) {
+  await dropEntriesFor(env, "cred:", record.name);
+  await env.ACCOUNTS.put(accountKey(record.name), JSON.stringify(record), { expirationTtl: SIGNUP_PENDING_DAYS * 86400 });
+}
+
+async function notifySignup(env, user) {
+  const last = Number(await env.ACCOUNTS.get("meta:signup-alert")) || 0;
+  if (Date.now() - last < SIGNUP_ALERT_GAP_MS) return;
+  await env.ACCOUNTS.put("meta:signup-alert", String(Date.now()));
+  await notifyAdmins(env, `${user} asked for an account. Open the app to see who's waiting.`);
+}
+
 async function handleRegister(request, env) {
   if (!env.ACCOUNTS) return json({ error: "Sign-ups aren't turned on yet." }, 503);
   const payload = await request.json().catch(() => null);
-  const user = String((payload && payload.user) || "").trim();
+  // The hidden field: a person never fills it in, so this is a bot. It's told the
+  // request went through, so it has no reason to try anything else.
+  if (payload && payload.website) return json({ ok: true, pending: true });
+  const user = cleanUsername(payload && payload.user);
   const password = String((payload && payload.password) || "");
-  if (!USERNAME.test(user)) {
-    return json({ error: "Usernames are 3–24 letters, numbers, dots, dashes or underscores." }, 400);
-  }
-  if (password.length < 8 || password.length > 200) return json({ error: "Use a password of at least 8 characters." }, 400);
-  if ((await isShared(env, user)) || (await getAccount(env, user))) return json({ error: "That username is taken." }, 409);
-  const salt = crypto.getRandomValues(new Uint8Array(16));
-  const hash = await hashPassword(password, salt, PBKDF2_ITER);
-  await env.ACCOUNTS.put(accountKey(user), JSON.stringify({
-    name: user, salt: b64url(salt), hash: b64url(hash), iter: PBKDF2_ITER,
+  if (!USERNAME.test(user)) return json({ error: USERNAME_RULE }, 400);
+  const problem = passwordProblem(password);
+  if (problem) return json({ error: problem }, 400);
+  const blocked = await signupBlocked(env, user);
+  if (blocked) return json({ error: blocked[0] }, blocked[1]);
+  await savePending(env, {
+    name: user, ...(await hashNewPassword(password)),
     status: "pending", admin: false, created: new Date().toISOString(),
-  }));
-  await notifyAdmins(env, `${user} asked for an account. Open the app to approve or decline.`);
+  });
+  await notifySignup(env, user);
   return json({ ok: true, pending: true });
 }
 
@@ -594,9 +669,9 @@ async function handlePasskeyOptions(request, env) {
   if (purpose === "login") return json({ ...base, ...(await makeTicket(env, "login", "")) });
   if (purpose === "signup") {
     // The username is checked now, before the phone makes a passkey for it.
-    const user = String(payload.user || "").trim();
-    if (!USERNAME.test(user)) return json({ error: "Usernames are 3–24 letters, numbers, dots, dashes or underscores." }, 400);
-    if ((await isShared(env, user)) || (await getAccount(env, user))) return json({ error: "That username is taken." }, 409);
+    const user = cleanUsername(payload.user);
+    const blocked = await signupBlocked(env, user);
+    if (blocked) return json({ error: blocked[0] }, blocked[1]);
     return json({ ...base, ...(await makeTicket(env, "signup", user)), user });
   }
   if (purpose !== "add") return json({ error: "Unknown purpose." }, 400);
@@ -621,9 +696,9 @@ async function handlePasskeyRegister(request, env) {
 
   let user;
   if (signup) {
-    user = String(ticket.u || "");
-    if (!USERNAME.test(user)) return json({ error: "Usernames are 3–24 letters, numbers, dots, dashes or underscores." }, 400);
-    if ((await isShared(env, user)) || (await getAccount(env, user))) return json({ error: "That username is taken." }, 409);
+    user = cleanUsername(ticket.u);
+    const blocked = await signupBlocked(env, user);
+    if (blocked) return json({ error: blocked[0] }, blocked[1]);
   } else {
     const who = await authenticate(request, env);
     if (!who || who.user.toLowerCase() !== String(ticket.u).toLowerCase()) return json({ error: "Sign in first." }, 401);
@@ -644,17 +719,13 @@ async function handlePasskeyRegister(request, env) {
   const id = b64url(authData.credId);
   if (await env.ACCOUNTS.get(credKey(id))) return json({ error: "That passkey is already saved." }, 409);
 
-  if (signup) {
-    await env.ACCOUNTS.put(accountKey(user), JSON.stringify({
-      name: user, status: "pending", admin: false, created: new Date().toISOString(),
-    }));
-  }
+  if (signup) await savePending(env, { name: user, status: "pending", admin: false, created: new Date().toISOString() });
   await env.ACCOUNTS.put(credKey(id), JSON.stringify({
     user, jwk, counter: authData.counter, label: cleanName(payload.label).slice(0, 40) || "Device",
     created: new Date().toISOString(),
   }));
   if (signup) {
-    await notifyAdmins(env, `${user} asked for an account (Face ID). Open the app to approve or decline.`);
+    await notifySignup(env, user);
     return json({ ok: true, pending: true });
   }
   return json({ ok: true, passkeys: await listCreds(env, user) });
