@@ -255,18 +255,61 @@ export function Media({ capture, alt, className, playable, sizes }) {
 /* ---------------------------- Camera status ----------------------------- */
 // One card per camera, so a silent camera can't hide behind a busy one.
 export function CameraCard({ name, row, onClick }) {
+  const health = healthItems(row.health);
+  const checkIn = checkInAge(row.health);
+  const quietHint = !row.quiet ? ""
+    : checkIn != null && checkIn < STALE_CHECKIN_MS
+      ? `No new photos lately, but the camera checked in ${timeAgo(new Date(row.health.lastCheckIn))}, so it's probably just a quiet spot.`
+      : health.length
+        ? "No new photos lately. Battery and signal are under the camera name."
+        : "No new photos lately. This can just mean no activity \u2014 if not, check battery and signal in the SPYPOINT app.";
   return html`<button className="camcard" onClick=${onClick} title=${`Show photos from ${name}`}>
     <span className="camcard__top">
       <span className="camcard__name">${name}</span>
-      <span className=${cx("pill", row.quiet ? "is-quiet" : "is-ok")}
-        title=${row.quiet ? "No new photos lately. This can just mean no activity \u2014 if not, check battery and signal in the SPYPOINT app." : ""}>
+      <span className=${cx("pill", row.quiet ? "is-quiet" : "is-ok")} title=${quietHint}>
         ${row.quiet ? (row.quietDays == null ? "No photos" : `Quiet ${row.quietDays}d`) : "Active"}
       </span>
     </span>
     <span className="camcard__sub">
       ${row.last ? `Last photo ${timeAgo(row.last)} \u00b7 ${row.week} this week` : "Nothing received yet"}
     </span>
+    ${health.length > 0 && html`<span className="camcard__health">
+      ${health.map((h) => html`<span key=${h.key} className=${cx("camcard__stat", h.warn && "is-warn")} title=${h.title}>${h.text}</span>`)}
+    </span>`}
   </button>`;
+}
+
+// What SPYPOINT last reported about a camera, as short labels. Anything it didn't
+// report is left out; values that need a trip to the camera are flagged.
+const STALE_CHECKIN_MS = 36 * 3600000;
+const num = (v) => (typeof v === "number" && Number.isFinite(v) ? v : null);
+function checkInAge(health) {
+  const t = health && health.lastCheckIn ? Date.parse(health.lastCheckIn) : NaN;
+  return Number.isFinite(t) ? Math.max(0, Date.now() - t) : null;
+}
+function healthItems(health) {
+  if (!health) return [];
+  const out = [];
+  const battery = num(health.battery);
+  if (battery != null) out.push({ key: "bat", text: `Battery ${battery}%`, warn: battery <= 25,
+    title: battery <= 25 ? "Battery is low" : `Battery${health.power ? ` (${String(health.power).toLowerCase()})` : ""}` });
+  const bars = num(health.signalBars), signal = num(health.signal);
+  if (bars != null || signal != null) {
+    const weak = bars != null ? bars <= 1 : signal <= 20;
+    out.push({ key: "sig", text: bars != null ? `Signal ${bars}/5` : `Signal ${signal}%`, warn: weak,
+      title: weak ? "Weak signal: photos may arrive late or not at all" : "Cell signal" });
+  }
+  const sd = num(health.sdUsed);
+  if (sd != null) out.push({ key: "sd", text: `SD ${sd}%`, warn: sd >= 90,
+    title: sd >= 90 ? "SD card is nearly full" : "SD card used" });
+  const used = num(health.planPhotos), cap = num(health.planLimit);
+  if (used != null && cap) out.push({ key: "plan", text: `Plan ${used}/${cap}`, warn: used >= cap * 0.9,
+    title: used >= cap * 0.9 ? "Close to the plan's photo limit" : "Photos used on the SPYPOINT plan" });
+  const age = checkInAge(health);
+  if (age != null && age >= STALE_CHECKIN_MS) out.push({ key: "chk", warn: true,
+    text: `Checked in ${timeAgo(new Date(health.lastCheckIn))}`,
+    title: "The camera hasn't reported to SPYPOINT lately: check its battery and signal" });
+  return out;
 }
 
 /* ------------------------------ Photo tile ------------------------------ */

@@ -105,7 +105,7 @@ export function cameraCounts(captures) {
 export const QUIET_DAYS = 3;
 export function cameraStatus(captures, cameras, now = Date.now()) {
   const week = now - 7 * 86400000;
-  const rows = new Map((cameras || []).map((c) => [c.name, { camera: c.name, last: null, week: 0 }]));
+  const rows = new Map((cameras || []).map((c) => [c.name, { camera: c.name, last: null, week: 0, health: c.health || null }]));
   for (const c of captures) {
     if (!rows.has(c.camera)) {
       if (cameras && cameras.length) continue; // e.g. a phone upload, which isn't a camera to watch

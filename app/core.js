@@ -142,6 +142,8 @@ function normalizePayload(d) {
       label: cam.label || null,
       latitude: Number.isFinite(lat) ? lat : null,
       longitude: Number.isFinite(lng) ? lng : null,
+      // Battery, signal, SD card and plan use as SPYPOINT last reported them (pull.py).
+      health: cam.health && typeof cam.health === "object" ? cam.health : null,
     };
   });
 
