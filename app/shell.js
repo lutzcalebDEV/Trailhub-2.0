@@ -204,8 +204,8 @@ export function useSheetDrag(open, onClose) {
 // Phones get five tabs: four main screens and "More", a list of everything else.
 // Seven tabs at phone width made every label tiny and easy to mis-tap.
 // Phone tab bar, in this order, then More; everything else is listed on More, also in order.
-export const MOBILE_MAIN = ["overview", "gallery", "insights", "bucks", "more"];
-export const MOBILE_MORE = ["map", "uploads", "review"];
+export const MOBILE_MAIN = ["overview", "gallery", "insights", "uploads", "more"];
+export const MOBILE_MORE = ["bucks", "map", "review"];
 const viewsIn = (ids) => ids.map((id) => VIEWS.find((v) => v.id === id)).filter(Boolean);
 const TABS = [...viewsIn(MOBILE_MAIN), { id: "more", label: "More", icon: "grid" }];
 
@@ -289,7 +289,7 @@ function MoreRow({ icon, tint, label, value, badge, chevron = true, tone, onClic
   </button>`;
 }
 
-const MORE_TINT = { map: "#2a9d6f", uploads: "#2f7de1", review: "#8e5bd8" };
+const MORE_TINT = { bucks: "#c97a2b", map: "#2a9d6f", review: "#8e5bd8" };
 export function MoreScreen({ more, counts, auth }) {
   const m = more || {};
   const status = m.status || {};
