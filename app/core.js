@@ -862,6 +862,54 @@ export function usePersistentSet(key) {
 // kept on this device first, so the app opens at once and with no signal, then the
 // Worker's, checked again every few minutes. A refused sign-in (the password was
 // changed elsewhere, or the account removed) calls onSignedOut.
+/* ------------------------------ App updates ------------------------------ */
+// GitHub Pages stamps every file of a deploy with the deploy time, so a newer
+// Last-Modified on index.html means a newer app than the one running. An app left
+// open on a phone can otherwise run old code for days: switching back to it only
+// resumes it.
+const LIVE = /^https?:$/.test(location.protocol);
+async function deployTime() {
+  try {
+    const res = await fetch("./index.html", { method: "HEAD", cache: "no-store" });
+    const t = Date.parse(res.headers.get("Last-Modified") || "");
+    return res.ok && Number.isFinite(t) ? Math.floor(t / 1000) : null;
+  } catch (e) { return null; }
+}
+// The deploy this page came from: the page's own time (document.lastModified), or
+// the server's at startup if that's older (a browser that reports "now" instead).
+let loadedDeploy = (() => {
+  const t = Date.parse(document.lastModified);
+  return Number.isFinite(t) ? Math.floor(t / 1000) : null;
+})();
+const startupCheck = LIVE ? deployTime().then((t) => {
+  if (t != null) loadedDeploy = loadedDeploy == null ? t : Math.min(loadedDeploy, t);
+}) : Promise.resolve();
+const RELOADED_FOR = "trailhub-reloaded-for";
+
+// Resolves to the newer deploy's time, or null (none, offline, or a local copy).
+export async function newerDeploy() {
+  if (!LIVE) return null;
+  await startupCheck;
+  if (loadedDeploy == null) return null;
+  const deployed = await deployTime();
+  if (deployed == null || deployed <= loadedDeploy) return null;
+  // Never reload twice for one deploy, so mismatched clocks can't loop.
+  try { if (sessionStorage.getItem(RELOADED_FOR) === String(deployed)) return null; } catch (e) {}
+  return deployed;
+}
+
+export function reloadForDeploy(deployed) {
+  try { sessionStorage.setItem(RELOADED_FOR, String(deployed)); } catch (e) {}
+  window.location.reload();
+}
+
+// Nothing half-done on screen: no photo, sheet or form open, and no field being typed in.
+export function safeToReload() {
+  const a = document.activeElement;
+  if (a && a.matches && a.matches("input, textarea, select, [contenteditable]")) return false;
+  return !document.querySelector(".lb, .modal, .drawer, .mapbox.is-full");
+}
+
 export function useData(auth, onSignedOut, pollMs = 5 * 60 * 1000) {
   const [data, setData] = useState(loadInitialData);
   const [refreshing, setRefreshing] = useState(false);

@@ -1,7 +1,7 @@
 // Vale Trails — application root: state, routing, actions and mount.
 import { html, useState, useEffect, useLayoutEffect, useMemo, useRef, useCallback, Fragment, ReactDOM } from "./react.js";
 import {
-  LS, usePersistent, usePersistentSet, useData, loadOverrides,
+  LS, usePersistent, usePersistentSet, useData, loadOverrides, newerDeploy, reloadForDeploy, safeToReload,
   remoteLoadTags, remoteSaveTags, remoteSaveTagsBatch, hasSharedTags, effectiveSpecies, timeAgo,
   loadCameraNames, remoteLoadCameraNames, remoteSaveCameraName, displayCamera,
   loadMetadata, remoteLoadMetadata, remoteSaveMetadata, applyMeta, metaOf, cameraLabels,
@@ -520,6 +520,33 @@ function App() {
     return () => window.removeEventListener("popstate", onPop);
   }, [findPhoto]);
 
+  /* ---------------------------- App updates ----------------------------- */
+  // Coming back to the app loads a newer version straight away; one found while
+  // the app is open waits for the next tab tap or return, never mid-scroll or
+  // over a half-typed comment.
+  const pendingDeploy = useRef(null);
+  useEffect(() => {
+    let checking = false;
+    const check = async (resumed) => {
+      if (checking) return;
+      checking = true;
+      const deployed = await newerDeploy();
+      checking = false;
+      if (!deployed) return;
+      if (resumed && safeToReload()) reloadForDeploy(deployed);
+      else pendingDeploy.current = deployed;
+    };
+    const onVisible = () => { if (document.visibilityState === "visible") check(true); };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("pageshow", onVisible);
+    const t = setInterval(() => check(false), 5 * 60 * 1000);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("pageshow", onVisible);
+      clearInterval(t);
+    };
+  }, []);
+
   /* --------------------------- Actions ---------------------------------- */
   const setFilter = useCallback((patch) => setFilters((f) => ({ ...f, ...patch })), []);
   // Back to every photo. Returns whether anything was filtered.
@@ -551,6 +578,13 @@ function App() {
   // never looks like it did nothing.
   const manualRefresh = useCallback(async () => {
     clearFilters();
+    // A newer version of the app loads now (refreshing starts unfiltered anyway).
+    const deployed = await newerDeploy();
+    if (deployed) {
+      try { localStorage.removeItem(LS.filters); } catch (e) {}
+      reloadForDeploy(deployed);
+      return;
+    }
     const before = new Set(data.captures.map((c) => c.id));
     const fresh = await refresh();
     if (!fresh) { showToast("err", "Couldn’t reach the site — try again"); return; }
@@ -708,6 +742,13 @@ function App() {
   // pages that set a filter on purpose (a camera card, a chart bar) use setView instead.
   // Saved scroll spots were for the filtered lists, so those tabs open at the top.
   const tabFromBar = (v) => {
+    // A newer version found while the app was open loads with the tab tap.
+    if (pendingDeploy.current) {
+      if (v !== view) { try { localStorage.removeItem(LS.filters); } catch (e) {} }
+      window.history.replaceState({ scrollY: 0 }, "", routeUrl(v));
+      reloadForDeploy(pendingDeploy.current);
+      return;
+    }
     setAlertsOpen(false); setAccountsOpen(false); setFaceIdOpen(false); setPasswordOpen(false); setSignIn(null);
     const cleared = v !== view && clearFilters();
     switchTab(v, cleared);
@@ -717,7 +758,7 @@ function App() {
     if (v !== view) clearFilters();
     setView(v);
   };
-  // Swipe from the left edge goes back from the pages on More (Bucks, Map, Identify).
+  // Swipe from the left edge goes back from the pages on More (Map, Identify).
   useEdgeBack(MOBILE_MORE.includes(view) && !overlayOpen, swipeBack);
   const app = {
     more: {
