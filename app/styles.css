@@ -1600,3 +1600,24 @@ html[data-nav="pop"]::view-transition-new(root) { animation-name: navFromUnder; 
 /* The sign-up form's bot trap (tag-worker.js, "Guarding new sign-ups"): off screen,
    never focused, so only a bot that fills in every box finds it. */
 .hp-field { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+
+/* ------------------------------ Sign-in screen ------------------------------ */
+/* The whole app until someone signs in (login.js). */
+.login {
+  min-height: 100vh; min-height: 100dvh; display: grid; place-items: center;
+  padding: max(28px, env(safe-area-inset-top, 0px)) 20px max(28px, env(safe-area-inset-bottom, 0px));
+  background:
+    radial-gradient(120% 70% at 50% -10%, color-mix(in srgb, var(--accent) 22%, transparent) 0%, transparent 60%),
+    var(--bg);
+}
+.login__card { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 22px; }
+.login__brand { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
+.login__brand .brand__mark { border-radius: 20px; box-shadow: 0 12px 32px rgba(0, 0, 0, .35); margin-bottom: 8px; }
+.login__brand h1 { margin: 0; font-size: 30px; font-weight: 750; letter-spacing: -.02em; color: var(--text); }
+.login__brand p { margin: 0; font-size: 15px; color: var(--text-faint); }
+.login__panel {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 20px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, .25);
+}
+.login__panel .btn { min-height: 48px; font-size: 16px; }
+.login__foot { margin: 0; text-align: center; font-size: 12.5px; color: var(--text-faint); }

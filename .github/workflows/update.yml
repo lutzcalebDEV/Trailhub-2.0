@@ -9,7 +9,7 @@ on:
   workflow_dispatch: {}
 
 permissions:
-  contents: write
+  contents: write # only for the weekly keep-alive commit
 
 concurrency:
   group: trailhub-update
@@ -21,8 +21,6 @@ jobs:
     steps:
       - name: Check out the repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -48,61 +46,37 @@ jobs:
           PUSH_SECRET: ${{ secrets.PUSH_SECRET }}
         run: |
           set -e
+          # Nothing the site shows is kept in this public repo: data.js and the files
+          # behind it live in the private R2 bucket, and the Worker serves them only
+          # to signed-in people. Start from the latest saved state...
+          python state_sync.py download
+
+          # ...fetch new photos (pull.py only downloads ones it hasn't seen, tracked
+          # in store.json, so re-running is cheap and idempotent)...
+          python pull.py --limit 100
+
+          # ...add optional AI labels (never allowed to stop new photos publishing)...
+          python ai_tag.py || echo "::warning::AI tagging failed; photos still publish."
+          python pull.py --rebuild
+
+          # ...and save it. Only the photo job's own files; site edits are the Worker's.
+          python state_sync.py upload
+
+          # Push alerts compare with the data.js from before this run, so each
+          # sighting alerts once. A failure here never fails the run.
+          python push_alerts.py --before-file .prev-data.js || echo "::warning::Push alerts failed."
+
+      - name: Keep the scheduled runs alive
+        # GitHub pauses scheduled workflows in a repo with no commits for 60 days, and
+        # the photo job no longer commits anything. Once a week it records the date.
+        run: |
+          f=.github/last-run
+          now=$(date +%s)
+          last=$(cat "$f" 2>/dev/null || echo 0)
+          if [ $((now - last)) -lt 604800 ]; then exit 0; fi
+          echo "$now" > "$f"
           git config user.name "trailhub-bot"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          published=0
-          for attempt in 1 2 3 4 5; do
-            echo "=== Attempt ${attempt}/5 ==="
-
-            # Always start from the very latest remote state so our commit is a
-            # clean fast-forward. This is what prevents data.js merge conflicts:
-            # we never rebase or merge, we rebuild on top of current origin/main.
-            git fetch origin main --quiet
-            git reset --hard origin/main
-            # What was published before this run, for push alerts afterwards.
-            BEFORE=$(git rev-parse HEAD)
-
-            # Regenerate data.js / store.json / cameras.json / photos. pull.py only
-            # downloads photos it hasn't seen (tracked in store.json), so re-running
-            # is cheap and idempotent.
-            python pull.py --limit 100
-
-            # Optional AI labels. Never allowed to stop new photos publishing.
-            python ai_tag.py || echo "::warning::AI tagging failed; photos still publish."
-            python pull.py --rebuild
-
-            git add -A
-            if git diff --cached --quiet; then
-              echo "No changes to publish this run."
-              published=1
-              break
-            fi
-
-            TIMESTAMP=$(date -u +'%Y-%m-%dT%H:%MZ')
-            git commit -m "Update trail-cam photos (${TIMESTAMP})"
-
-            # Plain fast-forward push. No --force, no rebase: our commit sits
-            # directly on top of the origin/main we just reset to.
-            if git push origin HEAD:main; then
-              echo "SUCCESS: Published update."
-              published=1
-              pushed=1
-              break
-            fi
-
-            echo "Remote moved while we were working; retrying from latest main..."
-            sleep $((attempt * 3))
-          done
-
-          if [ "${published}" -ne 1 ]; then
-            echo "ERROR: Could not publish after multiple attempts."
-            exit 1
-          fi
-
-          # Push alerts go out only after the push succeeded, comparing against what
-          # was published before, so each sighting alerts once. A failure here never
-          # fails the run. Does nothing until PUSH_SECRET is set.
-          if [ "${pushed:-0}" -eq 1 ]; then
-            python push_alerts.py --before "${BEFORE}" || echo "::warning::Push alerts failed."
-          fi
+          git add "$f"
+          git commit -m "Weekly keep-alive"
+          git pull --rebase --quiet origin main && git push origin HEAD:main || echo "::warning::Keep-alive push failed."

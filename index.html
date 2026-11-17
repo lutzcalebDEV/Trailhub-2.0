@@ -69,9 +69,9 @@
     </div>
   </div>
 
-  <!-- Site config + generated capture data (define globals before the app boots). -->
+  <!-- Site config (the Worker's address). The photos and everything else are
+       private: the app fetches them from the Worker after signing in. -->
   <script src="config.js"></script>
-  <script src="data.js"></script>
 
   <!-- Vendored React + htm (no build step; works on GitHub Pages over plain http). -->
   <script src="vendor/react.production.min.js"></script>

@@ -6,7 +6,7 @@ import {
   loadCameraNames, remoteLoadCameraNames, remoteSaveCameraName, displayCamera,
   loadMetadata, remoteLoadMetadata, remoteSaveMetadata, applyMeta, metaOf, cameraLabels,
   remoteLoadComments, saveComment, updateUpload, NotSignedIn, TooManyAttempts,
-  loadSession, saveSession, faceIdOn, faceIdName, getScrollY, scrollToY,
+  loadSession, saveSession, faceIdOn, faceIdName, setApiAuth, forgetPrivateData, getScrollY, scrollToY,
 } from "./core.js";
 import { filterCaptures, speciesList, reviewQueue } from "./analytics.js";
 import {
@@ -15,6 +15,7 @@ import {
 } from "./shell.js";
 import { Lightbox, Toast } from "./ui.js";
 import { UploadDialog, SignInDialog } from "./upload.js";
+import { LoginScreen } from "./login.js";
 import { Comments } from "./comments.js";
 import { AccountsDialog, PasswordDialog, usePendingAccounts } from "./account.js";
 import { AlertsDialog } from "./alerts.js";
@@ -92,7 +93,12 @@ function loadUploadEdits() {
 }
 
 function App() {
-  const { data, refresh, refreshing } = useData();
+  // The signed-in account. Its session token is kept on this device (30 days) so a
+  // refresh doesn't sign you out; the password itself is never stored. Nothing is
+  // shown, or even fetched, without one: the app is the sign-in screen until then.
+  const [uploadAuth, setUploadAuth] = useState(loadSession);
+  setApiAuth(uploadAuth);
+  const { data, refresh, refreshing } = useData(uploadAuth, () => setUploadAuth(null));
   const [theme, setTheme] = usePersistent(LS.theme, "dark");
   const [sidebarCollapsed, setSidebarCollapsed] = usePersistent(LS.sidebarCollapsed, "false");
   // Active tab + filters are remembered across refreshes so the page comes back
@@ -119,9 +125,6 @@ function App() {
 
   const [lightbox, setLightbox] = useState(null);
   const [uploadOpen, setUploadOpen] = useState(false);
-  // The signed-in account. Its session token is kept on this device (30 days) so a
-  // refresh doesn't sign you out; the password itself is never stored.
-  const [uploadAuth, setUploadAuth] = useState(loadSession);
   const [accountsOpen, setAccountsOpen] = useState(false);
   const [alertsOpen, setAlertsOpen] = useState(false);
   const [faceIdOpen, setFaceIdOpen] = useState(false);
@@ -329,7 +332,9 @@ function App() {
   }, [showToast, pushLocalEdits, faceIdSupported]);
   const signOut = useCallback(() => { setUploadAuth(null); setAccountsOpen(false); showToast("ok", "Signed out"); }, [showToast]);
   const [pendingAccounts, refreshPending] = usePendingAccounts(uploadAuth, data);
-  useEffect(() => { saveSession(uploadAuth); }, [uploadAuth]);
+  // Signing out (or a session that ended) also deletes the photo list and the
+  // photos kept on this device for offline use.
+  useEffect(() => { saveSession(uploadAuth); if (!uploadAuth) forgetPrivateData(); }, [uploadAuth]);
 
   // Reload shared data with every refresh, so edits from other devices show up
   // on the same schedule as new photos.
@@ -724,6 +729,9 @@ function App() {
     onFaceId: faceIdSupported ? () => setFaceIdOpen(true) : null,
     onPassword: () => setPasswordOpen(true),
   };
+
+  // Nothing without signing in: until then the app is the sign-in screen.
+  if (!uploadAuth) return html`<${LoginScreen} onDone=${signedIn} message=${signIn ? signIn.message : ""} />`;
 
   return html`<${Fragment}>
     <div className=${sidebarCollapsed === "true" ? "app app--sidebar-collapsed" : "app"}>

@@ -116,8 +116,8 @@ function normalizePayload(d) {
         tags: baseTags || [species],
         camera: c.camera || "Camera",
         date,
-        image: c.image || "",
-        thumb: c.thumb || "",
+        image: mediaUrl(c.image),
+        thumb: mediaUrl(c.thumb),
         isNight: !!c.isNight,
         confidence: c.confidence == null ? null : c.confidence,
         aiTagged: !!c.aiTagged,
@@ -168,20 +168,86 @@ function parseDataScript(text) {
   return JSON.parse(m[1]);
 }
 
+/* ------------------------- Signed-in reads only ------------------------- */
+// Nothing is public: the photo list, the edits and every photo come from the
+// Worker, which answers only signed-in people (tag-worker.js, "Private storage").
+// The app sets who's signed in here (setApiAuth) and every read below uses it.
+let apiAuth = null;
+export function setApiAuth(auth) {
+  if ((auth && auth.user) !== (apiAuth && apiAuth.user)) mediaPass = null;
+  apiAuth = auth && auth.token ? auth : null;
+}
+async function apiGet(path) {
+  if (!TAGS_API || !apiAuth) throw new NotSignedIn("Sign in");
+  const r = await fetch(TAGS_API + path, { headers: { Authorization: authHeader(apiAuth) }, cache: "no-store" });
+  if (r.status === 401) throw new NotSignedIn("Sign in");
+  if (!r.ok) throw new Error(`${path} failed (${r.status})`);
+  return r;
+}
+const getJSON = async (path) => (await apiGet(path)).json();
+
+// Photos: an <img> can't send a sign-in header, so each photo address carries a
+// photo pass (a read-only key that lasts a week). It's fetched once per sign-in
+// and renewed a day before it runs out. Photos stored in R2 have their old public
+// address in data.js; that's mapped to the Worker's private one.
+const MEDIA_KEY = "trailhub-media-pass";
+let mediaPass = null;
+export async function ensureMediaPass() {
+  const fresh = (p) => p && p.user === (apiAuth && apiAuth.user) && p.exp - Date.now() > 86400000;
+  if (fresh(mediaPass)) return mediaPass;
+  try { const saved = JSON.parse(localStorage.getItem(MEDIA_KEY) || "null"); if (fresh(saved)) return (mediaPass = saved); } catch (e) {}
+  const r = await getJSON("/media-token");
+  mediaPass = { token: r.token, exp: r.exp, user: apiAuth.user };
+  try { localStorage.setItem(MEDIA_KEY, JSON.stringify(mediaPass)); } catch (e) {}
+  return mediaPass;
+}
+const R2_ADDRESS = /^https:\/\/pub-[0-9a-f]+\.r2\.dev\/(.+)$/;
+export function mediaUrl(url) {
+  const m = R2_ADDRESS.exec(url || "");
+  if (!m || !TAGS_API) return url || "";
+  return `${TAGS_API}/media/${m[1]}?m=${encodeURIComponent(mediaPass ? mediaPass.token : "")}`;
+}
+
+// The last photo list is kept on this device, so the app opens at once (and with
+// no signal) before the fresh copy arrives. Signing out deletes it, and the
+// photos kept for offline use (forgetPrivateData).
+const DATA_CACHE = "vale-state";
+const DATA_KEY = "/state/data";
+async function rememberData(text) {
+  try { await (await caches.open(DATA_CACHE)).put(DATA_KEY, new Response(text)); } catch (e) {}
+}
+export async function loadCachedData() {
+  try {
+    const hit = await (await caches.open(DATA_CACHE)).match(DATA_KEY);
+    if (!hit || !apiAuth) return null;
+    await ensureMediaPass().catch(() => {});
+    return normalizePayload(parseDataScript(await hit.text()));
+  } catch (e) { return null; }
+}
+export async function forgetPrivateData() {
+  mediaPass = null;
+  try { localStorage.removeItem(MEDIA_KEY); } catch (e) {}
+  try {
+    await (await caches.open(DATA_CACHE)).delete(DATA_KEY);
+    await caches.delete("vale-photos");
+  } catch (e) {}
+}
+
 export async function fetchLatestData() {
-  const res = await fetch(`data.js?t=${Date.now()}`, { cache: "no-store" });
-  if (!res.ok) throw new Error(`data.js fetch failed (${res.status})`);
-  return normalizePayload(parseDataScript(await res.text()));
+  const [res] = await Promise.all([apiGet("/data"), ensureMediaPass()]);
+  const text = await res.text();
+  const data = normalizePayload(parseDataScript(text));
+  rememberData(text);
+  return data;
 }
 
 export function loadInitialData() {
-  const d = (typeof window !== "undefined" && window.TRAILHUB_DATA) || {};
-  return normalizePayload(d);
+  return normalizePayload({});
 }
 
-/* ----------------------- Shared tag sync (optional) --------------------- */
-// window.TRAILHUB_TAGS_API (config.js) enables global tag edits. Without it,
-// edits stay in this browser only, on top of a committed tags.json overlay.
+/* ------------------------------ Shared edits ------------------------------ */
+// window.TRAILHUB_TAGS_API (config.js) is the Worker: it serves everything and
+// saves the family's edits for everyone.
 const TAGS_API =
   typeof window !== "undefined" && window.TRAILHUB_TAGS_API
     ? String(window.TRAILHUB_TAGS_API).replace(/\/$/, "")
@@ -202,16 +268,7 @@ export function normalizeTagMap(raw) {
 }
 
 export async function remoteLoadTags() {
-  const urls = [];
-  if (TAGS_API) urls.push(TAGS_API + (TAGS_API.includes("?") ? "&" : "?") + "t=" + Date.now());
-  urls.push("tags.json?t=" + Date.now());
-  for (const u of urls) {
-    try {
-      const r = await fetch(u, { cache: "no-store" });
-      if (r.ok) return normalizeTagMap(await r.json());
-    } catch (e) { /* try next */ }
-  }
-  return null;
+  try { return normalizeTagMap(await getJSON("/")); } catch (e) { return null; }
 }
 
 // Every write to the Worker carries the family login. Without one, the Worker
@@ -532,9 +589,16 @@ export function loadSession() {
 }
 export function saveSession(auth) {
   try {
-    if (auth && auth.token) localStorage.setItem(LS.session, JSON.stringify(auth));
-    else localStorage.removeItem(LS.session);
+    if (auth && auth.token) {
+      localStorage.setItem(LS.session, JSON.stringify(auth));
+      localStorage.setItem(LS.lastUser, auth.user);
+    } else localStorage.removeItem(LS.session);
   } catch (e) {}
+}
+// The username last signed in on this device, kept after signing out so the
+// sign-in screen can fill it in. The password is left to iCloud Keychain.
+export function lastUser() {
+  try { return localStorage.getItem(LS.lastUser) || ""; } catch (e) { return ""; }
 }
 
 export const MAX_VIDEO_BYTES = 80 * 1024 * 1024;
@@ -586,16 +650,7 @@ export async function updateUpload(patch, auth) {
 /* ------------------------------ Comments -------------------------------- */
 // Anyone can read comments. Posting needs the upload login.
 export async function remoteLoadComments() {
-  const urls = [];
-  if (TAGS_API) urls.push(TAGS_API + "/comments?t=" + Date.now());
-  urls.push("comments.json?t=" + Date.now());
-  for (const u of urls) {
-    try {
-      const r = await fetch(u, { cache: "no-store" });
-      if (r.ok) return await r.json();
-    } catch (e) { /* try next */ }
-  }
-  return null;
+  try { return await getJSON("/comments"); } catch (e) { return null; }
 }
 
 // `body` is { photo, text, author } or { photo, remove }. Returns that photo's comments.
@@ -618,16 +673,7 @@ export function normalizeNameMap(raw) {
 }
 
 export async function remoteLoadCameraNames() {
-  const urls = [];
-  if (CAMERAS_API) urls.push(CAMERAS_API + (CAMERAS_API.includes("?") ? "&" : "?") + "t=" + Date.now());
-  urls.push("camera-names.json?t=" + Date.now());
-  for (const u of urls) {
-    try {
-      const r = await fetch(u, { cache: "no-store" });
-      if (r.ok) return normalizeNameMap(await r.json());
-    } catch (e) { /* try next */ }
-  }
-  return null;
+  try { return normalizeNameMap(await getJSON("/cameras")); } catch (e) { return null; }
 }
 
 export async function remoteSaveCameraName(id, name, auth) {
@@ -694,16 +740,7 @@ export function normalizeMetaMap(raw) {
 }
 
 export async function remoteLoadMetadata() {
-  const urls = [];
-  if (META_API) urls.push(META_API + (META_API.includes("?") ? "&" : "?") + "t=" + Date.now());
-  urls.push("metadata.json?t=" + Date.now());
-  for (const u of urls) {
-    try {
-      const r = await fetch(u, { cache: "no-store" });
-      if (r.ok) return normalizeMetaMap(await r.json());
-    } catch (e) { /* try next */ }
-  }
-  return null;
+  try { return normalizeMetaMap(await getJSON("/meta")); } catch (e) { return null; }
 }
 
 // Save a metadata patch for one photo. Keys set to null are removed server-side;
@@ -747,6 +784,7 @@ export const LS = {
   uploadEdits: "trailhub-upload-edits",
   sidebarCollapsed: "trailhub-sidebar-collapsed",
   session: "trailhub-session",
+  lastUser: "trailhub-last-user",
   alertSpecies: "trailhub-alert-species",
   alertCameras: "trailhub-alert-cameras",
   alertQuiet: "trailhub-alert-quiet",
@@ -817,13 +855,20 @@ export function usePersistentSet(key) {
   return [set, { add, remove, clear, setSet }];
 }
 
-// Loads data instantly from window.TRAILHUB_DATA, then polls data.js for updates.
-export function useData(pollMs = 5 * 60 * 1000) {
+// The photo list for whoever is signed in (nothing for anyone else): the copy
+// kept on this device first, so the app opens at once and with no signal, then the
+// Worker's, checked again every few minutes. A refused sign-in (the password was
+// changed elsewhere, or the account removed) calls onSignedOut.
+export function useData(auth, onSignedOut, pollMs = 5 * 60 * 1000) {
   const [data, setData] = useState(loadInitialData);
   const [refreshing, setRefreshing] = useState(false);
   const mounted = useRef(true);
+  const signedOut = useRef(onSignedOut);
+  signedOut.current = onSignedOut;
+  const user = auth && auth.token ? auth.user : null;
 
   const refresh = useCallback(async () => {
+    if (!user) return null;
     setRefreshing(true);
     try {
       const fresh = await fetchLatestData();
@@ -835,12 +880,17 @@ export function useData(pollMs = 5 * 60 * 1000) {
       if (mounted.current) setData((prev) => (same(prev) ? prev : fresh));
       return fresh;
     } catch (e) {
+      if (e instanceof NotSignedIn && signedOut.current) signedOut.current();
       return null; // keep current data
     } finally { if (mounted.current) setRefreshing(false); }
-  }, []);
+  }, [user, auth && auth.token]);
 
   useEffect(() => {
     mounted.current = true;
+    if (!user) { setData(loadInitialData()); return undefined; }
+    loadCachedData().then((kept) => {
+      if (kept && mounted.current) setData((prev) => (prev.captures.length ? prev : kept));
+    });
     refresh();
     const t = setInterval(refresh, pollMs);
     // Coming back to the tab (or phone) should show new photos right away.

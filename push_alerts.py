@@ -1,7 +1,7 @@
 """Push alerts: tell phones about new sightings after each publish.
 
 Runs in the GitHub workflow right after a successful publish. It compares the
-data.js just pushed with the one before it and collects each photo's species that
+data.js just published with the one before it and collects each photo's species that
 are new: a new photo, or an existing photo that just got identified (by SPYPOINT,
 the AI tagger, or someone tagging it on the site). It then sends that list to the
 Worker's /push/notify, which delivers standard push notifications to every phone
@@ -12,15 +12,18 @@ from one trigger is one sighting, and "Animal" (unidentified) and "Empty" never
 alert. Needs PUSH_SECRET (the same value as the Worker secret); without it, or
 without a Worker URL in config.js, this does nothing.
 
-    python push_alerts.py --before <git revision>     # what the workflow runs
-    python push_alerts.py --before HEAD~50 --dry-run  # preview, sends nothing
+    python push_alerts.py --before-file .prev-data.js  # what the workflow runs
+    python push_alerts.py --before-file old.js --dry-run  # preview, sends nothing
+
+The previous data.js comes from state_sync.py download (data.js no longer lives in
+the repo). With no previous copy to compare against, nothing is sent: otherwise
+every recent photo would look new.
 """
 import os
 import re
 import sys
 import json
 import argparse
-import subprocess
 import urllib.request
 import datetime as dt
 from pathlib import Path
@@ -43,11 +46,10 @@ def parse_payload(text):
     return json.loads(m.group(1)) if m else None
 
 
-def data_at(rev):
-    """data.js as it was at a git revision (None if it didn't exist)."""
+def data_from(path):
+    """A saved data.js (None if it's missing or empty)."""
     try:
-        out = subprocess.run(["git", "show", f"{rev}:data.js"], cwd=HERE, capture_output=True, check=True)
-        return parse_payload(out.stdout.decode("utf-8"))
+        return parse_payload(Path(path).read_text(encoding="utf-8"))
     except Exception:
         return None
 
@@ -154,7 +156,7 @@ def build_sightings(before, after, now=None, hours=RECENT_HOURS):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--before", required=True, help="git revision of the previously published data.js")
+    ap.add_argument("--before-file", required=True, help="the previously published data.js")
     ap.add_argument("--dry-run", action="store_true", help="print the sightings instead of sending them")
     ap.add_argument("--all-ages", action="store_true", help="ignore the 48-hour window (for previews)")
     args = ap.parse_args()
@@ -168,8 +170,12 @@ def main():
     if not after:
         print("Push alerts: couldn't read data.js.")
         return 1
+    before = data_from(args.before_file)
+    if not before or not before.get("captures"):
+        print("Push alerts: no previous data.js to compare with; sending nothing this run.")
+        return 0
     now = dt.datetime(2100, 1, 1, tzinfo=dt.timezone.utc) if args.all_ages else None
-    sightings = build_sightings(data_at(args.before), after, now, 10 ** 6 if args.all_ages else RECENT_HOURS)
+    sightings = build_sightings(before, after, now, 10 ** 6 if args.all_ages else RECENT_HOURS)
     if not sightings:
         print("Push alerts: no new sightings.")
         return 0

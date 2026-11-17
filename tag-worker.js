@@ -1,15 +1,12 @@
 // TrailHub sync Worker (Cloudflare Workers, free tier).
 // ---------------------------------------------------------------------------
 // PURPOSE
-//   Saves the family's edits (tags, camera names, notes, comments, uploads) into
-//   JSON files in the GitHub repo so they show up for EVERYONE, on every device.
-//   pull.py bakes those files into data.js on the next scheduled run, and the site
-//   also reads them live right away.
-//
-// WHY YOU NEED IT
-//   GitHub Pages can only SERVE files, it can't SAVE them. This Worker is the piece
-//   that does the saving. It holds your GitHub token server-side so the token is
-//   never exposed in the website.
+//   The site's private back end. GitHub Pages serves only the app itself; every
+//   photo, the photo list (data.js) and the family's edits (tags, camera names,
+//   notes, comments, uploads) live in the PHOTOS R2 bucket, which has no public
+//   address, and this Worker hands them out to signed-in people only ("Private
+//   storage" below). pull.py bakes the edits into data.js on its next run, and the
+//   site also reads them live right away.
 //
 // SETUP (one time, ~5 minutes) — see the README "Shared tags" section.
 //   Required Worker variables (Settings -> Variables and Secrets):
@@ -24,11 +21,14 @@
 //   Then copy the Worker URL into config.js:  window.TRAILHUB_TAGS_API = "https://...workers.dev";
 //
 // ACCESS
-//   Reading is public. EVERY write needs the upload login (HTTP Basic auth), so a
-//   stranger who finds this URL can't wipe tags or rename cameras. Sign-in attempts
-//   are rate limited per IP (LOGIN_LIMITER / WRITE_LIMITER in wrangler.toml).
+//   Everything needs a sign-in, reading included; only signing in, asking for an
+//   account and the push key are open. Sign-in attempts are rate limited per IP
+//   (LOGIN_LIMITER / WRITE_LIMITER in wrangler.toml).
 //
 // API
+//   GET  /data        -> data.js (the photo list)
+//   GET  /media-token -> { token, exp }: a photo pass, so <img> tags can load photos
+//   GET  /media/<key>?m=<photo pass>  one photo or video (byte ranges supported)
 //   GET  /            -> { "<photoId>": ["Deer","Turkey"], ... }   (all photo tags)
 //   POST /            with { "id": "sp_...", "tags": ["Deer","Turkey"] }  (save one photo)
 //   POST /            with { "items": { "sp_...": ["Deer"], ... } }  (save many in one commit)
@@ -65,9 +65,9 @@
 //                     or { "photo": "...", "remove": "<commentId>" }
 // ---------------------------------------------------------------------------
 
-// Each resource maps a request path to a JSON file committed in the repo. pull.py
-// bakes tags.json + metadata.json into data.js; the site reads all three files
-// live for instant updates.
+// Each resource maps a request path to a JSON file in private storage. pull.py
+// bakes tags.json + metadata.json into data.js; the site reads them live through
+// this Worker for instant updates.
 const TAGS_FILE = "tags.json";
 const CAMERA_FILE = "camera-names.json";
 const META_FILE = "metadata.json";
@@ -83,8 +83,8 @@ const UPLOAD_ID = /^up_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  "Access-Control-Allow-Methods": "GET, HEAD, POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, Range",
 };
 
 function json(body, status = 200) {
@@ -94,13 +94,7 @@ function json(body, status = 200) {
   });
 }
 
-// UTF-8 safe base64 (custom tags may contain non-ASCII characters).
-function b64encode(str) {
-  const bytes = new TextEncoder().encode(str);
-  let bin = "";
-  bytes.forEach((b) => (bin += String.fromCharCode(b)));
-  return btoa(bin);
-}
+// UTF-8 safe base64 decoding (sign-ins and repo files may hold non-ASCII text).
 function b64decode(b64) {
   const bin = atob(b64);
   const bytes = Uint8Array.from(bin, (c) => c.charCodeAt(0));
@@ -182,53 +176,136 @@ function ghHeaders(env) {
   };
 }
 
-async function readFile(env, path) {
+/* ---------------------------- Private storage -----------------------------
+   Everything the site shows is private: it lives in the PHOTOS R2 bucket, which
+   has no public address, and this Worker hands it only to signed-in people.
+   - "state/<file>": data.js from the photo job (the workflow writes it), and the
+     JSON files edited from the site (tags, notes, comments, camera names, uploads).
+   - every other key: a photo, its small copy, or an uploaded video (/media/).
+   A file not moved here yet is read once from the repo, its old home, and saved
+   here on its first change. */
+const STATE_PREFIX = "state/";
+
+// The repo copy of a JSON file, for anything not moved to the bucket yet.
+async function readRepoFile(env, path) {
   const branch = env.GITHUB_BRANCH || "main";
   const url = `https://api.github.com/repos/${env.GITHUB_OWNER}/${env.GITHUB_REPO}/contents/${path}?ref=${branch}`;
   const r = await fetch(url, { headers: ghHeaders(env) });
-  if (r.status === 404) return { data: {}, sha: null };
+  if (r.status === 404) return {};
   if (!r.ok) throw new Error(`GitHub read failed: ${r.status}`);
   const body = await r.json();
-  let data = {};
   try {
     const parsed = JSON.parse(b64decode((body.content || "").replace(/\n/g, "")));
-    if (parsed && typeof parsed === "object") data = parsed;
+    return parsed && typeof parsed === "object" ? parsed : {};
   } catch (_) {
-    data = {};
+    return {};
   }
-  return { data, sha: body.sha };
 }
 
-async function writeFile(env, path, data, sha, message) {
-  const url = `https://api.github.com/repos/${env.GITHUB_OWNER}/${env.GITHUB_REPO}/contents/${path}`;
-  const body = {
-    message,
-    content: b64encode(JSON.stringify(data, null, 1) + "\n"),
-    branch: env.GITHUB_BRANCH || "main",
-  };
-  if (sha) body.sha = sha;
-  return fetch(url, {
-    method: "PUT",
-    headers: { ...ghHeaders(env), "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
+async function readFile(env, path) {
+  const obj = await env.PHOTOS.get(STATE_PREFIX + path);
+  if (!obj) return { data: await readRepoFile(env, path), etag: null };
+  let data = {};
+  try {
+    const parsed = JSON.parse(await obj.text());
+    if (parsed && typeof parsed === "object") data = parsed;
+  } catch (_) {}
+  return { data, etag: obj.etag };
 }
 
-// Read-modify-write with retries to survive concurrent edits (GitHub returns 409
-// when the sha is stale). `mutate(data)` edits the map in place; returning false
-// from it means "nothing to change", which skips the commit.
-async function saveEntry(env, path, mutate, message) {
-  for (let attempt = 0; attempt < 3; attempt++) {
-    const { data, sha } = await readFile(env, path);
+// Saves only if nobody else saved since `etag` was read; false when someone did.
+async function writeFile(env, path, data, etag) {
+  const options = { httpMetadata: { contentType: "application/json", cacheControl: "no-store" } };
+  if (etag) options.onlyIf = { etagMatches: etag };
+  const put = await env.PHOTOS.put(STATE_PREFIX + path, JSON.stringify(data, null, 1) + "\n", options);
+  return !!put;
+}
+
+// Read-modify-write with retries to survive concurrent edits. `mutate(data)`
+// edits the map in place; returning false from it means "nothing to change".
+// (The last argument, once a commit message, is no longer used.)
+async function saveEntry(env, path, mutate, _message) {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const { data, etag } = await readFile(env, path);
     if (mutate(data) === false) return { ok: true, data, unchanged: true };
-    const res = await writeFile(env, path, data, sha, message);
-    if (res.ok) return { ok: true, data };
-    if (res.status !== 409) {
-      const text = await res.text();
-      return { ok: false, status: 502, error: `Save failed (${res.status}): ${text}` };
-    }
+    if (await writeFile(env, path, data, etag)) return { ok: true, data };
   }
   return { ok: false, status: 409, error: "Conflict after retries, please try again." };
+}
+
+// data.js as the photo job last wrote it (the repo copy until it moves here).
+async function readDataScript(env) {
+  const obj = await env.PHOTOS.get(STATE_PREFIX + "data.js");
+  if (obj) return obj.text();
+  const branch = env.GITHUB_BRANCH || "main";
+  const r = await fetch(`https://raw.githubusercontent.com/${env.GITHUB_OWNER}/${env.GITHUB_REPO}/${branch}/data.js`,
+    { headers: { "User-Agent": "trailhub-tags" } });
+  return r.ok ? r.text() : "window.TRAILHUB_DATA = {};\n";
+}
+
+/* Photos and videos: GET /media/<key>?m=<photo pass>. An <img> or <video> can't
+   send a sign-in header, so the app asks for a photo pass (GET /media-token): a
+   signed, read-only key that lasts MEDIA_DAYS and is checked against the account
+   on every request, so removing someone or changing their password stops it. */
+const MEDIA_DAYS = 7;
+async function makeMediaToken(env, user) {
+  const exp = Date.now() + MEDIA_DAYS * 86400000;
+  const body = b64url(new TextEncoder().encode(JSON.stringify({ u: user, iat: Date.now(), exp })));
+  return { token: `m1.${body}.${b64url(await hmac(env, "media:" + body))}`, exp };
+}
+async function mediaViewer(env, request, url) {
+  const m = url.searchParams.get("m");
+  if (!m) return authenticate(request, env);
+  const [v, body, sig] = m.split(".");
+  if (v !== "m1" || !body || !sig) return null;
+  try {
+    if (!sameBytes(fromB64url(sig), await hmac(env, "media:" + body))) return null;
+    const c = JSON.parse(new TextDecoder().decode(fromB64url(body)));
+    if (!c || !c.u || !(c.exp > Date.now())) return null;
+    if (await isShared(env, c.u)) return { user: env.UPLOAD_USER };
+    const acct = await getAccount(env, c.u);
+    if (!acct || acct.status !== "approved") return null;
+    if (acct.sessionsFrom && c.iat < acct.sessionsFrom) return null;
+    return { user: acct.name };
+  } catch (_) { return null; }
+}
+
+// Serves one photo or video, with byte ranges (iPhones play video in pieces).
+async function handleMedia(request, env, url) {
+  let key = "";
+  try { key = decodeURIComponent(url.pathname.slice("/media/".length)); } catch (_) {}
+  if (!key || key.startsWith(STATE_PREFIX) || key.includes("..")) return new Response("Not found", { status: 404, headers: CORS });
+  if (!(await mediaViewer(env, request, url))) return new Response("Sign in to see photos.", { status: 401, headers: CORS });
+  let range;
+  const asked = /^bytes=(\d*)-(\d*)$/.exec(request.headers.get("Range") || "");
+  if (asked && (asked[1] || asked[2])) {
+    if (asked[1]) {
+      const offset = Number(asked[1]);
+      range = asked[2] ? { offset, length: Number(asked[2]) - offset + 1 } : { offset };
+    } else {
+      range = { suffix: Number(asked[2]) };
+    }
+  }
+  const obj = await env.PHOTOS.get(key, range ? { range } : undefined);
+  if (!obj) return new Response("Not found", { status: 404, headers: CORS });
+  const headers = new Headers(CORS);
+  headers.set("Content-Type", (obj.httpMetadata && obj.httpMetadata.contentType) || "application/octet-stream");
+  headers.set("Cache-Control", "private, max-age=31536000, immutable");
+  headers.set("Accept-Ranges", "bytes");
+  headers.set("Access-Control-Expose-Headers", "Content-Range, Content-Length, Accept-Ranges");
+  if (obj.httpEtag) headers.set("ETag", obj.httpEtag);
+  if (!range) {
+    headers.set("Content-Length", String(obj.size));
+    return new Response(obj.body, { status: 200, headers });
+  }
+  const start = range.suffix != null ? Math.max(0, obj.size - range.suffix) : range.offset;
+  const end = range.length != null ? Math.min(obj.size - 1, start + range.length - 1) : obj.size - 1;
+  if (start >= obj.size || end < start) {
+    return new Response("Range not satisfiable", { status: 416, headers: { ...CORS, "Content-Range": `bytes */${obj.size}` } });
+  }
+  headers.set("Content-Range", `bytes ${start}-${end}/${obj.size}`);
+  headers.set("Content-Length", String(end - start + 1));
+  return new Response(obj.body, { status: 206, headers });
 }
 
 // Starts the photo pull. Needs a token with Actions: Read and write, as DISPATCH_TOKEN
@@ -1297,7 +1374,8 @@ export default {
 
     // Route by path: /cameras -> camera names, /meta -> per-photo metadata,
     // everything else -> photo tags.
-    const path = new URL(request.url).pathname.replace(/\/+$/, "").toLowerCase();
+    const url = new URL(request.url);
+    const path = url.pathname.replace(/\/+$/, "").toLowerCase();
     const isCameras = path === "/cameras" || path === "/camera-names";
     const isMeta = path === "/meta" || path === "/metadata";
 
@@ -1306,15 +1384,15 @@ export default {
       if (request.method === "GET" && path === "/push/key") {
         return json({ enabled: pushReady(env), publicKey: pushReady(env) ? env.VAPID_PUBLIC_KEY : null });
       }
-      if (request.method === "GET" && path !== "/accounts" && path !== "/passkeys" && path !== "/password") {
-        const file = path === "/comments" ? COMMENTS_FILE : isCameras ? CAMERA_FILE : isMeta ? META_FILE : TAGS_FILE;
-        const { data } = await readFile(env, file);
-        return json(data);
+      // Photos and videos: checked by their photo pass, and not rate limited (one
+      // screen of photos is dozens of requests).
+      if ((request.method === "GET" || request.method === "HEAD") && path.startsWith("/media/")) {
+        return await handleMedia(request, env, url);
       }
 
       if (request.method !== "POST" && request.method !== "GET") return json({ error: "Method not allowed." }, 405);
 
-      // Every write is signed in. Reads above stay public.
+      // Everything below is signed in, reads included, except signing in itself.
       // Challenges check no password, so they get the looser limit (a sign-up asks
       // for one as the username is typed).
       const strict = path === "/login" || path === "/register" || path === "/passkey/register" || path === "/passkey/login" ||
@@ -1331,7 +1409,19 @@ export default {
       if (path === "/push/notify" && request.method === "POST") return await handlePushNotify(request, env);
 
       const who = await authenticate(request, env);
-      if (!who) return json({ error: "Sign in to save changes." }, 401);
+      if (!who) return json({ error: "Sign in to see Vale Trails." }, 401);
+
+      if (request.method === "GET" && path === "/data") {
+        return new Response(await readDataScript(env), {
+          headers: { "Content-Type": "application/javascript; charset=utf-8", "Cache-Control": "no-store", ...CORS },
+        });
+      }
+      if (request.method === "GET" && path === "/media-token") return json(await makeMediaToken(env, who.user));
+      if (request.method === "GET" && path !== "/accounts" && path !== "/passkeys" && path !== "/password") {
+        const file = path === "/comments" ? COMMENTS_FILE : isCameras ? CAMERA_FILE : isMeta ? META_FILE : TAGS_FILE;
+        const { data } = await readFile(env, file);
+        return json(data);
+      }
 
       if (path === "/accounts") return await handleAccounts(request, env, who);
       if (path === "/passkeys") return await handlePasskeys(request, env, who);

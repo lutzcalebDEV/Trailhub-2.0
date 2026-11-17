@@ -1,12 +1,13 @@
 // Vale Trails — service worker.
-// Makes the site installable and lets it open with no signal: the app shell and
-// the last data.js are kept in a cache and used when the network fails.
+// Makes the site installable and lets it open with no signal: the app shell is
+// kept in a cache and used when the network fails. (The photo list is private and
+// comes from the Worker; the app keeps its own copy of it, see core.js.)
 //
 // Strategy: network first, cache as fallback, for same-origin GET requests only.
 // Always trying the network first means a deploy is picked up on the next load
-// and the app's modules can never be served from two different versions. Photos
-// (R2), map tiles and fonts are other origins and are left to the browser cache.
-const VERSION = "vale-trails-v6";
+// and the app's modules can never be served from two different versions. Map
+// tiles and fonts are other origins and are left to the browser cache.
+const VERSION = "vale-trails-v7";
 // Kept across app updates (only "vale-trails-v*" caches are replaced on update).
 const PHOTO_CACHE = "vale-photos";
 const STATE_CACHE = "vale-state";
@@ -29,6 +30,8 @@ const SHELL = [
   "./app/account.js",
   "./app/alerts.js",
   "./app/install.js",
+  "./app/login.js",
+  "./app/faceid.js",
   "./app/views/overview.js",
   "./app/views/gallery.js",
   "./app/views/uploads.js",
@@ -141,14 +144,25 @@ self.addEventListener("notificationclick", (event) => {
 });
 
 /* --------------------------- Photos without signal --------------------------
-   Photos (R2) are kept on the phone as they're seen, plus the small copies from the
+   Photos are kept on the phone as they're seen, plus the small copies from the
    last two days (the app asks for those), so recent photos still show at camp or in
    the stand. A photo never changes once taken, so a kept copy is used as is.
-   This needs the bucket to allow the site to download photos (README: r2-cors.json).
-   Whether it does is checked once a day with a separate URL, so the check can never
-   get in the way of a photo on screen; until then photos load exactly as before. */
+   Photos come from the Worker's /media/ with a photo pass (?m=) that changes
+   every week; a kept copy is filed without the pass, so it stays found. Signing
+   out deletes them all (forgetPrivateData in core.js). Videos aren't touched.
+   Whether photos can be kept is checked once a day with a separate URL, so the
+   check can never get in the way of a photo on screen. */
 const PHOTO_MAX = 600;
-const isPhoto = (url) => /.r2.dev$/.test(url.hostname) && /.(jpe?g|png|webp)$/i.test(url.pathname);
+const isPhoto = (url) => /\.workers\.dev$/.test(url.hostname) && url.pathname.startsWith("/media/") &&
+  /\.(jpe?g|png|webp)$/i.test(url.pathname);
+// The address a photo is kept under: without its pass. Anything else in the
+// address (like ?share-check) means "don't keep" (null).
+const photoKey = (href) => {
+  const url = new URL(href);
+  url.searchParams.delete("m");
+  if (url.search) return null;
+  return url.href;
+};
 
 async function readState(key) {
   const hit = await (await caches.open(STATE_CACHE)).match("/state/" + key);
@@ -166,7 +180,9 @@ function photosAllowed(sampleUrl) {
       const saved = await readState("photo-cors");
       if (saved && Date.now() - saved.at < 86400000) return (corsKnown = saved.ok);
       let ok = false;
-      try { ok = (await fetch(sampleUrl + "?offline-check=" + Date.now(), { mode: "cors", cache: "no-store" })).ok; } catch (e) {}
+      const probe = new URL(sampleUrl);
+      probe.searchParams.set("offline-check", String(Date.now()));
+      try { ok = (await fetch(probe.href, { mode: "cors", cache: "no-store" })).ok; } catch (e) {}
       await writeState("photo-cors", { ok, at: Date.now() });
       return (corsKnown = ok);
     })();
@@ -183,9 +199,10 @@ async function keep(cache, url, res) {
 }
 
 async function photo(request) {
-  if (new URL(request.url).search) return fetch(request); // checks like ?share-check: never kept
+  const key = photoKey(request.url);
+  if (!key) return fetch(request); // checks like ?share-check: never kept
   const cache = await caches.open(PHOTO_CACHE);
-  const hit = await cache.match(request.url);
+  const hit = await cache.match(key);
   if (hit) return hit;
   // Until the check has an answer, load the photo as before and let the check run
   // alongside; the photos after it use the answer.
@@ -197,7 +214,7 @@ async function photo(request) {
   if (corsKnown) {
     try {
       const res = await fetch(request.url, { mode: "cors", credentials: "omit" });
-      if (res.ok) keep(cache, request.url, res.clone()).catch(() => {});
+      if (res.ok) keep(cache, key, res.clone()).catch(() => {});
       return res;
     } catch (e) { /* offline or refused: fall through */ }
   }
@@ -212,10 +229,11 @@ self.addEventListener("message", (event) => {
     if (!(await photosAllowed(msg.urls[0]))) return;
     const cache = await caches.open(PHOTO_CACHE);
     for (const u of msg.urls.slice(0, 200)) {
-      if (await cache.match(u)) continue;
+      const key = photoKey(u);
+      if (!key || (await cache.match(key))) continue;
       try {
         const res = await fetch(u, { mode: "cors", credentials: "omit" });
-        if (res.ok) await keep(cache, u, res);
+        if (res.ok) await keep(cache, key, res);
       } catch (e) { return; } // offline: try again next time
     }
   })());

@@ -94,9 +94,9 @@ function usernameProblem(name) {
 }
 
 // Sign in, or ask for an account (which an admin approves before it can sign in).
-export function SignIn({ onDone, message }) {
-  const [mode, setMode] = useState("signin");
-  const [user, setUser] = useState("");
+export function SignIn({ onDone, message, initialUser = "", startMode = "signin" }) {
+  const [mode, setMode] = useState(startMode);
+  const [user, setUser] = useState(initialUser);
   // The password boxes aren't tied to state: iOS can fill them (saved passwords,
   // "Use Strong Password") without the events a controlled input needs, and the
   // next redraw would wipe them. They're read from the form when it's sent.

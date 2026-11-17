@@ -156,11 +156,23 @@ def has_photo(capture):
     return image.startswith("https://") or (image.startswith("photos/") and (HERE / image).exists())
 
 
+_r2 = []  # the R2 client, made on first use ([None] when R2 isn't set up)
+
+
 def photo_bytes(capture):
-    """Read a photo from Cloudflare R2, or from the repo if it hasn't moved."""
+    """Read a photo from Cloudflare R2, or from the repo if it hasn't moved.
+
+    The bucket has no public address, so R2 photos are read with the API keys.
+    """
     image = str(capture["image"])
     if not image.startswith("https://"):
         return (HERE / image).read_bytes()
+    if not _r2:
+        from pull import make_r2_uploader
+        _r2.append(make_r2_uploader())
+    key = _r2[0].key_for(image) if _r2[0] else None
+    if key:
+        return _r2[0].get_bytes(key)
     request = urllib.request.Request(image, headers={"User-Agent": "TrailHub/1.0"})
     with urllib.request.urlopen(request, timeout=30) as response:
         return response.read()

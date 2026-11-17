@@ -265,14 +265,40 @@ class R2Uploader:
             self.used += local_path.stat().st_size
         return f"{self.public_base_url}/{key}"
 
+    # The bucket has no public address any more (the site reads photos through the
+    # Worker for signed-in people), so everything here reads it with the API keys.
+    # R2_PUBLIC_BASE_URL stays as the fixed prefix of each photo's address in data.js.
+
+    def key_for(self, url: str):
+        """The bucket key behind a photo address, or None if it isn't one of ours."""
+        prefix = self.public_base_url + "/"
+        return url[len(prefix):] if url.startswith(prefix) else None
+
+    def get_bytes(self, key: str, first: int = 0) -> bytes:
+        """A file from the bucket (just its first bytes when `first` is set)."""
+        extra = {"Range": f"bytes=0-{first - 1}"} if first else {}
+        return self._client.get_object(Bucket=self.bucket, Key=key, **extra)["Body"].read()
+
+    def get_text(self, key: str):
+        """A text file from the bucket, or None if there isn't one."""
+        try:
+            return self.get_bytes(key).decode("utf-8")
+        except self._client.exceptions.NoSuchKey:
+            return None
+
+    def put_text(self, key: str, text: str, content_type: str):
+        self._client.put_object(
+            Bucket=self.bucket, Key=key, Body=text.encode("utf-8"),
+            ContentType=content_type, CacheControl="no-store",
+        )
+
 
 def move_photos_to_r2(store, r2, limit=R2_MOVES_PER_RUN):
     """Copy repo-hosted photos to R2 and point their records at the new URLs.
 
-    The first copy is fetched back through the public URL before anything changes:
-    a wrong bucket setting must not repoint the site at images that don't load.
+    The first copy is read back from the bucket before anything changes: a wrong
+    bucket setting must not repoint the site at images that don't load.
     """
-    import urllib.request
     moved = 0
     pending = [c for c in store.values() if str(c.get("image", "")).startswith("photos/")]
     for c in sorted(pending, key=lambda c: c.get("date", ""), reverse=True)[:limit]:
@@ -283,11 +309,8 @@ def move_photos_to_r2(store, r2, limit=R2_MOVES_PER_RUN):
             break
         try:
             url = r2.upload(path, path.name)
-            if not moved:
-                request = urllib.request.Request(url, headers={"User-Agent": "TrailHub/1.0"})
-                with urllib.request.urlopen(request, timeout=30) as response:
-                    if response.status != 200 or not response.read(3).startswith(b"\xff\xd8"):
-                        raise RuntimeError("the public URL didn't return the image")
+            if not moved and not r2.get_bytes(path.name, first=3).startswith(b"\xff\xd8"):
+                raise RuntimeError("the bucket didn't return the image")
         except Exception as e:
             print(f"::warning title=R2 move stopped::{e}")
             break
