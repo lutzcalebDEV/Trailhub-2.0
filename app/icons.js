@@ -43,6 +43,9 @@ const P = {
   eye: html`<g><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/></g>`,
   paw: html`<g><circle cx="6.5" cy="12.5" r="1.7"/><circle cx="10" cy="9" r="1.7"/><circle cx="14" cy="9" r="1.7"/><circle cx="17.5" cy="12.5" r="1.7"/><path d="M8.2 16.4c0-2 1.7-3.4 3.8-3.4s3.8 1.4 3.8 3.4-1.7 2.6-3.8 2.6-3.8-.6-3.8-2.6Z"/></g>`,
   grid: html`<g><rect x="3" y="3" width="8" height="8" rx="1.6"/><rect x="13" y="3" width="8" height="8" rx="1.6"/><rect x="3" y="13" width="8" height="8" rx="1.6"/><rect x="13" y="13" width="8" height="8" rx="1.6"/></g>`,
+  // Photo size buttons: many small tiles, four medium ones, one large one.
+  gridSmall: html`<g><rect x="3" y="3" width="4.6" height="4.6" rx="1"/><rect x="9.7" y="3" width="4.6" height="4.6" rx="1"/><rect x="16.4" y="3" width="4.6" height="4.6" rx="1"/><rect x="3" y="9.7" width="4.6" height="4.6" rx="1"/><rect x="9.7" y="9.7" width="4.6" height="4.6" rx="1"/><rect x="16.4" y="9.7" width="4.6" height="4.6" rx="1"/><rect x="3" y="16.4" width="4.6" height="4.6" rx="1"/><rect x="9.7" y="16.4" width="4.6" height="4.6" rx="1"/><rect x="16.4" y="16.4" width="4.6" height="4.6" rx="1"/></g>`,
+  gridLarge: html`<g><rect x="3" y="3" width="18" height="18" rx="2.6"/></g>`,
   columns: html`<g><rect x="3" y="3" width="8" height="12" rx="1.6"/><rect x="13" y="3" width="8" height="7" rx="1.6"/><rect x="3" y="17" width="8" height="4" rx="1.6"/><rect x="13" y="12" width="8" height="9" rx="1.6"/></g>`,
   inbox: html`<g><path d="M3 13h4.5l1.6 2.6h5.8L16.5 13H21"/><path d="M5.5 5h13l2.5 8v5.5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V13Z"/></g>`,
   bolt: html`<path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"/>`,

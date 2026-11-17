@@ -79,10 +79,10 @@ export function Gallery(app) {
       <${Select} value=${newestFirst ? "new" : "old"} onChange=${(v) => setNewestFirst(v === "new")}
         aria-label="Sort order"
         options=${[{ value: "new", label: "Newest" }, { value: "old", label: "Oldest" }]} />
-      <${Segmented} value=${gridSize} onChange=${setGridSize} options=${[
-        { value: "S", label: "S", title: "Small photos" },
-        { value: "M", label: "M", title: "Medium photos" },
-        { value: "L", label: "L", title: "Large photos" },
+      <${Segmented} value=${gridSize} onChange=${setGridSize} label="Photo size" options=${[
+        { value: "S", icon: "gridSmall", title: "Small photos: more on screen" },
+        { value: "M", icon: "grid", title: "Medium photos" },
+        { value: "L", icon: "gridLarge", title: "Large photos: one per row on a phone" },
       ]} />
       <${Btn} sm variant=${selecting ? "primary" : "ghost"}
         onClick=${() => (selecting ? exitSelect() : setSelecting(true))}>

@@ -36,12 +36,15 @@ export function Chip({ active, dotColor, onClear, children, className = "", ...r
   </button>`;
 }
 
-export function Segmented({ value, onChange, options }) {
-  return html`<div className="segmented">
+// An option with only an icon gets its `title` as the name screen readers read out.
+export function Segmented({ value, onChange, options, label }) {
+  return html`<div className="segmented" role="group" aria-label=${label}>
     ${options.map((o) => html`<button
       key=${o.value}
       className=${value === o.value ? "is-active" : ""}
       title=${o.title || o.label || ""}
+      aria-label=${o.label ? undefined : o.title}
+      aria-pressed=${value === o.value}
       onClick=${() => onChange(o.value)}>
       ${o.icon && html`<${Icon} name=${o.icon} size=${15} />`}
       ${o.label && html`<span>${o.label}</span>`}
