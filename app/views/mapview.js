@@ -3,7 +3,7 @@ import { html, useEffect, useRef, useMemo, useState } from "../react.js";
 import { FilterBar } from "../shell.js";
 import { Icon } from "../icons.js";
 import { Empty, Btn, Chip, healthItems } from "../ui.js";
-import { filterCaptures, cameraStatus } from "../analytics.js";
+import { filterCaptures, cameraStatus, NOT_GAME } from "../analytics.js";
 import { LS, usePersistent, timeAgo } from "../core.js";
 
 const cx = (...xs) => xs.filter(Boolean).join(" ");
@@ -54,7 +54,7 @@ function loadLeaflet() {
 const coarse = () => window.matchMedia("(pointer: coarse)").matches;
 
 export function MapView(app) {
-  const { data, captures, ov, filtered, filters, setFilter, setView, spList, theme, camName, renameCamera, auth, openSignIn } = app;
+  const { data, captures, ov, filters, setFilter, setView, spList, theme, camName, renameCamera, auth, openSignIn } = app;
   const [leafletReady, setLeafletReady] = useState(() => !!window.L);
   useEffect(() => {
     if (leafletReady) return;
@@ -66,7 +66,8 @@ export function MapView(app) {
   const mapRef = useRef(null);
   const layerRef = useRef(null);
   const [full, setFull] = useState(false);
-  const [layer, setLayer] = usePersistent(LS.mapLayer, "map");
+  // Aerial photos by default: the street map shows almost nothing in the woods.
+  const [layer, setLayer] = usePersistent(LS.mapLayer, "satellite");
   const sat = layer === "satellite";
   const tilesRef = useRef(null);
   const markersRef = useRef(new Map());
@@ -85,11 +86,16 @@ export function MapView(app) {
   );
   // Each camera's count honors every filter except the camera one. Otherwise picking
   // a camera would zero out all the others and the markers would jump in size.
+  // The counts are of animals: passing trucks, people and empty frames would say more
+  // about the road than the deer. Picking one of those species on purpose counts it.
   const countByCam = useMemo(() => {
     const m = new Map();
-    for (const c of filterCaptures(captures, { ...filters, camera: "All" }, ov)) m.set(c.camera, (m.get(c.camera) || 0) + 1);
+    for (const c of filterCaptures(captures, { ...filters, camera: "All", gameOnly: true }, ov)) m.set(c.camera, (m.get(c.camera) || 0) + 1);
     return m;
   }, [captures, filters, ov]);
+  const animalsOnly = !NOT_GAME.has(filters.species);
+  const shown = useMemo(() => filterCaptures(captures, { ...filters, gameOnly: true }, ov).length, [captures, filters, ov]);
+  const noun = animalsOnly ? "animal photo" : "photo";
 
   // (Re)create the map — also re-runs on theme change to swap tile colors.
   useEffect(() => {
@@ -141,7 +147,7 @@ export function MapView(app) {
       const go = document.createElement("button");
       go.className = "btn btn--primary btn--sm";
       go.textContent = "View photos";
-      go.addEventListener("click", () => { setFilter({ camera: cam.name }); setView("gallery"); });
+      go.addEventListener("click", () => { setFilter({ camera: cam.name, gameOnly: true }); setView("gallery"); });
       pop.append(title, sub, go);
       mk.bindPopup(pop);
       mk.on("click", () => setFilter({ camera: cameraRef.current === cam.name ? "All" : cam.name }));
@@ -193,7 +199,7 @@ export function MapView(app) {
 
   if (!cams.length) {
     return html`<div className="col" style=${{ gap: 4 }}>
-      <${FilterBar} filters=${filters} set=${setFilter} cameras=${data.cameras} speciesList=${spList} count=${filtered.length} camName=${camName} />
+      <${FilterBar} filters=${filters} set=${setFilter} cameras=${data.cameras} speciesList=${spList} count=${shown} noun=${noun} camName=${camName} />
       <${Empty} icon="map" title="No camera locations yet"
         message="When your cameras report GPS coordinates they'll appear here on the map." />
     </div>`;
@@ -213,13 +219,13 @@ export function MapView(app) {
   const rows = [...cams].sort((a, b) => (countByCam.get(b.name) || 0) - (countByCam.get(a.name) || 0));
 
   return html`<div className="col" style=${{ gap: 4 }}>
-    <${FilterBar} filters=${filters} set=${setFilter} cameras=${data.cameras} speciesList=${spList} count=${filtered.length} camName=${camName} />
+    <${FilterBar} filters=${filters} set=${setFilter} cameras=${data.cameras} speciesList=${spList} count=${shown} noun=${noun} camName=${camName} />
 
     ${selected && html`<div className="row wrap" style=${{ marginBottom: 14, gap: 10 }}>
       <${Chip} active dotColor="var(--accent)" onClear=${() => setFilter({ camera: "All" })}>${camName(selected.name)}</${Chip}>
       <div className="spacer" />
-      <${Btn} sm variant="primary" iconRight="arrowRight" onClick=${() => setView("gallery")}>
-        View ${(countByCam.get(selected.name) || 0)} in Gallery
+      <${Btn} sm variant="primary" iconRight="arrowRight" onClick=${() => { setFilter({ gameOnly: true }); setView("gallery"); }}>
+        View ${(countByCam.get(selected.name) || 0)} in Photos
       </${Btn}>
     </div>`}
 

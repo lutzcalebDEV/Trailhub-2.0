@@ -4,6 +4,8 @@ import { html } from "./react.js";
 const P = {
   dashboard: html`<g><rect x="3" y="3" width="7" height="9" rx="1.6"/><rect x="14" y="3" width="7" height="5" rx="1.6"/><rect x="14" y="12" width="7" height="9" rx="1.6"/><rect x="3" y="16" width="7" height="5" rx="1.6"/></g>`,
   images: html`<g><rect x="3" y="3" width="18" height="18" rx="2.6"/><circle cx="8.5" cy="8.5" r="1.7"/><path d="m21 15-5-5L5 21"/></g>`,
+  // Uploads: a stack of photos. (The up-arrow means "add photos".)
+  album: html`<g><rect x="3" y="7.5" width="14.5" height="13" rx="2.2"/><path d="M7 4h11.5A2.5 2.5 0 0 1 21 6.5V16"/><circle cx="7.6" cy="12" r="1.3"/><path d="m17.5 16.5-3.6-3.6-6.4 6.4"/></g>`,
   map: html`<g><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="2.6"/></g>`,
   chart: html`<g><path d="M3 3v18h18"/><rect x="7" y="11" width="3" height="6" rx="1"/><rect x="12" y="6.5" width="3" height="10.5" rx="1"/><rect x="17" y="13" width="3" height="4" rx="1"/></g>`,
   scan: html`<g><path d="M4 7V5.5A1.5 1.5 0 0 1 5.5 4H7"/><path d="M17 4h1.5A1.5 1.5 0 0 1 20 5.5V7"/><path d="M20 17v1.5a1.5 1.5 0 0 1-1.5 1.5H17"/><path d="M7 20H5.5A1.5 1.5 0 0 1 4 18.5V17"/><circle cx="12" cy="12" r="3.2"/></g>`,

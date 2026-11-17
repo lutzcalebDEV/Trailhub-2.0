@@ -57,6 +57,20 @@ export function Gallery(app) {
     setShown(PAGE);
   }, [filtered, newestFirst]);
 
+  // More photos load as the end of the list comes near, the way photo apps scroll.
+  // The "Show more" button stays as the fallback (and for keyboards).
+  const moreRef = useRef(null);
+  const more = shown < items.length;
+  useEffect(() => {
+    const el = moreRef.current;
+    if (!more || !el || typeof IntersectionObserver !== "function") return undefined;
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) setShown((n) => n + PAGE);
+    }, { rootMargin: "1200px 0px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [more, shown]);
+
   const toggle = (id) =>
     setSelected((s) => {
       const n = new Set(s);
@@ -73,36 +87,50 @@ export function Gallery(app) {
     exitSelect();
   };
 
+  // Sort order and photo size sit on the bar on a computer. A phone has no room for
+  // them there (they pushed the photos half a screen down), so it shows them in the
+  // Filters sheet, each with its name.
+  const sortSelect = html`<${Select} value=${newestFirst ? "new" : "old"} onChange=${(v) => setNewestFirst(v === "new")}
+    aria-label="Sort order"
+    options=${[{ value: "new", label: "Newest first" }, { value: "old", label: "Oldest first" }]} />`;
+  const sizeOptions = (labels) => [
+    { value: "S", icon: "gridSmall", label: labels && "Small", title: "Small photos: more on screen" },
+    { value: "M", icon: "grid", label: labels && "Medium", title: "Medium photos" },
+    { value: "L", icon: "gridLarge", label: labels && "Large", title: "Large photos: one per row on a phone" },
+  ];
+  const sheetExtras = html`<${Fragment}>
+    <div className="field-row"><span>Sort</span>${sortSelect}</div>
+    <div className="field-row"><span>Photo size</span>
+      <${Segmented} value=${gridSize} onChange=${setGridSize} label="Photo size" options=${sizeOptions(true)} />
+    </div>
+  </${Fragment}>`;
+  const bulkbar = selecting && html`<div className="bulkbar">
+    <button className="bulkbar__all" onClick=${toggleAll}>
+      ${allShown ? "Clear all" : "Select all " + sorted.length}
+    </button>
+    <span className="bulkbar__count">${selected.size} selected</span>
+    <div className="spacer" />
+    <span className="bulkbar__as">Tag as</span>
+    <${Select} value=${bulkSpecies} onChange=${setBulkSpecies} aria-label="Tag as"
+      options=${TAG_OPTIONS.map((s) => ({ value: s, label: s }))} />
+    <${Btn} sm variant="primary" icon="tag" disabled=${!selected.size} onClick=${applyBulk}>
+      Tag ${selected.size || ""}
+    </${Btn}>
+  </div>`;
+
   return html`<div className="col" style=${{ gap: 6 }}>
     <${FilterBar} filters=${filters} set=${setFilter} cameras=${data.cameras}
-      speciesList=${spList} count=${filtered.length} camName=${camName}>
-      <${Select} value=${newestFirst ? "new" : "old"} onChange=${(v) => setNewestFirst(v === "new")}
-        aria-label="Sort order"
-        options=${[{ value: "new", label: "Newest" }, { value: "old", label: "Oldest" }]} />
-      <${Segmented} value=${gridSize} onChange=${setGridSize} label="Photo size" options=${[
-        { value: "S", icon: "gridSmall", title: "Small photos: more on screen" },
-        { value: "M", icon: "grid", title: "Medium photos" },
-        { value: "L", icon: "gridLarge", title: "Large photos: one per row on a phone" },
-      ]} />
+      speciesList=${spList} count=${filtered.length} camName=${camName}
+      quick sheetExtras=${sheetExtras} below=${bulkbar}>
+      <span className="filterbar__wide">
+        ${sortSelect}
+        <${Segmented} value=${gridSize} onChange=${setGridSize} label="Photo size" options=${sizeOptions(false)} />
+      </span>
       <${Btn} sm variant=${selecting ? "primary" : "ghost"}
         onClick=${() => (selecting ? exitSelect() : setSelecting(true))}>
         ${selecting ? "Cancel" : "Select"}
       </${Btn}>
     </${FilterBar}>
-
-    ${selecting && html`<div className="bulkbar">
-      <button className="bulkbar__all" onClick=${toggleAll}>
-        ${allShown ? "Clear all" : "Select all " + sorted.length}
-      </button>
-      <span className="bulkbar__count">${selected.size} selected</span>
-      <div className="spacer" />
-      <span className="bulkbar__as">Tag as</span>
-      <${Select} value=${bulkSpecies} onChange=${setBulkSpecies}
-        options=${TAG_OPTIONS.map((s) => ({ value: s, label: s }))} />
-      <${Btn} sm variant="primary" icon="tag" disabled=${!selected.size} onClick=${applyBulk}>
-        Tag ${selected.size || ""}
-      </${Btn}>
-    </div>`}
 
     ${sorted.length === 0
       ? html`<${Empty} icon="search" title="No matching photos"
@@ -119,7 +147,7 @@ export function Gallery(app) {
                 onClick=${selecting ? () => toggle(c.id) : () => openLightbox(sorted, sorted.indexOf(c))} />`)}
             </div>
           </section>`)}
-          ${shown < items.length && html`<div className="loadmore">
+          ${shown < items.length && html`<div className="loadmore" ref=${moreRef}>
             <${Btn} onClick=${() => setShown((n) => n + PAGE)}>Show more</${Btn}>
           </div>`}
         </${Fragment}>`}

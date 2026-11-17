@@ -9,6 +9,9 @@ export function Comments({ photo, list, auth, setAuth, onChange }) {
   const [author, setAuthor] = usePersistent(LS.commentName, "");
   const [saving, setSaving] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
+  // Comments go up under the signed-in name. The box for a different name (someone
+  // on the shared family login, say) stays folded away until asked for.
+  const [naming, setNaming] = useState(false);
 
   const post = async () => {
     setSaving(true);
@@ -34,8 +37,11 @@ export function Comments({ photo, list, auth, setAuth, onChange }) {
     ${!hasUploads ? null : auth
       ? html`<textarea rows=${2} maxLength=${500} placeholder="Add a comment" aria-label="Add a comment"
             value=${text} onInput=${(e) => setText(e.target.value)} />
-          <input maxLength=${40} placeholder=${"Your name (default: " + auth.user + ")"} aria-label="Your name"
-            value=${author} onInput=${(e) => setAuthor(e.target.value)} />
+          ${naming
+            ? html`<input maxLength=${40} placeholder=${"Your name (default: " + auth.user + ")"} aria-label="Your name"
+                value=${author} onInput=${(e) => setAuthor(e.target.value)} />`
+            : html`<p className="form-note">Posting as <b>${author.trim() || auth.user}</b> ·${" "}
+                <button type="button" className="lb__link" onClick=${() => setNaming(true)}>Change</button></p>`}
           <${Btn} sm variant="primary" disabled=${!text.trim() || saving} onClick=${post}>
             ${saving ? "Saving…" : "Post"}
           </${Btn}>`

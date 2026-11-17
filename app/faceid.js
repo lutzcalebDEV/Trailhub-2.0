@@ -1,7 +1,7 @@
 // Vale Trails — Face ID sign-in (passkeys): the hooks the sign-in box uses, and the
 // "Face ID" screen from the name menu where a device turns it on.
 import { html, useState, useEffect, useCallback } from "./react.js";
-import { Btn, IconBtn } from "./ui.js";
+import { Btn, IconBtn, Dialog } from "./ui.js";
 import { Icon } from "./icons.js";
 import {
   passkeyAvailable, getPasskeyTicket, passkeyTicketFresh, passkeyCreate, loadPasskeys, removePasskey,
@@ -85,12 +85,7 @@ export function FaceIdDialog({ auth, onClose, onSignedOut, showToast }) {
     } finally { setBusy(""); }
   };
 
-  return html`<div className="modal" onClick=${onClose}>
-    <div className="modal__box" role="dialog" aria-modal="true" aria-label=${name} onClick=${(e) => e.stopPropagation()}>
-      <div className="modal__head">
-        <h2 className="h-sec"><${Icon} name="faceid" size=${17} /> ${name}</h2>
-        <${IconBtn} icon="x" bare onClick=${onClose} aria-label="Close" />
-      </div>
+  return html`<${Dialog} title=${name} icon="faceid" onClose=${onClose}>
       <div className="col" style=${{ gap: 14 }}>
         <p className="form-note">Sign in as <b>${auth.user}</b> with ${name} instead of typing the password.
           Your face never leaves the phone; Vale Trails only keeps a key that proves it's you.</p>
@@ -110,6 +105,5 @@ export function FaceIdDialog({ auth, onClose, onSignedOut, showToast }) {
         <p className="form-note faint">${name} sign-ins sync to your other Apple devices through iCloud Keychain.
           Removing one here stops it working; you can also delete it from the phone in Settings → Passwords.</p>
       </div>
-    </div>
-  </div>`;
+  </${Dialog}>`;
 }

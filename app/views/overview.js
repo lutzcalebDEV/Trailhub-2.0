@@ -1,14 +1,24 @@
-// Vale Trails — Home: what's new first, then a short summary of activity.
+// Vale Trails — Home: where to sit, how the cameras are doing, the newest deer,
+// then a short summary of activity.
 import { html } from "../react.js";
-import { Stat, Panel, Sparkbars, Histogram, Shot, Empty, Btn, CameraCard } from "../ui.js";
-import { effectiveSpecies, fmtDate, labelHour } from "../core.js";
+import { Stat, Panel, Sparkbars, Histogram, Shot, Empty, Btn, CameraCard, Segmented } from "../ui.js";
+import { effectiveSpecies, fmtDate, labelHour, LS, usePersistent } from "../core.js";
 import {
   dailyCounts, hourHistogram, daylightPct, periodDelta, peakHour, cameraStatus, collapseBursts, bestSit, withoutEmpty, animalActivity,
 } from "../analytics.js";
+import { AlertsNudge } from "../alerts.js";
 import { windowLabel } from "./insights.js";
 
+// "Deer" on Home means any deer: bucks, does, and deer nobody has told apart yet.
+const DEER = new Set(["Buck", "Doe", "Deer"]);
+const LATEST = 6;
+
 export function Overview(app) {
-  const { captures, data, ov, reviewQ, openLightbox, setView, setFilter, camName } = app;
+  const { captures, data, ov, reviewQ, openLightbox, setView, setFilter, camName, openAlerts } = app;
+  // Squirrels and raccoons trip the cameras far more often than deer do, so the
+  // newest photos would be mostly them. Home shows the newest deer unless asked for
+  // everything (remembered on this device).
+  const [latestOf, setLatestOf] = usePersistent(LS.homeLatest, "deer");
 
   if (!captures.length) {
     return html`<${Empty} icon="camera" title="No photos yet"
@@ -21,33 +31,43 @@ export function Overview(app) {
   const peak = peakHour(seen);
   const daily = dailyCounts(seen, 14);
   const busiestDay = daily.reduce((a, b) => (b.value > a.value ? b : a), daily[0]);
-  const recent = collapseBursts(withoutEmpty(captures, ov), 12);
+  const animals = withoutEmpty(captures, ov);
+  const deer = animals.filter((c) => DEER.has(effectiveSpecies(c, ov)));
+  // With no deer on the cameras yet there's nothing to choose between.
+  const deerOnly = latestOf !== "all" && deer.length > 0;
+  const latestList = deerOnly ? deer : animals;
+  const recent = collapseBursts(latestList, LATEST);
   const favorites = captures.filter((c) => c.favorite).slice(0, 6);
   const cams = cameraStatus(captures, data.cameras);
   const sit = bestSit(captures, ov);
   const showCamera = (camera) => { setFilter({ camera }); setView("gallery"); };
   // The charts here count animals only, so the photos a bar opens are animals only.
   const go = (patch) => { setFilter({ ...patch, gameOnly: true }); setView("gallery"); };
-  const seeAll = (label) => html`<${Btn} sm variant="ghost" iconRight="arrowRight"
-    onClick=${() => setView("gallery")}>${label}</${Btn}>`;
 
   return html`<div className="col" style=${{ gap: 24 }}>
-    <div className="camcards">
-      ${cams.map((row) => html`<${CameraCard} key=${row.camera} row=${row}
-        name=${camName(row.camera)} onClick=${() => showCamera(row.camera)} />`)}
-    </div>
-
     ${sit && html`<div className="bestsit">
       <span className="bestsit__k">Best bet</span>
       <b>${camName(sit.camera)}, ${windowLabel(sit)}</b>
       <span className="muted">${sit.count} of ${sit.total} recent ${sit.subject} sightings</span>
     </div>`}
 
-    <${Panel} title="Latest photos" className="panel--plain" pad=${false} actions=${seeAll("All photos")}>
+    <div className="camcards">
+      ${cams.map((row) => html`<${CameraCard} key=${row.camera} row=${row}
+        name=${camName(row.camera)} onClick=${() => showCamera(row.camera)} />`)}
+    </div>
+
+    <${AlertsNudge} onOpen=${openAlerts} />
+
+    <${Panel} title=${deerOnly ? "Latest deer" : "Latest photos"} className="panel--plain" pad=${false}
+      actions=${deer.length > 0 && html`<${Segmented} value=${deerOnly ? "deer" : "all"} onChange=${setLatestOf}
+        label="Which photos to show" options=${[{ value: "deer", label: "Deer" }, { value: "all", label: "All" }]} />`}>
       <div className="shots size-M">
         ${recent.map(({ capture: c, count }) => html`<${Shot} key=${c.id} capture=${c} burst=${count}
           species=${effectiveSpecies(c, ov)} cameraLabel=${camName(c.camera)}
-          onClick=${() => openLightbox(captures, captures.indexOf(c))} />`)}
+          onClick=${() => openLightbox(latestList, latestList.indexOf(c))} />`)}
+      </div>
+      <div className="loadmore">
+        <${Btn} iconRight="arrowRight" onClick=${() => setView("gallery")}>All photos</${Btn}>
       </div>
     </${Panel}>
 

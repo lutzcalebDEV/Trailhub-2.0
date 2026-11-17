@@ -2,7 +2,7 @@
 // Standard Web Push: once turned on, alerts arrive on the lock screen with the app
 // closed. On iPhone that works from the Home Screen app (iOS 16.4+), not Safari.
 import { html, useState, useEffect } from "./react.js";
-import { Btn, IconBtn } from "./ui.js";
+import { Btn, IconBtn, Dialog } from "./ui.js";
 import { Icon } from "./icons.js";
 import {
   SPECIES_ORDER, speciesColor, LS, loadPushKey, savePushSubscription, removePushSubscription, NotSignedIn,
@@ -38,6 +38,36 @@ const fmtClock = (hhmm) => {
   const [h, m] = String(hhmm).split(":").map(Number);
   return `${h % 12 || 12}${m ? ":" + String(m).padStart(2, "0") : ""} ${h < 12 ? "am" : "pm"}`;
 };
+
+// On Home, on a phone that could get alerts but hasn't been asked yet: one line
+// offering them. Alerts are the reason to have the Home Screen app, and otherwise
+// they're three taps away under More. "Not now" hides it on this phone for good.
+export function AlertsNudge({ onOpen }) {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    if (!pushSupported() || Notification.permission !== "default") return undefined;
+    if (!window.matchMedia("(max-width: 900px)").matches) return undefined;
+    try { if (localStorage.getItem(LS.alertsNudge)) return undefined; } catch (e) {}
+    let alive = true;
+    navigator.serviceWorker.ready
+      .then((reg) => reg.pushManager.getSubscription())
+      .then((s) => { if (alive && !s) setShow(true); }, () => {});
+    return () => { alive = false; };
+  }, []);
+  if (!show || !onOpen || Notification.permission !== "default") return null;
+  const dismiss = () => {
+    try { localStorage.setItem(LS.alertsNudge, String(Date.now())); } catch (e) {}
+    setShow(false);
+  };
+  return html`<div className="nudge nudge--alerts">
+    <${Icon} name="bell" size=${18} />
+    <span><b>Get an alert when a buck shows up</b></span>
+    <${Btn} sm variant="primary" onClick=${onOpen}>Turn on</${Btn}>
+    <button type="button" className="installhint__close" onClick=${dismiss} aria-label="Not now">
+      <${Icon} name="x" size=${16} />
+    </button>
+  </div>`;
+}
 
 export function AlertsDialog({ auth, cameras = [], camName, onClose, onSignIn, onSignedOut, showToast }) {
   const [chosen, setChosen] = useState(loadChosen);
@@ -174,13 +204,7 @@ export function AlertsDialog({ auth, cameras = [], camName, onClose, onSignIn, o
     </div>`;
   }
 
-  return html`<div className="modal" onClick=${onClose}>
-    <div className="modal__box" role="dialog" aria-modal="true" aria-label="Alerts" onClick=${(e) => e.stopPropagation()}>
-      <div className="modal__head">
-        <h2 className="h-sec"><${Icon} name="bell" size=${17} /> Alerts</h2>
-        <${IconBtn} icon="x" bare onClick=${onClose} aria-label="Close" />
-      </div>
+  return html`<${Dialog} title="Alerts" icon="bell" onClose=${onClose}>
       ${body}
-    </div>
-  </div>`;
+  </${Dialog}>`;
 }

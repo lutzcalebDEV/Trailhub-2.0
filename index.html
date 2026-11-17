@@ -35,18 +35,37 @@
   <!-- Set theme before paint to avoid a flash of the wrong palette. -->
   <script>
     try {
+      // "dark" (the default), "light", or "auto" to follow the phone's own setting.
       var t = localStorage.getItem("trailhub-theme") || "dark";
-      document.documentElement.setAttribute("data-theme", t === "light" ? "light" : "dark");
+      if (t === "auto") t = window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+      t = t === "light" ? "light" : "dark";
+      document.documentElement.setAttribute("data-theme", t);
+      // The browser's bars take the app's colour, not the phone's light or dark setting.
+      var metas = document.querySelectorAll('meta[name="theme-color"]');
+      for (var i = 0; i < metas.length; i++) metas[i].setAttribute("content", t === "light" ? "#f6f7f6" : "#0f1211");
     } catch (e) { document.documentElement.setAttribute("data-theme", "dark"); }
   </script>
 
   <!-- Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <!-- Loaded without blocking the first paint: on a weak signal the page shows in the
-       system font instead of waiting on Google, then switches to Inter. -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
-  <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" /></noscript>
+  <!-- iPhones and iPads use their own system font (styles.css, "iPhone type"): it's
+       what every other app on the phone uses, and there's nothing to download on a
+       weak signal. Everything else loads Inter, without blocking the first paint. -->
+  <script>
+    (function () {
+      var apple = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+      if (apple) { document.documentElement.classList.add("apple-type"); return; }
+      var add = function (rel, href, cross) {
+        var l = document.createElement("link");
+        l.rel = rel; l.href = href;
+        if (cross) l.crossOrigin = "";
+        document.head.appendChild(l);
+        return l;
+      };
+      add("preconnect", "https://fonts.googleapis.com");
+      add("preconnect", "https://fonts.gstatic.com", true);
+      add("stylesheet", "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+    })();
+  </script>
 
   <!-- Design system -->
   <link rel="stylesheet" href="app/styles.css" />

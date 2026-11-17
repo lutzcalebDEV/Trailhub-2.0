@@ -1,8 +1,8 @@
 // Vale Trails — app chrome: sidebar, topbar, mobile nav and the shared filter bar.
 import { html, useState, useEffect, useRef, Fragment, createPortal } from "./react.js";
 import { Icon, BrandMark } from "./icons.js";
-import { IconBtn, Select, Segmented, Switch, Chip, edgeBackHere } from "./ui.js";
-import { speciesColor, LS, labelHour, getScrollY, faceIdName } from "./core.js";
+import { IconBtn, Select, Segmented, Switch, Chip, edgeBackHere, useSheetDrag } from "./ui.js";
+import { speciesColor, LS, labelHour, getScrollY, faceIdName, isoDay } from "./core.js";
 import { RANGE_OPTIONS, rangeLabel, WEEKDAY_PLURAL, NOT_GAME } from "./analytics.js";
 import { UserMenu } from "./account.js";
 
@@ -11,7 +11,7 @@ const cx = (...xs) => xs.filter(Boolean).join(" ");
 export const VIEWS = [
   { id: "overview", label: "Home",     icon: "dashboard" },
   { id: "gallery",  label: "Photos",   icon: "images" },
-  { id: "uploads",  label: "Uploads",  icon: "upload" },
+  { id: "uploads",  label: "Uploads",  icon: "album" },
   { id: "bucks",    label: "Bucks",    icon: "target" },
   { id: "insights", label: "Patterns", icon: "chart" },
   { id: "map",      label: "Map",      icon: "map" },
@@ -100,105 +100,44 @@ function useScrolledPast(px) {
   return past;
 }
 
-// The phone's header. A pushed screen (from "More") gets a back button in place of
-// the logo; the page name fades in once the large title scrolls away.
-export function MobileTopbar({ title, onBack, theme, toggleTheme, onRefresh, refreshing, onUpload, auth, pending, onSignIn, onSignOut, onAccounts, onAlerts, onFaceId, onPassword }) {
+// The phone's header: the logo (or a back button on a screen opened from "More"), the
+// page name once the large title has scrolled away, and Upload. Everything else that
+// used to sit here is on the More tab (account, alerts, appearance) or is a gesture
+// (pull down to check for new photos).
+export function MobileTopbar({ title, onBack, onUpload }) {
   const collapsed = useScrolledPast(LARGE_TITLE_PX);
-  return html`<div className=${cx("mobile-top", collapsed && "is-collapsed")}>
+  // Its height is shared as --mobile-top-h, so the Photos filter bar can stay pinned
+  // just under it.
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return undefined;
+    const set = () => { if (el.offsetHeight) document.documentElement.style.setProperty("--mobile-top-h", el.offsetHeight + "px"); };
+    set();
+    const ro = typeof ResizeObserver === "function" ? new ResizeObserver(set) : null;
+    if (ro) ro.observe(el);
+    return () => { if (ro) ro.disconnect(); };
+  }, []);
+  return html`<div ref=${ref} className=${cx("mobile-top", collapsed && "is-collapsed")}>
     ${onBack
       ? html`<button type="button" className="mobile-top__back" onClick=${onBack} aria-label="Back">
           <${Icon} name="chevronLeft" size=${26} /></button>`
       : html`<${BrandMark} size=${30} />`}
     <div className="mobile-top__title" aria-hidden=${!collapsed}>${title}</div>
     <div className="topbar__spacer" />
-    <${UserMenu} compact auth=${auth} pending=${pending} onSignIn=${onSignIn} onSignOut=${onSignOut} onAccounts=${onAccounts} onAlerts=${onAlerts} onFaceId=${onFaceId} onPassword=${onPassword} />
-    <${IconBtn} icon="upload" bare onClick=${onUpload} aria-label="Upload photos" />
-    <${IconBtn} icon="refresh" bare onClick=${onRefresh} className=${refreshing ? "is-spin" : ""} aria-label="Refresh" />
-    <${IconBtn} icon=${theme === "light" ? "moon" : "sun"} bare onClick=${toggleTheme} aria-label="Toggle theme" />
+    <button type="button" className="mobile-top__add" onClick=${onUpload} aria-label="Upload photos">
+      <${Icon} name="upload" size=${17} /><span>Upload</span>
+    </button>
   </div>`;
 }
 
-// The big page name at the top of each phone screen, with when photos were last checked.
-export function LargeTitle({ title, status }) {
+// The big page name at the top of each phone screen. Home and Photos add a line
+// saying whether the photos are current (main.js, titleSub).
+export function LargeTitle({ title, sub, warn }) {
   return html`<div className="largetitle">
     <h1>${title}</h1>
-    <small className=${status.stale ? "is-stale" : ""}>
-      ${status.checked ? "Checked " + status.checked : "Awaiting sync"}
-    </small>
+    ${sub && html`<small className=${warn ? "is-stale" : ""}>${sub}</small>`}
   </div>`;
-}
-
-/* ------------------------------ Bottom sheets ---------------------------- */
-// A sheet follows a downward drag and closes past a threshold (or on a quick flick),
-// otherwise it springs back. The drag starts on the grip, or anywhere on the sheet
-// while its own content is scrolled to the top. The scrim dims less as it goes.
-export function useSheetDrag(open, onClose) {
-  const ref = useRef(null);
-  const close = useRef(onClose);
-  close.current = onClose;
-  useEffect(() => {
-    const sheet = ref.current;
-    if (!open || !sheet) return;
-    const scrim = sheet.parentElement;
-    let start = null, dragging = false, dy = 0, lastY = 0, lastT = 0, speed = 0;
-    const place = (y, animate) => {
-      const ease = animate ? "transform .26s cubic-bezier(.2,.8,.2,1)" : "none";
-      sheet.style.transition = ease;
-      sheet.style.transform = y ? `translateY(${y}px)` : "";
-      if (scrim) {
-        scrim.style.transition = animate ? "background-color .26s ease" : "none";
-        scrim.style.setProperty("--sheet-fade", String(Math.max(0, 1 - y / (sheet.offsetHeight || 1))));
-      }
-    };
-    const onStart = (e) => {
-      start = null;
-      if (e.touches.length !== 1) return;
-      const grip = !!(e.target.closest && e.target.closest(".drawer__grip"));
-      if (!grip && sheet.scrollTop > 0) return;
-      const t = e.touches[0];
-      start = { x: t.clientX, y: t.clientY, grip };
-      dragging = false; dy = 0; lastY = t.clientY; lastT = e.timeStamp; speed = 0;
-    };
-    const onMove = (e) => {
-      if (!start) return;
-      const t = e.touches[0];
-      const d = t.clientY - start.y;
-      if (!dragging) {
-        // Scrolling the sheet's content up, or a sideways swipe: not a drag.
-        if (d < -4 || Math.abs(t.clientX - start.x) > Math.abs(d) + 4) { start = null; return; }
-        if (d < 6) return;
-        if (!start.grip && sheet.scrollTop > 0) { start = null; return; }
-        dragging = true;
-      }
-      if (e.cancelable) e.preventDefault();
-      dy = Math.max(0, d);
-      const dt = e.timeStamp - lastT;
-      if (dt > 0) speed = (t.clientY - lastY) / dt;
-      lastY = t.clientY; lastT = e.timeStamp;
-      place(dy, false);
-    };
-    const onEnd = () => {
-      if (!start) return;
-      const was = dragging;
-      start = null; dragging = false;
-      if (!was) return;
-      if (dy > Math.min(140, sheet.offsetHeight * 0.3) || speed > 0.5) {
-        place(sheet.offsetHeight + 40, true);
-        setTimeout(() => close.current(), 220);
-      } else place(0, true);
-    };
-    sheet.addEventListener("touchstart", onStart, { passive: true });
-    sheet.addEventListener("touchmove", onMove, { passive: false });
-    sheet.addEventListener("touchend", onEnd);
-    sheet.addEventListener("touchcancel", onEnd);
-    return () => {
-      sheet.removeEventListener("touchstart", onStart);
-      sheet.removeEventListener("touchmove", onMove);
-      sheet.removeEventListener("touchend", onEnd);
-      sheet.removeEventListener("touchcancel", onEnd);
-    };
-  }, [open]);
-  return ref;
 }
 
 // Phones get five tabs: four main screens and "More", a list of everything else.
@@ -231,7 +170,8 @@ export function MobileNav({ view, onTab, counts }) {
       className=${activeTab === v.id ? "is-active" : ""} onClick=${() => onTab(v.id)}
       aria-current=${activeTab === v.id ? "page" : undefined}>
       <${Icon} name=${v.icon} size=${22} />${v.label}
-      ${v.id === "more" && counts.review > 0 && html`<span className="nav__badge">${badgeCount(counts.review)}</span>`}
+      ${v.id === "more" && counts.review + (counts.pending || 0) > 0
+        && html`<span className="nav__badge">${badgeCount(counts.review + (counts.pending || 0))}</span>`}
     </button>`)}
   </nav>`;
 }
@@ -276,8 +216,9 @@ function useKeyboardFlag() {
 }
 
 /* -------------------------------- More tab ------------------------------- */
-// A Settings-style list: the other pages (they open on top with a Back button),
-// then alerts, Face ID, accounts and appearance, then the account itself.
+// A Settings-style list: the other pages (a chevron: they open on top with a Back
+// button), then alerts, Face ID, accounts (no chevron: each is a sheet that slides
+// up) and appearance, then the account itself.
 function MoreRow({ icon, tint, label, value, badge, chevron = true, tone, onClick, children }) {
   return html`<button type="button" className=${cx("ios-row", tone && "is-" + tone)} onClick=${onClick}>
     ${icon && html`<span className="ios-row__icon" style=${{ background: tint }}><${Icon} name=${icon} size=${17} /></span>`}
@@ -301,15 +242,21 @@ export function MoreScreen({ more, counts, auth }) {
     </section>
 
     <section className="ios-group" aria-label="Settings">
-      <${MoreRow} icon="bell" tint="#e5484d" label="Alerts" onClick=${m.onAlerts} />
-      ${m.onFaceId && auth && auth.token && html`<${MoreRow} icon="faceid" tint="#30a46c" label=${faceIdName()} onClick=${m.onFaceId} />`}
-      ${auth && auth.token && m.onPassword && html`<${MoreRow} icon="key" tint="#8a6d3b" label="Change password" onClick=${m.onPassword} />`}
+      <${MoreRow} icon="bell" tint="#e5484d" label="Alerts" chevron=${false} onClick=${m.onAlerts} />
+      ${m.onFaceId && auth && auth.token && html`<${MoreRow} icon="faceid" tint="#30a46c" label=${faceIdName()} chevron=${false} onClick=${m.onFaceId} />`}
+      ${auth && auth.token && m.onPassword && html`<${MoreRow} icon="key" tint="#8a6d3b" label="Change password" chevron=${false} onClick=${m.onPassword} />`}
       ${auth && auth.admin && auth.token && html`<${MoreRow} icon="users" tint="#6e7781" label="Manage accounts"
-        badge=${m.pending} onClick=${m.onAccounts} />`}
-      <${MoreRow} icon=${m.theme === "light" ? "sun" : "moon"} tint="#5b5bd6" label="Dark mode" chevron=${false}
-        onClick=${m.toggleTheme}>
-        <span className=${cx("ios-switch", m.theme !== "light" && "is-on")} aria-hidden="true"><span /></span>
-      </${MoreRow}>
+        badge=${m.pending} chevron=${false} onClick=${m.onAccounts} />`}
+      <div className="ios-row is-static">
+        <span className="ios-row__icon" style=${{ background: "#5b5bd6" }}><${Icon} name=${m.theme === "light" ? "sun" : "moon"} size=${17} /></span>
+        <span className="ios-row__label">Appearance</span>
+        <${Segmented} value=${m.themePref === "auto" || m.themePref === "light" ? m.themePref : "dark"} onChange=${m.setThemePref}
+          label="Appearance" options=${[
+            { value: "auto", label: "Auto", title: "Match this phone's light or dark setting" },
+            { value: "light", label: "Light" },
+            { value: "dark", label: "Dark" },
+          ]} />
+      </div>
     </section>
 
     <section className="ios-group" aria-label="Account">
@@ -481,24 +428,30 @@ export function loadFilters() {
   }
 }
 
-export function FilterBar({ filters, set, cameras, speciesList, count, camName, children }) {
+// `quick` adds the row of one-tap chips (Photos). `sheetExtras` are controls the
+// phone shows inside the Filters sheet instead of on the bar (sort order, photo size).
+// `below` is drawn under the bar and stays pinned with it (the bulk-tag bar).
+// `noun` names what's counted ("animal photo" on Patterns, which leaves the rest out).
+export function FilterBar({ filters, set, cameras, speciesList, count, camName, children, quick, sheetExtras, below, noun = "photo" }) {
   const [open, setOpen] = useState(false);
   const sheet = useSheetDrag(open, () => setOpen(false));
   const cn = camName || ((x) => x);
+  const gameOnly = filters.gameOnly && !NOT_GAME.has(filters.species);
   const activeCount =
     (filters.species !== "All" ? 1 : 0) +
     (filters.camera !== "All" ? 1 : 0) +
     (filters.tod !== "all" ? 1 : 0) +
     (filters.bucksOnly ? 1 : 0) +
-    (filters.gameOnly && !NOT_GAME.has(filters.species) ? 1 : 0) +
+    (gameOnly ? 1 : 0) +
     (filters.range !== "all" ? 1 : 0) +
     (filters.hour >= 0 ? 1 : 0) +
     (filters.wday >= 0 ? 1 : 0);
+  const counted = `${count.toLocaleString()} ${noun}${count === 1 ? "" : "s"}`;
 
   const controls = html`<${Fragment}>
-    <${Select} value=${filters.species} onChange=${(v) => set({ species: v })}
+    <${Select} value=${filters.species} onChange=${(v) => set({ species: v })} aria-label="Species"
       options=${[{ value: "All", label: "All species" }, ...speciesList.map((s) => ({ value: s, label: s }))]} />
-    <${Select} value=${filters.camera} onChange=${(v) => set({ camera: v })}
+    <${Select} value=${filters.camera} onChange=${(v) => set({ camera: v })} aria-label="Camera"
       options=${[{ value: "All", label: "All cameras" }, ...cameras.map((c) => ({ value: c.name, label: cn(c.name) }))]} />
     <${Select} value=${filters.range} onChange=${(v) => set({ range: v })} aria-label="Date range"
       options=${RANGE_OPTIONS} />
@@ -509,7 +462,7 @@ export function FilterBar({ filters, set, cameras, speciesList, count, camName, 
       <input className="input" type="date" value=${filters.to} min=${filters.from || undefined}
         aria-label="To date" onInput=${(e) => set({ to: e.target.value })} />
     </div>`}
-    <${Segmented} value=${filters.tod} onChange=${(v) => set({ tod: v })}
+    <${Segmented} value=${filters.tod} onChange=${(v) => set({ tod: v })} label="Time of day"
       options=${[
         { value: "all", label: "All" },
         { value: "day", label: "Day", title: "Daytime" },
@@ -518,40 +471,71 @@ export function FilterBar({ filters, set, cameras, speciesList, count, camName, 
     <${Switch} checked=${filters.bucksOnly} onChange=${(v) => set({ bucksOnly: v })}>Bucks only</${Switch}>
   </${Fragment}>`;
 
+  // One-tap chips (phones): each is a shortcut to a filter in the sheet, lit while
+  // that filter is on, and a second tap takes it off again.
+  const today = isoDay(new Date());
+  const isToday = filters.range === "custom" && filters.from === today && filters.to === today;
+  const quickSpecies = speciesList.filter((sp) => !NOT_GAME.has(sp) && sp !== "Buck" && sp !== "Animal").slice(0, 5);
+  const quickChips = !quick ? [] : [
+    { k: "game", label: "Animals", on: !!gameOnly, tap: () => set({ gameOnly: !gameOnly }) },
+    { k: "buck", label: "Bucks", dot: speciesColor("Buck"), on: filters.bucksOnly, tap: () => set({ bucksOnly: !filters.bucksOnly }) },
+    ...quickSpecies.map((sp) => ({ k: "sp-" + sp, label: sp, dot: speciesColor(sp), on: filters.species === sp,
+      tap: () => set({ species: filters.species === sp ? "All" : sp }) })),
+    { k: "today", label: "Today", on: isToday,
+      tap: () => set(isToday ? { range: "all", from: "", to: "" } : { range: "custom", from: today, to: today }) },
+    ...(cameras.length > 1 ? cameras.map((c) => ({ k: "cam-" + c.name, label: shortName(cn(c.name)), on: filters.camera === c.name,
+      tap: () => set({ camera: filters.camera === c.name ? "All" : c.name }) })) : []),
+  ];
+
+  // The chips that say which filters are on. `dup` marks the ones a lit quick chip
+  // already shows, which a phone leaves out.
   const chips = [];
-  if (filters.species !== "All") chips.push({ k: "sp", label: filters.species, dot: speciesColor(filters.species), clear: () => set({ species: "All" }) });
-  if (filters.camera !== "All") chips.push({ k: "cam", label: cn(filters.camera), clear: () => set({ camera: "All" }) });
-  if (filters.range !== "all") chips.push({ k: "range", label: rangeLabel(filters), clear: () => set({ range: "all", from: "", to: "" }) });
+  if (filters.species !== "All") chips.push({ k: "sp", label: filters.species, dot: speciesColor(filters.species), dup: quickSpecies.includes(filters.species), clear: () => set({ species: "All" }) });
+  if (filters.camera !== "All") chips.push({ k: "cam", label: cn(filters.camera), dup: cameras.length > 1, clear: () => set({ camera: "All" }) });
+  if (filters.range !== "all") chips.push({ k: "range", label: isToday ? "Today" : rangeLabel(filters), dup: isToday, clear: () => set({ range: "all", from: "", to: "" }) });
   if (filters.tod !== "all") chips.push({ k: "tod", label: filters.tod === "day" ? "Daytime" : "Night", clear: () => set({ tod: "all" }) });
   if (filters.hour >= 0) chips.push({ k: "hour", label: `${labelHour(filters.hour)} hour`, clear: () => set({ hour: -1 }) });
   if (filters.wday >= 0) chips.push({ k: "wday", label: WEEKDAY_PLURAL[filters.wday], clear: () => set({ wday: -1 }) });
-  if (filters.bucksOnly) chips.push({ k: "buck", label: "Bucks only", clear: () => set({ bucksOnly: false }) });
-  if (filters.gameOnly && !NOT_GAME.has(filters.species)) chips.push({ k: "game", label: "Animals only", clear: () => set({ gameOnly: false }) });
+  if (filters.bucksOnly) chips.push({ k: "buck", label: "Bucks only", dup: true, clear: () => set({ bucksOnly: false }) });
+  if (gameOnly) chips.push({ k: "game", label: "Animals only", dup: true, clear: () => set({ gameOnly: false }) });
+  const dupOnly = !!quick && chips.every((c) => c.dup);
 
-  return html`<div>
+  return html`<div className=${cx("filterwrap", quick && "has-quick")}>
     <div className="filterbar">
       <div className="filterbar__inline">${controls}</div>
       <button className="btn btn--sm filters-trigger" onClick=${() => setOpen(true)}>
         <${Icon} name="sliders" size=${15} /><span>Filters</span>
         ${activeCount > 0 && html`<span className="nav__badge">${activeCount}</span>`}
       </button>
-      <span className="filterbar__count">${count.toLocaleString()} photo${count === 1 ? "" : "s"}</span>
+      <span className="filterbar__count">${counted}</span>
       ${children && html`<div className="filterbar__tools">${children}</div>`}
     </div>
 
-    ${chips.length > 0 && html`<div className="filterchips">
-      ${chips.map((c) => html`<${Chip} key=${c.k} dotColor=${c.dot} onClear=${c.clear}>${c.label}</${Chip}>`)}
-      ${chips.length > 1 && html`<button className="btn btn--ghost btn--sm" onClick=${() => set(defaultFilters())}>Clear all</button>`}
+    ${quickChips.length > 0 && html`<div className="quickchips" role="group" aria-label="Quick filters">
+      ${activeCount > 0 && html`<button type="button" className="chip quickchips__clear" onClick=${() => set(defaultFilters())}>
+        <${Icon} name="x" size=${13} />Clear</button>`}
+      ${quickChips.map((c) => html`<${Chip} key=${c.k} active=${c.on} dotColor=${c.dot} aria-pressed=${!!c.on} onClick=${c.tap}>${c.label}</${Chip}>`)}
     </div>`}
+
+    ${chips.length > 0 && html`<div className=${cx("filterchips", dupOnly && "is-dup")}>
+      ${chips.map((c) => html`<${Chip} key=${c.k} dotColor=${c.dot} className=${quick && c.dup ? "is-dup" : ""} onClear=${c.clear}>${c.label}</${Chip}>`)}
+      ${chips.length > 1 && html`<button className=${cx("btn btn--ghost btn--sm", quick && "is-dup")} onClick=${() => set(defaultFilters())}>Clear all</button>`}
+    </div>`}
+
+    ${below}
 
     ${open && createPortal(html`<div className="scrim" onClick=${() => setOpen(false)}>
       <div className="drawer" ref=${sheet} onClick=${(e) => e.stopPropagation()}>
         <div className="drawer__grip" />
-        <div className="filterbar__inline">${controls}</div>
-        <button className="btn btn--primary mt" onClick=${() => setOpen(false)} style=${{ width: "100%" }}>
-          Show ${count.toLocaleString()} photo${count === 1 ? "" : "s"}
-        </button>
+        <div className="filterbar__inline">${controls}${sheetExtras}</div>
+        <div className="row mt" style=${{ gap: 10 }}>
+          ${activeCount > 0 && html`<button className="btn" onClick=${() => set(defaultFilters())}>Clear</button>`}
+          <button className="btn btn--primary" onClick=${() => setOpen(false)} style=${{ flex: 1 }}>Show ${counted}</button>
+        </div>
       </div>
     </div>`, document.body)}
   </div>`;
 }
+
+// "Food Plot (Tall Stand)" -> "Food Plot": chips have no room for the part in brackets.
+const shortName = (name) => String(name || "").replace(/\s*\([^)]*\)\s*$/, "").trim() || name;

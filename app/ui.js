@@ -1,7 +1,7 @@
 // Vale Trails — reusable UI primitives, chart widgets, photo tile and lightbox.
 // Pure presentation: all data shaping happens in the views. Components map 1:1
 // to the classes defined in styles.css.
-import { html, useEffect, useRef, useState, Fragment } from "./react.js";
+import { html, useEffect, useLayoutEffect, useRef, useState, Fragment } from "./react.js";
 import { Icon } from "./icons.js";
 import {
   speciesColor, fmtDate, fmtDateTime, timeAgo, labelHour, isoDay, TAG_OPTIONS, toLocalInput, canEditUpload,
@@ -26,8 +26,10 @@ export function IconBtn({ icon, bare, size = 18, className = "", ...rest }) {
 }
 
 /* --------------------------- Chips / segmented -------------------------- */
+// A chip that can be cleared clears on a tap anywhere on it: the little x alone is
+// too small a target for a thumb.
 export function Chip({ active, dotColor, onClear, children, className = "", ...rest }) {
-  return html`<button className=${cx("chip", active && "is-active", className)} ...${rest}>
+  return html`<button type="button" className=${cx("chip", active && "is-active", className)} onClick=${onClear} ...${rest}>
     ${dotColor && html`<span className="chip__dot" style=${{ background: dotColor }} />`}
     ${children}
     ${onClear && html`<span className="chip__x" role="button" onClick=${(e) => { e.stopPropagation(); onClear(); }}>
@@ -74,6 +76,98 @@ export function Switch({ checked, onChange, children }) {
     ${children && html`<span>${children}</span>`}
   </button>`;
 }
+
+/* ------------------------------ Bottom sheets ---------------------------- */
+// A sheet follows a downward drag and closes past a threshold (or on a quick flick),
+// otherwise it springs back. The drag starts on the grip, or anywhere on the sheet
+// while its own content is scrolled to the top. The scrim dims less as it goes.
+export function useSheetDrag(open, onClose) {
+  const ref = useRef(null);
+  const close = useRef(onClose);
+  close.current = onClose;
+  useEffect(() => {
+    const sheet = ref.current;
+    if (!open || !sheet) return;
+    const scrim = sheet.parentElement;
+    let start = null, dragging = false, dy = 0, lastY = 0, lastT = 0, speed = 0;
+    const place = (y, animate) => {
+      const ease = animate ? "transform .26s cubic-bezier(.2,.8,.2,1)" : "none";
+      sheet.style.transition = ease;
+      sheet.style.transform = y ? `translateY(${y}px)` : "";
+      if (scrim) {
+        scrim.style.transition = animate ? "background-color .26s ease" : "none";
+        scrim.style.setProperty("--sheet-fade", String(Math.max(0, 1 - y / (sheet.offsetHeight || 1))));
+      }
+    };
+    const onStart = (e) => {
+      start = null;
+      if (e.touches.length !== 1 || !window.matchMedia("(max-width: 900px)").matches) return;
+      const grip = !!(e.target.closest && e.target.closest(".drawer__grip"));
+      if (!grip && sheet.scrollTop > 0) return;
+      const t = e.touches[0];
+      start = { x: t.clientX, y: t.clientY, grip };
+      dragging = false; dy = 0; lastY = t.clientY; lastT = e.timeStamp; speed = 0;
+    };
+    const onMove = (e) => {
+      if (!start) return;
+      const t = e.touches[0];
+      const d = t.clientY - start.y;
+      if (!dragging) {
+        // Scrolling the sheet's content up, or a sideways swipe: not a drag.
+        if (d < -4 || Math.abs(t.clientX - start.x) > Math.abs(d) + 4) { start = null; return; }
+        if (d < 6) return;
+        if (!start.grip && sheet.scrollTop > 0) { start = null; return; }
+        dragging = true;
+      }
+      if (e.cancelable) e.preventDefault();
+      dy = Math.max(0, d);
+      const dt = e.timeStamp - lastT;
+      if (dt > 0) speed = (t.clientY - lastY) / dt;
+      lastY = t.clientY; lastT = e.timeStamp;
+      place(dy, false);
+    };
+    const onEnd = () => {
+      if (!start) return;
+      const was = dragging;
+      start = null; dragging = false;
+      if (!was) return;
+      if (dy > Math.min(140, sheet.offsetHeight * 0.3) || speed > 0.5) {
+        place(sheet.offsetHeight + 40, true);
+        setTimeout(() => close.current(), 220);
+      } else place(0, true);
+    };
+    sheet.addEventListener("touchstart", onStart, { passive: true });
+    sheet.addEventListener("touchmove", onMove, { passive: false });
+    sheet.addEventListener("touchend", onEnd);
+    sheet.addEventListener("touchcancel", onEnd);
+    return () => {
+      sheet.removeEventListener("touchstart", onStart);
+      sheet.removeEventListener("touchmove", onMove);
+      sheet.removeEventListener("touchend", onEnd);
+      sheet.removeEventListener("touchcancel", onEnd);
+    };
+  }, [open]);
+  return ref;
+}
+
+// A pop-up: a centred box on a computer, a sheet from the bottom on a phone (drag
+// it down, tap outside it or tap the X to close).
+export function Dialog({ title, label, icon, wide, onClose, children }) {
+  const sheet = useSheetDrag(true, onClose);
+  return html`<div className="modal" onClick=${onClose}>
+    <div ref=${sheet} className=${cx("modal__box", wide && "modal__box--wide")} role="dialog" aria-modal="true"
+      aria-label=${label || title} onClick=${(e) => e.stopPropagation()}>
+      <div className="drawer__grip modal__grip" />
+      <div className="modal__head">
+        <h2 className="h-sec">${icon && html`<${Icon} name=${icon} size=${17} />`} ${title}</h2>
+        <${IconBtn} icon="x" bare onClick=${onClose} aria-label="Close" />
+      </div>
+      ${children}
+    </div>
+  </div>`;
+}
+
+const coarsePointer = () => typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
 
 /* ------------------------------ Containers ------------------------------ */
 export function SecHead({ icon, title, children }) {
@@ -146,23 +240,44 @@ export function SplitBar({ segments, onSelect }) {
   </div>`;
 }
 
+// With a mouse, a click on a bar opens its photos. On a touch screen the bars are
+// narrower than a fingertip, so a touch (or a drag across the chart) picks the hour
+// and shows it below, with a button to open its photos.
 export function Histogram({ hours, onSelect }) {
   const max = Math.max(1, ...hours);
   const peak = hours.indexOf(Math.max(...hours));
   const Col = onSelect ? "button" : "div";
+  const [touch] = useState(coarsePointer);
+  const [picked, setPicked] = useState(null);
+  const scrub = !!onSelect && touch;
+  const wrap = useRef(null);
+  const pickAt = (e) => {
+    const r = wrap.current.getBoundingClientRect();
+    setPicked(Math.min(23, Math.max(0, Math.floor(((e.clientX - r.left) / r.width) * 24))));
+  };
+  const count = picked == null ? 0 : hours[picked];
   return html`<div className="histwrap">
-    <div className="hist">
+    <div className=${cx("hist", scrub && "is-scrub")} ref=${wrap}
+      onPointerDown=${scrub ? pickAt : undefined}
+      onPointerMove=${scrub ? (e) => { if (e.pointerType !== "mouse" || e.buttons) pickAt(e); } : undefined}>
       ${hours.map((v, h) => {
         const pct = (v / max) * 100;
         const cls = v === 0 ? "hist__bar dim" : (h === peak ? "hist__bar peak" : "hist__bar");
-        return html`<${Col} className=${cx("hist__col", onSelect && "is-btn")} key=${h}
-          onClick=${onSelect ? () => onSelect(h) : undefined}
+        return html`<${Col} className=${cx("hist__col", onSelect && "is-btn", scrub && picked === h && "is-picked")} key=${h}
+          onClick=${!onSelect ? undefined : scrub ? () => setPicked(h) : () => onSelect(h)}
+          aria-pressed=${scrub ? picked === h : undefined}
           title=${`${labelHour(h)} · ${v} photo${v === 1 ? "" : "s"}`}>
           <div className=${cls} style=${{ height: Math.max(pct, v > 0 ? 6 : 2) + "%" }} />
         </${Col}>`;
       })}
     </div>
     <div className="axis"><span>12a</span><span>6a</span><span>12p</span><span>6p</span><span>11p</span></div>
+    ${scrub && html`<div className="hist__readout" role="status">
+      ${picked == null
+        ? html`<span className="faint">Touch a bar to pick an hour</span>`
+        : html`<span><b>${labelHour(picked)}</b> · ${count} photo${count === 1 ? "" : "s"}</span>
+            <${Btn} sm variant="primary" iconRight="arrowRight" disabled=${!count} onClick=${() => onSelect(picked)}>See photos</${Btn}>`}
+    </div>`}
   </div>`;
 }
 
@@ -266,15 +381,25 @@ export function CameraCard({ name, row, onClick }) {
       : health.length
         ? "No new photos lately. Battery and signal are under the camera name."
         : "No new photos lately. This can just mean no activity \u2014 if not, check battery and signal in the SPYPOINT app.";
+  // A phone shows each camera as one line: a dot for its state, a short name, when it
+  // last sent a photo. The "Active" pill and the longer wording are for wider screens.
+  const short = shortCamera(name);
   return html`<button className="camcard" onClick=${onClick} title=${`Show photos from ${name}`}>
     <span className="camcard__top">
-      <span className="camcard__name">${name}</span>
+      <span className=${cx("camcard__dot", row.quiet && "is-quiet")} aria-hidden="true" />
+      <span className="camcard__name">
+        ${short !== name
+          ? html`<span className="shot__cam-full">${name}</span><span className="shot__cam-short">${short}</span>`
+          : name}
+      </span>
       <span className=${cx("pill", row.quiet ? "is-quiet" : "is-ok")} title=${quietHint}>
         ${row.quiet ? (row.quietDays == null ? "No photos" : `Quiet ${row.quietDays}d`) : "Active"}
       </span>
     </span>
     <span className="camcard__sub">
-      ${row.last ? `Last photo ${timeAgo(row.last)} \u00b7 ${row.week} this week` : "Nothing received yet"}
+      ${row.last
+        ? html`<span className="camcard__wide">Last photo </span>${timeAgo(row.last)} \u00b7 ${row.week} this week`
+        : "Nothing received yet"}
     </span>
     ${health.length > 0 && html`<span className="camcard__health">
       ${health.map((h) => html`<span key=${h.key} className=${cx("camcard__stat", h.warn && "is-warn")} title=${h.title}>${h.text}</span>`)}
@@ -390,6 +515,9 @@ export function LightboxEdit({ capture, species, meta, onMeta, onToggleFavorite,
   const [buck, setBuck] = useState(m.buck || "");
   const [temp, setTemp] = useState(c.temp == null ? "" : String(c.temp));
   const [moon, setMoon] = useState(c.moon || "");
+  // Temperature and moon are read from the photo; fixing them is rare, so the two
+  // boxes stay folded away until asked for.
+  const [fixing, setFixing] = useState(false);
   const isFav = !!m.favorite;
 
   const commitNote = () => {
@@ -446,19 +574,22 @@ export function LightboxEdit({ capture, species, meta, onMeta, onToggleFavorite,
           ${(buckNames || []).map((n) => html`<option key=${n} value=${n} />`)}
         </datalist>
       </label>
-      <label className="lb__field">
+      ${fixing && html`<label className="lb__field">
         <span><${Icon} name="thermo" size=${13} />Temp \u00b0F</span>
         <input type="number" inputMode="numeric" value=${temp}
           onInput=${(e) => setTemp(e.target.value)} onBlur=${commitTemp}
           onKeyDown=${(e) => e.key === "Enter" && e.target.blur()} placeholder="\u2014" />
-      </label>
-      <label className="lb__field">
+      </label>`}
+      ${fixing && html`<label className="lb__field">
         <span><${Icon} name="moon" size=${13} />Moon</span>
         <input type="text" value=${moon}
           onInput=${(e) => setMoon(e.target.value)} onBlur=${commitMoon}
           onKeyDown=${(e) => e.key === "Enter" && e.target.blur()} placeholder="\u2014" maxLength=${40} />
-      </label>
+      </label>`}
     </div>
+    ${!fixing && html`<button type="button" className="lb__link lb__fixlink" onClick=${() => setFixing(true)}>
+      Fix the temperature or moon
+    </button>`}
   </div>`;
 }
 
@@ -537,6 +668,21 @@ export function ZoomImage({ capture, alt, onZoomChange, controls }) {
   // Fixed per photo: once the host is known to allow it, photos load in a way the
   // share sheet can reuse (see checkShareFiles). Never switched on a shown photo.
   const [cors] = useState(() => (shareFilesOk === true ? "anonymous" : undefined));
+  // On a phone the small copy (usually already on the phone from the grid) shows at
+  // once, stretched to size, and the full photo takes its place when it has arrived.
+  // On a weak signal that's a soft photo for a moment, not an empty screen.
+  const [src, setSrc] = useState(() => (capture.thumb && coarsePointer() ? capture.thumb : capture.image));
+  useEffect(() => {
+    if (src === capture.image) return undefined;
+    let live = true;
+    const full = new Image();
+    if (cors) full.crossOrigin = cors;
+    const show = () => { if (live) setSrc(capture.image); };
+    full.onload = show;
+    full.onerror = show;
+    full.src = capture.image;
+    return () => { live = false; full.onload = null; full.onerror = null; };
+  }, []);
   const [hint, setHint] = useState(null);
   const viewRef = useRef(view);
   viewRef.current = view;
@@ -706,7 +852,8 @@ export function ZoomImage({ capture, alt, onZoomChange, controls }) {
   return html`<div ref=${frame} className=${cx("lb__zoom", zoomed && "is-zoomed", moving && "is-moving")}
       onPointerDown=${onPointerDown} onPointerMove=${onPointerMove}
       onPointerUp=${onPointerEnd} onPointerCancel=${onPointerEnd}>
-    <img className="lb__img" src=${capture.image} alt=${alt} draggable=${false} crossOrigin=${cors}
+    <img className=${cx("lb__img", src !== capture.image && "is-preview")} src=${src} alt=${alt} draggable=${false} crossOrigin=${cors}
+      onError=${() => { if (src !== capture.image) setSrc(capture.image); }}
       style=${{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.s})` }} />
     ${hint && html`<span className="lb__zoomhint" role="status">${hint}</span>`}
     ${zoomed && html`<span className="lb__zoomlevel" key=${view.s} aria-live="polite">${formatZoom(view.s)}</span>`}
@@ -785,8 +932,10 @@ export const edgeBackHere = () => {
 // One-tap labels for the common cases; "Other…" opens the full list in the details.
 const QUICK_TAGS = ["Buck", "Doe", "Deer", "Empty"];
 
-export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggleFavorite, onTag, onToast, buckNames, comments, upload, signedIn, onSignIn, onClose, onPrev, onNext, hasPrev, hasNext }) {
+export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggleFavorite, onTag, onToast, buckNames, comments, upload, signedIn, onSignIn, onClose, onPrev, onNext, hasPrev, hasNext, position, total, neighbors }) {
   const share = usePhotoShare(capture, species, cameraLabel, onToast);
+  // Phones: the row of one-tap labels above the action bar, opened by its Tag button.
+  const [tagOpen, setTagOpen] = useState(false);
   const zoomControls = useRef(null);
   const [zoomed, setZoomed] = useState(false);
   const [navIdle, setNavIdle] = useState(false);
@@ -840,6 +989,7 @@ export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggle
     e.stopPropagation();
     // On a phone, tapping the photo while the details sheet is up lowers the sheet.
     if (sheetOpen && !e.target.closest(".lb__panel, button")) { setSheetOpen(false); return; }
+    if (tagOpen && !e.target.closest(".lb__tagpop, .lb__bar")) { setTagOpen(false); return; }
     if (!immersive || lastPointer.current === "mouse" || !e.target.closest(".lb__zoom")) return;
     if (tapTimer.current) { clearTimeout(tapTimer.current); tapTimer.current = null; return; }
     tapTimer.current = setTimeout(() => {
@@ -878,6 +1028,35 @@ export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggle
   useEffect(() => {
     if (stage.current) stage.current.scrollTop = 0;
     if (panel.current) panel.current.scrollTop = 0;
+    setTagOpen(false);
+  }, [photoId]);
+
+  // The photos either side are fetched ahead (small copies of both, and the full
+  // copy of the next), so a swipe shows a photo, not a wait.
+  useEffect(() => {
+    const [prev, next] = neighbors || [];
+    const cors = shareFilesOk === true ? "anonymous" : undefined;
+    const fetchAhead = (url) => { if (!url) return; const im = new Image(); if (cors) im.crossOrigin = cors; im.src = url; };
+    const t = setTimeout(() => {
+      for (const n of [prev, next]) if (n && n.media !== "video") fetchAhead(n.thumb);
+      if (next && next.media !== "video") fetchAhead(next.image);
+    }, 350);
+    return () => clearTimeout(t);
+  }, [photoId]);
+
+  // A swipe to the next photo slides this one off; when the next one is drawn it
+  // comes in from the side it was waiting on (see fling, below).
+  const flung = useRef(null);
+  useLayoutEffect(() => {
+    const el = root.current;
+    const dir = flung.current;
+    flung.current = null;
+    if (!el) return undefined;
+    el.style.removeProperty("--dragx");
+    if (!dir) { delete el.dataset.swipe; return undefined; }
+    el.dataset.swipe = "from-" + dir;
+    const t = setTimeout(() => { if (el.dataset.swipe === "from-" + dir) delete el.dataset.swipe; }, 260);
+    return () => clearTimeout(t);
   }, [photoId]);
 
   // Swipe on a photo: sideways moves between photos; on a phone, down closes the
@@ -901,22 +1080,49 @@ export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggle
     el.style.setProperty("--drag", dy + "px");
     el.style.setProperty("--drag-fade", String(Math.max(0.25, 1 - dy / 420)));
   };
+  // Sideways the photo follows the finger too. `data-swipe` (not a class, which a
+  // redraw would wipe) tells the styles whether it's being dragged or let go.
+  const setSide = (dx) => {
+    const el = root.current;
+    if (!el) return;
+    if (dx == null) { delete el.dataset.swipe; el.style.removeProperty("--dragx"); return; }
+    el.dataset.swipe = "drag";
+    el.style.setProperty("--dragx", dx + "px");
+  };
+  // Let go far enough: the photo slides off that side, then the next one is shown
+  // (and slides in, see the effect above).
+  const fling = (dir) => {
+    const el = root.current;
+    if (!el) { (dir === "next" ? onNext : onPrev)(); return; }
+    el.dataset.swipe = "fling";
+    el.style.setProperty("--dragx", (dir === "next" ? -1 : 1) * window.innerWidth + "px");
+    setTimeout(() => { flung.current = dir; (dir === "next" ? onNext : onPrev)(); }, 150);
+  };
   const onTouchStart = (e) => {
     const t = e.touches[0];
     if (edgeOn && t.clientX <= EDGE_PX) { swipe.current = null; return; } // that's a back swipe
-    swipe.current = !zoomed && e.target.tagName === "IMG" && e.touches.length === 1
+    // Anywhere on the photo or the space around it. A video keeps its drags for its
+    // own seek bar, but the space around a video still swipes on to the next photo.
+    const free = !(e.target.closest && e.target.closest("video, button, a, .lb__panel, .lb__bar, .lb__tagpop"));
+    swipe.current = !zoomed && free && e.touches.length === 1 && root.current.dataset.swipe !== "fling"
       ? { x: t.clientX, y: t.clientY } : null;
   };
   const onTouchMove = (e) => {
-    if (e.touches.length > 1) { swipe.current = null; setDrag(null); return; }
+    if (e.touches.length > 1) { swipe.current = null; setDrag(null); setSide(null); return; }
     const s = swipe.current;
     if (!s || !isPhone() || sheetOpen) return;
     const t = e.touches[0];
     const dx = t.clientX - s.x;
     const dy = t.clientY - s.y;
+    if (!s.way) {
+      if (dy > 12 && dy > Math.abs(dx) * 1.3) s.way = "down";
+      else if (Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy) * 1.3) s.way = "side";
+    }
     // The photo follows a downward drag and the backdrop fades, so it's clear that
     // letting go will close it.
-    if (s.down || (dy > 12 && dy > Math.abs(dx) * 1.3)) { s.down = true; setDrag(Math.max(0, dy)); }
+    if (s.way === "down") setDrag(Math.max(0, dy));
+    // At the first or last photo it only gives a little, to show there's no more.
+    else if (s.way === "side") setSide((dx < 0 ? hasNext : hasPrev) ? dx : dx * 0.25);
   };
   const onTouchEnd = (e) => {
     const s = swipe.current;
@@ -927,11 +1133,13 @@ export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggle
     swipe.current = null;
     setDrag(null);
     const vertical = Math.abs(dy) > Math.abs(dx) * 1.3;
-    if (isPhone() && vertical && dy > 90) { if (sheetOpen) setSheetOpen(false); else onClose(); return; }
-    if (isPhone() && vertical && dy < -50 && !immersive) { setSheetOpen(true); return; }
-    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
-    if (dx < 0 && hasNext) onNext();
-    else if (dx > 0 && hasPrev) onPrev();
+    if (isPhone() && vertical && dy > 90) { setSide(null); if (sheetOpen) setSheetOpen(false); else onClose(); return; }
+    if (isPhone() && vertical && dy < -50 && !immersive) { setSide(null); setSheetOpen(true); return; }
+    const dir = dx < 0 ? "next" : "prev";
+    const far = Math.abs(dx) >= 50 && Math.abs(dx) >= Math.abs(dy) * 1.5;
+    if (!far || !(dir === "next" ? hasNext : hasPrev)) { setSide(null); return; } // springs back
+    if (s.way === "side") fling(dir);
+    else { setSide(null); (dir === "next" ? onNext : onPrev)(); }
   };
 
   // "Other…" brings up the full Animal list in the details.
@@ -1020,7 +1228,8 @@ export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggle
       onPointerDown=${(e) => { lastPointer.current = e.pointerType; if (e.pointerType === "mouse") wakeNavigation(); }}
       onTouchStart=${onEdgeStart} onTouchMove=${onEdgeMove} onTouchEnd=${onEdgeEnd} onTouchCancel=${onEdgeEnd}>
     <div className=${cx("lb__stage", zoomed && "is-zoomed")} ref=${stage} onClick=${onStageClick}
-      onTouchStart=${onTouchStart} onTouchMove=${onTouchMove} onTouchEnd=${onTouchEnd}>
+      onTouchStart=${onTouchStart} onTouchMove=${onTouchMove} onTouchEnd=${onTouchEnd}
+      onTouchCancel=${() => { swipe.current = null; setDrag(null); setSide(null); }}>
       ${c.image && c.media === "video"
         ? html`<${Media} key=${c.id} className="lb__img" capture=${c} alt=${species} playable />`
         : c.image
@@ -1043,11 +1252,39 @@ export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggle
         <${SpeciesDot} species=${species} size=${9} /><b>${species}</b>
         <span>${cameraLabel || c.camera}</span><span>${fmtDateTime(c.date)}</span>
       </div>`}
-      ${/* Phones: details stay out of the way until asked for, so the photo has the screen. */ ""}
-      <button type="button" className="lb__infobtn" onClick=${(e) => { e.stopPropagation(); setSheetOpen(true); }}
-        aria-label="Show photo details" aria-expanded=${sheetOpen}>
-        <${Icon} name="info" size=${17} /><span>Details</span>
-      </button>
+      ${/* Phones: what the photo is, and the things done most, without opening the details. */ ""}
+      <div className="lb__cap">
+        <${SpeciesDot} species=${species} size=${9} /><b>${species}</b>
+        <span>${shortCamera(cameraLabel || c.camera)} · ${fmtDateTime(c.date)}</span>
+        ${total > 1 && html`<span className="lb__count tnum">${position} of ${total}</span>`}
+      </div>
+      ${tagOpen && onTag && html`<div className="lb__tagpop" role="group" aria-label="What's in this photo">
+        ${QUICK_TAGS.map((sp) => html`<button key=${sp} type="button"
+          className=${cx("qtag", species === sp && "is-on")} aria-pressed=${species === sp}
+          onClick=${() => { if (species !== sp) onTag(sp); setTagOpen(false); }}>
+          <span className="sdot" style=${{ background: speciesColor(sp) }} />${sp}
+        </button>`)}
+        <button type="button" className=${cx("qtag", !QUICK_TAGS.includes(species) && "is-on")}
+          onClick=${() => { setTagOpen(false); openOtherTags(); }}>
+          ${QUICK_TAGS.includes(species) ? "Other…" : `${species} ▾`}
+        </button>
+      </div>`}
+      <div className="lb__bar" role="toolbar" aria-label="Photo actions">
+        ${onToggleFavorite && html`<button type="button" className=${meta && meta.favorite ? "is-on" : ""}
+          onClick=${onToggleFavorite} aria-pressed=${!!(meta && meta.favorite)}>
+          <${Icon} name="star" size=${22} /><span>${meta && meta.favorite ? "Favorited" : "Favorite"}</span>
+        </button>`}
+        ${onTag && html`<button type="button" className=${tagOpen ? "is-open" : ""}
+          onClick=${() => setTagOpen((o) => !o)} aria-expanded=${tagOpen}>
+          <${Icon} name="tag" size=${22} /><span>Tag</span>
+        </button>`}
+        ${c.image && html`<button type="button" onClick=${share}>
+          <${Icon} name="share" size=${22} /><span>Share</span>
+        </button>`}
+        <button type="button" onClick=${() => { setTagOpen(false); setSheetOpen(true); }} aria-expanded=${sheetOpen}>
+          <${Icon} name="info" size=${22} /><span>Details</span>
+        </button>
+      </div>
       ${hasPrev && html`<button className="lb__nav prev" onClick=${onPrev} aria-label="Previous"><${Icon} name="chevronLeft" size=${22} /></button>`}
       ${hasNext && html`<button className="lb__nav next" onClick=${onNext} aria-label="Next"><${Icon} name="chevronRight" size=${22} /></button>`}
       <div className="lb__panel" ref=${panel}>
@@ -1088,7 +1325,9 @@ export function Lightbox({ capture, species, cameraLabel, meta, onMeta, onToggle
           </button>
         </div>`}
         </div>
-        ${onMeta && html`<${LightboxEdit} key=${c.id} capture=${c} species=${species} meta=${meta}
+        ${/* Keys must differ from the comments' key (the photo id, main.js): two siblings
+             with one key made React leave the last photo's details behind on Next. */ ""}
+        ${onMeta && html`<${LightboxEdit} key=${"meta-" + c.id} capture=${c} species=${species} meta=${meta}
           onMeta=${onMeta} onToggleFavorite=${onToggleFavorite} onTag=${onTag} buckNames=${buckNames}
           signedIn=${signedIn} onSignIn=${onSignIn} />`}
         ${upload && html`<${UploadEdit} key=${"up-" + c.id} capture=${c} ...${upload} />`}

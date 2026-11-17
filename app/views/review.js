@@ -5,9 +5,15 @@ import { Icon } from "../icons.js";
 import { SPECIES_ORDER, speciesColor, effectiveSpecies, reviewReason, fmtDateTime } from "../core.js";
 import { eff } from "../analytics.js";
 
+// Nearly every photo here is one of these four, so they get the big buttons. The
+// other twelve are one tap away and stay open once opened.
+const COMMON = ["Deer", "Buck", "Doe", "Empty"].filter((sp) => SPECIES_ORDER.includes(sp));
+const OTHERS = SPECIES_ORDER.filter((sp) => !COMMON.includes(sp));
+
 export function Review(app) {
   const { captures, reviewQ, ov, assignSpecies, keep, archive, camName } = app;
   const [index, setIndex] = useState(0);
+  const [showAll, setShowAll] = useState(false);
 
   const len = reviewQ.length;
   useEffect(() => { if (index >= len && len > 0) setIndex(len - 1); }, [len, index]);
@@ -28,6 +34,9 @@ export function Review(app) {
   const guess = effectiveSpecies(current, ov);
   const reason = reviewReason(eff(current, ov));
   const skip = () => setIndex((i) => (i + 1) % len);
+  const speciesButton = (sp) => html`<button key=${sp} className="spbtn" onClick=${() => assignSpecies(current.id, sp)}>
+    <span className="sdot" style=${{ background: speciesColor(sp) }} />${sp}
+  </button>`;
 
   return html`<div className="review">
     <div className="reviewcard">
@@ -54,18 +63,25 @@ export function Review(app) {
         ${len.toLocaleString()} photo${len === 1 ? "" : "s"} left
       </p>
 
-      <div className="spgrid">
-        ${SPECIES_ORDER.map((sp) => html`<button key=${sp} className="spbtn" onClick=${() => assignSpecies(current.id, sp)}>
-          <span className="sdot" style=${{ background: speciesColor(sp) }} />${sp}
-        </button>`)}
+      <div className="spgrid spgrid--common">
+        ${COMMON.map(speciesButton)}
       </div>
+      <button type="button" className="spmore" onClick=${() => setShowAll((v) => !v)} aria-expanded=${showAll}>
+        <span>${showAll ? "Fewer animals" : "Another animal"}</span>
+        <${Icon} name="chevronDown" size=${16} className=${showAll ? "is-up" : ""} />
+      </button>
+      ${showAll && html`<div className="spgrid">${OTHERS.map(speciesButton)}</div>`}
 
-      <div className="row mt-lg" style=${{ gap: 9 }}>
-        <${Btn} onClick=${skip}>Skip</${Btn}>
-        <${Btn} variant="ghost" onClick=${() => keep(current.id)}>${guess === "Animal" ? "Can't tell" : "Keep " + guess}</${Btn}>
+      <div className="row mt-lg" style=${{ gap: 9, flexWrap: "wrap" }}>
+        <${Btn} onClick=${() => keep(current.id)}>${guess === "Animal" ? "Can't tell" : `Yes, ${guess}`}</${Btn}>
+        <${Btn} variant="ghost" onClick=${skip}>Skip for now</${Btn}>
         <div className="spacer" />
         <${Btn} variant="ghost" onClick=${() => archive(current.id)}>Hide photo</${Btn}>
       </div>
+      <p className="faint mt-sm" style=${{ fontSize: 12.5 }}>
+        ${guess === "Animal" ? "“Can't tell” leaves it unlabelled" : `“Yes, ${guess}” keeps its label`} and takes it off this list.
+        “Skip for now” brings it back later. “Hide photo” hides it on this phone.
+      </p>
     </div>
   </div>`;
 }

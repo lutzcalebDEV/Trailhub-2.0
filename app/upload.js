@@ -1,6 +1,6 @@
 // Vale Trails — sign in and add photos or videos from a phone or an SD card.
 import { html, useState, useRef, useEffect } from "./react.js";
-import { Btn, IconBtn, Select } from "./ui.js";
+import { Btn, IconBtn, Select, Dialog } from "./ui.js";
 import { Icon } from "./icons.js";
 import {
   hasUploads, uploadLogin, registerAccount, uploadPhoto, uploadThumb, newUploadId, displayCamera, TAG_OPTIONS,
@@ -250,15 +250,9 @@ export function SignIn({ onDone, message, initialUser = "", startMode = "signin"
 
 // Sign in on its own, from the top bar or a "sign in to save" prompt.
 export function SignInDialog({ message, onDone, onClose }) {
-  return html`<div className="modal" onClick=${onClose}>
-    <div className="modal__box" role="dialog" aria-modal="true" aria-label="Sign in" onClick=${(e) => e.stopPropagation()}>
-      <div className="modal__head">
-        <h2 className="h-sec">Sign in</h2>
-        <${IconBtn} icon="x" bare onClick=${onClose} aria-label="Close" />
-      </div>
+  return html`<${Dialog} title="Sign in" onClose=${onClose}>
       <${SignIn} onDone=${onDone} message=${message || "Tags, names, notes and uploads are saved for everyone once you're signed in."} />
-    </div>
-  </div>`;
+  </${Dialog}>`;
 }
 
 function Picker({ auth, cameras, camName, buckNames, onUploaded, onSignedOut }) {
@@ -268,6 +262,8 @@ function Picker({ auth, cameras, camName, buckNames, onUploaded, onSignedOut }) 
   const [buck, setBuck] = useState("");
   const [comment, setComment] = useState("");
   const [author, setAuthor] = usePersistent(LS.commentName, "");
+  // Uploads go up under the signed-in name; the box for another name is on request.
+  const [naming, setNaming] = useState(false);
   const [sending, setSending] = useState(false);
   const [full, setFull] = useState(false);
   const [drag, setDrag] = useState(false);
@@ -410,9 +406,12 @@ function Picker({ auth, cameras, camName, buckNames, onUploaded, onSignedOut }) 
       <textarea className="input" rows=${2} maxLength=${500} value=${comment}
         onInput=${(e) => setComment(e.target.value)} />
     </label>
-    <label className="field-row"><span>Your name (optional)</span>
-      <input className="input" maxLength=${40} value=${author} onInput=${(e) => setAuthor(e.target.value)} />
-    </label>
+    ${naming
+      ? html`<label className="field-row"><span>Your name (optional)</span>
+          <input className="input" maxLength=${40} value=${author} placeholder=${auth.user} onInput=${(e) => setAuthor(e.target.value)} />
+        </label>`
+      : html`<p className="form-note">Uploading as <b>${author.trim() || auth.user}</b> ·${" "}
+          <button type="button" className="linkbtn" onClick=${() => setNaming(true)}>Change</button></p>`}
     <p className="form-note">
       Photos from a trail camera count in Patterns and the camera's stats. "Phone or other camera" photos stay in Uploads.
       ${hasVideo && " Videos can be up to 80 MB and keep any location data your phone recorded. Everyone with the site link can see them."}
@@ -429,18 +428,12 @@ function Picker({ auth, cameras, camName, buckNames, onUploaded, onSignedOut }) 
 // Signing in here keeps you signed in on this device; the password is never stored.
 export function UploadDialog({ cameras, camNames, buckNames, auth, setAuth, onClose, onUploaded }) {
   const camName = (raw) => displayCamera(raw, camNames);
-  return html`<div className="modal" onClick=${onClose}>
-    <div className="modal__box modal__box--wide" role="dialog" aria-modal="true" aria-label="Upload" onClick=${(e) => e.stopPropagation()}>
-      <div className="modal__head">
-        <h2 className="h-sec">Upload</h2>
-        <${IconBtn} icon="x" bare onClick=${onClose} aria-label="Close" />
-      </div>
+  return html`<${Dialog} title="Upload" wide onClose=${onClose}>
       ${!hasUploads
         ? html`<p className="muted">Uploads turn on once the site's Worker is connected.</p>`
         : auth
           ? html`<${Picker} auth=${auth} cameras=${cameras} camName=${camName} buckNames=${buckNames}
               onUploaded=${onUploaded} onSignedOut=${() => setAuth(null)} />`
           : html`<${SignIn} onDone=${setAuth} message="Sign in with the family login to upload." />`}
-    </div>
-  </div>`;
+  </${Dialog}>`;
 }

@@ -26,8 +26,10 @@ export function Insights(app) {
     setView("gallery");
   };
 
+  // "384 animal photos", so the number isn't read against the 866 on Photos.
   const filterBar = html`<${FilterBar} filters=${filters} set=${setFilter}
-    cameras=${data.cameras} speciesList=${spList} count=${filtered.length} camName=${camName} />`;
+    cameras=${data.cameras} speciesList=${spList} count=${filtered.length} camName=${camName}
+    noun=${NOT_GAME.has(filters.species) ? "photo" : "animal photo"} />`;
 
   if (!filtered.length) {
     return html`<div className="col" style=${{ gap: 4 }}>

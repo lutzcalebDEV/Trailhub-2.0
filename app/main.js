@@ -82,6 +82,32 @@ function transition(kind, update) {
   } catch (e) { delete root.dataset.nav; update(); }
 }
 
+// Follows a media query (the phone's own light or dark setting, for "Match iPhone").
+function useMedia(query) {
+  const [on, setOn] = useState(() => window.matchMedia(query).matches);
+  useEffect(() => {
+    const m = window.matchMedia(query);
+    const sync = () => setOn(m.matches);
+    sync();
+    if (m.addEventListener) m.addEventListener("change", sync); else m.addListener(sync);
+    return () => { if (m.removeEventListener) m.removeEventListener("change", sync); else m.removeListener(sync); };
+  }, [query]);
+  return on;
+}
+// Whether the phone has a connection. Without one the app shows the photos it kept.
+function useOnline() {
+  const [on, setOn] = useState(() => navigator.onLine !== false);
+  useEffect(() => {
+    const up = () => setOn(true);
+    const down = () => setOn(false);
+    window.addEventListener("online", up);
+    window.addEventListener("offline", down);
+    return () => { window.removeEventListener("online", up); window.removeEventListener("offline", down); };
+  }, []);
+  return on;
+}
+const THEME_COLOR = { light: "#f6f7f6", dark: "#0f1211" };
+
 function loadUploadEdits() {
   try {
     const raw = JSON.parse(sessionStorage.getItem(LS.uploadEdits) || "{}");
@@ -99,7 +125,11 @@ function App() {
   const [uploadAuth, setUploadAuth] = useState(loadSession);
   setApiAuth(uploadAuth);
   const { data, refresh, refreshing } = useData(uploadAuth, () => setUploadAuth(null));
-  const [theme, setTheme] = usePersistent(LS.theme, "dark");
+  // "dark", "light", or "auto" to follow the phone's own setting.
+  const [themePref, setThemePref] = usePersistent(LS.theme, "dark");
+  const systemDark = useMedia("(prefers-color-scheme: dark)");
+  const theme = themePref === "auto" ? (systemDark ? "dark" : "light") : themePref === "light" ? "light" : "dark";
+  const online = useOnline();
   const [sidebarCollapsed, setSidebarCollapsed] = usePersistent(LS.sidebarCollapsed, "false");
   // Active tab + filters are remembered across refreshes so the page comes back
   // exactly where you left it (validated against the known views / filter keys).
@@ -338,7 +368,12 @@ function App() {
 
   // Reload shared data with every refresh, so edits from other devices show up
   // on the same schedule as new photos.
-  useEffect(() => { document.documentElement.setAttribute("data-theme", theme); }, [theme]);
+  // The browser's own bars (and the Home Screen app's edges) take the app's colour,
+  // whichever way the phone itself is set.
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    for (const m of document.querySelectorAll('meta[name="theme-color"]')) m.setAttribute("content", THEME_COLOR[theme]);
+  }, [theme]);
   useEffect(() => {
     let alive = true;
     Promise.all([remoteLoadTags(), remoteLoadCameraNames()]).then(([tags, names]) => {
@@ -423,7 +458,11 @@ function App() {
   const filtered = useMemo(() => filterCaptures(captures, filters, ov), [captures, filters, ov]);
   const reviewQ = useMemo(() => reviewQueue(captures, ov, archived, reviewed), [captures, ov, archived, reviewed]);
 
-  const counts = { total: captures.length, cameras: data.cameras.length, review: reviewQ.length };
+  const counts = {
+    total: captures.length, cameras: data.cameras.length, review: reviewQ.length,
+    // Sign-ups waiting for an admin: part of the number on the phone's More tab.
+    pending: uploadAuth && uploadAuth.admin ? pendingAccounts : 0,
+  };
   const status = {
     demo: data.demo,
     checked: data.generatedAt ? timeAgo(data.generatedAt) : null,
@@ -559,7 +598,7 @@ function App() {
     setFilters(blank);
     return true;
   }, []);
-  const toggleTheme = useCallback(() => setTheme((t) => (t === "light" ? "dark" : "light")), [setTheme]);
+  const toggleTheme = useCallback(() => setThemePref(theme === "light" ? "dark" : "light"), [setThemePref, theme]);
 
   const changeComment = useCallback(async (body) => {
     try {
@@ -576,12 +615,15 @@ function App() {
 
   // Manual refresh starts over from every photo, and says what it found, so a tap
   // never looks like it did nothing.
-  const manualRefresh = useCallback(async () => {
-    clearFilters();
-    // A newer version of the app loads now (refreshing starts unfiltered anyway).
+  const manualRefresh = useCallback(async (opts) => {
+    // Pulling down on a phone keeps the filters: checking for new bucks shouldn't
+    // throw away "Bucks only". (A click passes its event here, which isn't that.)
+    const keep = !!opts && opts.keepFilters === true;
+    if (!keep) clearFilters();
+    // A newer version of the app loads now.
     const deployed = await newerDeploy();
     if (deployed) {
-      try { localStorage.removeItem(LS.filters); } catch (e) {}
+      if (!keep) { try { localStorage.removeItem(LS.filters); } catch (e) {} }
       reloadForDeploy(deployed);
       return;
     }
@@ -591,6 +633,8 @@ function App() {
     const added = fresh.captures.filter((c) => !before.has(c.id)).length;
     showToast("ok", added ? `${added} new photo${added === 1 ? "" : "s"}` : "No new photos yet");
   }, [data.captures, refresh, showToast, clearFilters]);
+
+  const pullRefresh = useCallback(() => manualRefresh({ keepFilters: true }), [manualRefresh]);
 
   const setOverrideTags = useCallback((id, tags) => {
     setLocalOverrides((prev) => {
@@ -735,6 +779,13 @@ function App() {
   const meta = VIEWS.find((v) => v.id === view) || (view === "more" ? MORE_META : VIEWS[0]);
   const View = view === "more" ? MoreScreen : VIEW_COMPONENTS[view] || Overview;
   const pageTitle = view === "overview" ? "Vale Trails" : meta.label;
+  // Under the big title on Home and Photos: whether the photos are current. The time
+  // of the last check isn't shown while all is well, because the file it comes from
+  // is only rewritten when something changes, so it reads older than it is.
+  const titleSub = view !== "overview" && view !== "gallery" ? ""
+    : !online ? "Offline · showing saved photos"
+    : status.stale ? (status.checked ? `Sync delayed · last checked ${status.checked}` : "Awaiting sync")
+    : "Up to date" + (status.newest ? ` · newest photo ${status.newest}` : "");
   // Anything open on top (a photo, a pop-up): the tab bar stays visible over it, and
   // tapping a tab closes it and goes to that tab. An upload in progress stays open.
   const overlayOpen = !!(lightbox || alertsOpen || accountsOpen || faceIdOpen || passwordOpen || signIn || uploadOpen);
@@ -766,14 +817,14 @@ function App() {
       onFaceId: faceIdSupported ? () => setFaceIdOpen(true) : null,
       onPassword: () => setPasswordOpen(true),
       onAccounts: () => setAccountsOpen(true), pending: pendingAccounts,
-      onSignIn: () => openSignIn(), onSignOut: signOut, status, theme, toggleTheme,
+      onSignIn: () => openSignIn(), onSignOut: signOut, status, theme, themePref, setThemePref,
     },
     data, captures, ov, theme,
     filters, setFilter, filtered, spList,
     gridSize, setGridSize,
     archived, reviewed, assignSpecies, keep, archive: archiveCap,
     openLightbox, reviewQ, counts, setView,
-    uploads, allCaptures, comments, openUpload: () => setUploadOpen(true),
+    uploads, allCaptures, comments, openUpload: () => setUploadOpen(true), openAlerts: () => setAlertsOpen(true),
     camName, camNames, bulkAssign, renameCamera,
     metaMap, updateMeta, toggleFavorite,
     auth: uploadAuth, openSignIn,
@@ -801,7 +852,8 @@ function App() {
         onCollapse=${() => setSidebarCollapsed("true")} />
       <main className="main">
         <${MobileTopbar} ...${chrome} title=${pageTitle} onBack=${MOBILE_MORE.includes(view) ? goBack : null} />
-        <${LargeTitle} title=${pageTitle} status=${status} />
+        <${LargeTitle} title=${pageTitle} sub=${titleSub} warn=${status.stale || !online} />
+        ${!online && html`<div className=${titleSub ? "offline is-dup" : "offline"} role="status">Offline · showing saved photos</div>`}
         <${Topbar} title=${meta.label} ...${chrome}
           sidebarHidden=${sidebarCollapsed === "true"} onShowSidebar=${() => setSidebarCollapsed("false")} />
         <div className=${HAS_VT && !reduceMotion() ? "view" : "view view__enter"} key=${view}>
@@ -811,7 +863,7 @@ function App() {
     </div>
 
     <${MobileNav} view=${view} onTab=${tabFromBar} counts=${counts} />
-    <${PullToRefresh} onRefresh=${manualRefresh} />
+    <${PullToRefresh} onRefresh=${pullRefresh} />
     <${InstallHint} />
 
     ${lbItem && html`<${Lightbox}
@@ -834,6 +886,8 @@ function App() {
       } : null}
       comments=${html`<${Comments} key=${lbItem.id} photo=${String(lbItem.id)} list=${comments[lbItem.id] || []}
         auth=${uploadAuth} setAuth=${signedIn} onChange=${changeComment} />`}
+      position=${lightbox.index + 1} total=${lightbox.list.length}
+      neighbors=${[lightbox.list[lightbox.index - 1], lightbox.list[lightbox.index + 1]]}
       hasPrev=${lightbox.index > 0}
       hasNext=${lightbox.index < lightbox.list.length - 1}
       onPrev=${() => setLightbox((s) => ({ ...s, index: Math.max(0, s.index - 1) }))}

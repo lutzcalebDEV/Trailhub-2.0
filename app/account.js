@@ -1,7 +1,7 @@
 // Vale Trails — the account menu in the top bar and the admin's account approvals.
 import { html, useState, useEffect, useRef, useCallback } from "./react.js";
 import { Icon } from "./icons.js";
-import { Btn, IconBtn } from "./ui.js";
+import { Btn, IconBtn, Dialog } from "./ui.js";
 import { loadAccounts, accountAction, timeAgo, NotSignedIn, faceIdName, loadPasswordInfo, changePassword, passwordProblem } from "./core.js";
 
 const cx = (...xs) => xs.filter(Boolean).join(" ");
@@ -128,12 +128,7 @@ export function PasswordDialog({ auth, onClose, onChanged, onSignedOut, showToas
   };
 
   const title = info && !info.hasPassword ? "Set a password" : "Change password";
-  return html`<div className="modal" onClick=${onClose}>
-    <div className="modal__box" role="dialog" aria-modal="true" aria-label=${title} onClick=${(e) => e.stopPropagation()}>
-      <div className="modal__head">
-        <h2 className="h-sec"><${Icon} name="key" size=${17} /> ${title}</h2>
-        <${IconBtn} icon="x" bare onClick=${onClose} aria-label="Close" />
-      </div>
+  return html`<${Dialog} title=${title} icon="key" onClose=${onClose}>
       ${!info ? html`<p className="form-note">Loading…</p>`
         : info.shared ? html`<div className="col" style=${{ gap: 12 }}>
             <p className="form-note"><b>${auth.user}</b> is the shared family login. Its password is
@@ -159,8 +154,7 @@ export function PasswordDialog({ auth, onClose, onChanged, onSignedOut, showToas
             ${error && html`<p className="form-error" role="alert" ref=${errRef}>${error}</p>`}
             <${Btn} variant="primary" disabled=${busy}>${busy ? "Saving…" : info.hasPassword ? "Change password" : "Set password"}</${Btn}>
           </form>`}
-    </div>
-  </div>`;
+  </${Dialog}>`;
 }
 
 /* -------------------------- Pending-account count ------------------------ */
@@ -224,12 +218,7 @@ export function AccountsDialog({ auth, uploads = [], onClose, onChanged, onUploa
   const approved = state.accounts.filter((a) => a.status !== "pending");
   const when = (iso) => (iso ? timeAgo(new Date(iso)) : "");
 
-  return html`<div className="modal" onClick=${onClose}>
-    <div className="modal__box modal__box--wide" role="dialog" aria-modal="true" aria-label="Accounts" onClick=${(e) => e.stopPropagation()}>
-      <div className="modal__head">
-        <h2 className="h-sec">Accounts</h2>
-        <${IconBtn} icon="x" bare onClick=${onClose} aria-label="Close" />
-      </div>
+  return html`<${Dialog} title="Accounts" wide onClose=${onClose}>
       ${state.loading ? html`<p className="form-note">Loading…</p>`
         : state.error ? html`<p className="form-error">${state.error}</p>`
         : !state.enabled ? html`<p className="form-note">Personal accounts aren't turned on. Add the ACCOUNTS
@@ -287,6 +276,5 @@ export function AccountsDialog({ auth, uploads = [], onClose, onChanged, onUploa
             </section>
             <p className="form-note">Admins can approve sign-ups and manage accounts. The shared login is always an admin.</p>
           </div>`}
-    </div>
-  </div>`;
+  </${Dialog}>`;
 }

@@ -792,6 +792,8 @@ export const LS = {
   alertCameras: "trailhub-alert-cameras",
   alertQuiet: "trailhub-alert-quiet",
   faceIdUsers: "trailhub-faceid-users",
+  homeLatest: "trailhub-home-latest",
+  alertsNudge: "trailhub-alerts-nudge",
 };
 
 // Local date helpers for the date-range filter and the upload date field.

@@ -1663,3 +1663,210 @@ html[data-nav="pop"]::view-transition-new(root) { animation-name: navFromUnder; 
   .shots.size-S .sbadge__dot { width: 6px; height: 6px; }
   .shots.size-S .shot__burst { right: 5px; bottom: 5px; padding: 1px 6px; font-size: 10px; }
 }
+
+/* ============================ iPhone review pass ============================ */
+/* iPhone type: iPhones and iPads use the system font (index.html adds .apple-type
+   and skips loading Inter there). Inter's stylistic sets mean other glyphs in SF. */
+html.apple-type { --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif; }
+html.apple-type body { font-feature-settings: normal; }
+
+/* Chart labels were 9.5-10px: too small to read on a phone. */
+.axis, .actclock__axis, .cal__months, .hist__tick { font-size: 11.5px; color: var(--text-faint); }
+
+/* Details: the editable boxes had the browser's own bright inset border. */
+.lb__note, .lb__field input { border: 0; }
+.lb__fixlink { align-self: flex-start; margin-top: 2px; font-size: 13px; }
+
+/* Offline notice (pages without a status line under the title). */
+.offline {
+  margin: 10px 16px 0; padding: 8px 12px; border-radius: var(--r-md);
+  background: var(--day-soft); color: var(--warn); font-size: 13px; font-weight: 600;
+}
+@media (min-width: 901px) { .offline { margin: 12px 26px 0; } }
+@media (max-width: 900px) { .offline.is-dup { display: none; } }
+
+/* Camera cards: a dot for their state on a phone, the pill on wider screens. */
+.camcard__dot { width: 8px; height: 8px; border-radius: 999px; flex: none; background: var(--accent); }
+.camcard__dot.is-quiet { background: var(--warn); }
+.camcard__top { justify-content: flex-start; }
+.camcard__top .pill { margin-left: auto; }
+@media (min-width: 561px) { .camcard__dot { display: none; } }
+
+/* Alerts offer on Home. */
+.nudge--alerts { justify-content: flex-start; }
+.nudge--alerts > svg { color: var(--accent); flex: none; }
+.nudge--alerts > span { flex: 1; min-width: 0; }
+
+/* Histogram on a touch screen: touch or drag across it to pick an hour. */
+.hist.is-scrub { touch-action: pan-y; }
+.hist__col.is-picked .hist__bar { box-shadow: 0 0 0 2px var(--text); }
+.hist__readout {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  min-height: 40px; margin-top: 10px; font-size: 14px;
+}
+
+/* Identify: four big buttons first, the rest on request. */
+.spmore {
+  display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%;
+  margin-top: 8px; min-height: 44px; border-radius: var(--r-md);
+  color: var(--text-muted); font-weight: 600; font-size: 14px;
+}
+.spmore svg { transition: transform .2s var(--ease); }
+.spmore svg.is-up { transform: rotate(180deg); }
+.spgrid--common .spbtn { min-height: 52px; font-size: 15px; }
+
+/* Quick filter chips (Photos). Shown on phones; a computer has the inline controls. */
+.quickchips { display: none; }
+.filterbar__wide { display: inline-flex; align-items: center; gap: 9px; }
+.modal__grip { display: none; }
+
+@media (max-width: 900px) {
+  /* ---- Phone header: logo or back, page name, Upload ---- */
+  .mobile-top { min-height: 0; }
+  .mobile-top__add {
+    position: relative; display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px;
+    border-radius: 999px; background: var(--accent-soft); color: var(--accent);
+    font-size: 15px; font-weight: 650; touch-action: manipulation;
+  }
+  .mobile-top__add::after { content: ""; position: absolute; inset: -5px -4px; }
+  .mobile-top__add:active { opacity: .6; }
+
+  /* ---- Photos: the bar (with its quick chips) stays pinned under the header ---- */
+  .filterwrap.has-quick {
+    position: sticky; top: var(--mobile-top-h, 60px); z-index: 30;
+    margin: 0 calc(-1 * max(16px, env(safe-area-inset-left, 0px))) 4px;
+    padding: 6px max(16px, env(safe-area-inset-left, 0px)) 4px;
+    background: color-mix(in srgb, var(--bg) 92%, transparent);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  }
+  .filterwrap .filterbar { flex-wrap: nowrap; }
+  .filterwrap .filterbar__tools { width: auto; margin-left: auto; flex-wrap: nowrap; }
+  .filterbar__wide { display: none; }
+  .quickchips {
+    display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none;
+    margin: 6px calc(-1 * max(16px, env(safe-area-inset-left, 0px))) 8px;
+    padding: 0 max(16px, env(safe-area-inset-left, 0px));
+  }
+  .quickchips::-webkit-scrollbar { display: none; }
+  .quickchips .chip { flex: none; }
+  .quickchips__clear { color: var(--text); }
+  .filterchips .is-dup, .filterchips.is-dup { display: none; }
+  .filterwrap .filterchips { margin-bottom: 8px; }
+  .filterwrap .bulkbar { margin-bottom: 6px; }
+  .drawer .field-row { gap: 7px; }
+  .drawer .segmented button { flex: 1; justify-content: center; }
+
+  /* ---- Pop-ups are sheets from the bottom (ending above the tab bar) ---- */
+  .modal { place-items: end stretch; padding: 0; }
+  .modal__box {
+    max-width: none; border-radius: 18px 18px 0 0; border-bottom: 0;
+    padding: 8px max(18px, env(safe-area-inset-left, 0px)) 20px;
+    animation: sheetIn .3s var(--ease-out);
+  }
+  .modal__grip { display: block; margin: 4px auto 10px; }
+  /* While typing, the sheet goes to the top so the keyboard can't cover the box. */
+  html[data-keyboard] .modal { place-items: start stretch; bottom: 0; padding-top: max(8px, env(safe-area-inset-top, 0px)); }
+  html[data-keyboard] .modal__box { border-radius: 0 0 18px 18px; border-bottom: 1px solid var(--border-strong); animation: none; }
+}
+
+@media (max-width: 560px) {
+  /* Home: each camera on one line, with any battery or signal warning under it. */
+  .camcards { gap: 8px; }
+  .camcard { flex-direction: row; flex-wrap: wrap; align-items: center; column-gap: 10px; row-gap: 3px; padding: 11px 14px; }
+  .camcard__top { flex: 1 1 auto; min-width: 0; gap: 9px; }
+  .camcard__top .pill, .camcard__wide { display: none; }
+  .camcard__name { font-size: 15px; }
+  .camcard__sub { flex: none; font-size: 13px; }
+  .camcard__health { flex-basis: 100%; padding-left: 17px; }
+  .camcard__stat:not(.is-warn) { display: none; }
+
+  .spgrid--common { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+}
+
+/* Thumb-sized targets on touch screens (Apple asks for 44 points). */
+@media (pointer: coarse) {
+  .iconbtn { width: 44px; height: 44px; }
+  .btn { min-height: 44px; }
+  .btn--sm { min-height: 38px; }
+  .chip { height: 36px; padding: 0 14px; font-size: 14px; }
+  .segmented button { height: 36px; padding: 0 13px; font-size: 14px; }
+  .lb__zoomtoggle, .lb__fullscreen { display: none; }
+}
+
+/* ---- Photo view on a phone held upright ----
+   The photo takes the whole screen down to an action bar where the tab bar was
+   (iPhone Photos does the same), with a one-line caption above it. */
+.lb__cap, .lb__bar, .lb__tagpop { display: none; }
+@media (max-width: 900px) and (orientation: portrait) {
+  .lb { bottom: 0; --lbh: 100dvh; --peek: calc(104px + env(safe-area-inset-bottom, 0px)); }
+  body:has(.lb) .mobilenav { visibility: hidden; }
+  .lb__infobtn { display: none; }
+  .lb ~ .toast { bottom: calc(var(--peek) + 10px); }
+  .lb__panel { padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)); }
+
+  .lb__cap {
+    display: flex; align-items: center; gap: 8px; position: fixed; z-index: 3;
+    left: 16px; right: 16px; bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+    color: #eef3ef; font-size: 14px; white-space: nowrap; overflow: hidden; pointer-events: none;
+    transition: opacity .2s ease;
+  }
+  .lb__cap > span { color: #b9c4bd; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .lb__cap .lb__count { margin-left: auto; flex: none; color: #8b968f; font-variant-numeric: tabular-nums; }
+
+  .lb__bar {
+    display: flex; position: fixed; z-index: 3; left: 0; right: 0; bottom: 0;
+    padding: 4px 8px max(6px, env(safe-area-inset-bottom, 0px));
+    background: rgba(10,13,12,.86); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+    border-top: 1px solid rgba(255,255,255,.08); transition: opacity .2s ease;
+  }
+  .lb__bar button {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 50px;
+    justify-content: center; color: #dfe7e2; font-size: 11px; font-weight: 600; touch-action: manipulation;
+  }
+  .lb__bar button:active { opacity: .55; }
+  .lb__bar button.is-on { color: #ffcf5c; }
+  .lb__bar button.is-on svg { fill: currentColor; }
+  .lb__bar button.is-open { color: var(--accent); }
+
+  .lb__tagpop {
+    display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; position: fixed; z-index: 4;
+    left: 0; right: 0; bottom: calc(60px + env(safe-area-inset-bottom, 0px)); padding: 10px 16px;
+    background: rgba(10,13,12,.9); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+    animation: fade .15s var(--ease);
+  }
+  .lb__tagpop::-webkit-scrollbar { display: none; }
+  .lb__tagpop .qtag { flex: none; padding: 9px 14px; font-size: 15px; }
+
+  /* Out of the way while zoomed, full screen, dragging, or with the details up. */
+  .lb.is-immersive :is(.lb__cap, .lb__bar, .lb__tagpop),
+  .lb:has(.lb__stage.is-zoomed) :is(.lb__cap, .lb__bar, .lb__tagpop),
+  .lb.is-dragging :is(.lb__cap, .lb__bar, .lb__tagpop),
+  .lb.is-sheet-open :is(.lb__cap, .lb__tagpop) { opacity: 0; pointer-events: none; }
+
+  /* Sideways swipes: the photo follows the finger, slides off when let go far
+     enough, and the next one slides in from that side. */
+  .lb__zoom, .lb__stage > .lb__img { translate: var(--dragx, 0px) var(--drag, 0px); }
+  .lb[data-swipe="drag"] :is(.lb__zoom, .lb__stage > .lb__img) { transition: none; }
+  .lb[data-swipe="fling"] :is(.lb__zoom, .lb__stage > .lb__img) { transition: translate .15s ease-in; }
+  .lb[data-swipe="from-next"] :is(.lb__zoom, .lb__stage > .lb__img) { animation: lbFromRight .24s var(--ease-out); }
+  .lb[data-swipe="from-prev"] :is(.lb__zoom, .lb__stage > .lb__img) { animation: lbFromLeft .24s var(--ease-out); }
+}
+@keyframes lbFromRight { from { translate: 30vw 0; opacity: .3; } to { translate: 0 0; opacity: 1; } }
+@keyframes lbFromLeft { from { translate: -30vw 0; opacity: .3; } to { translate: 0 0; opacity: 1; } }
+
+/* Light theme in the Home Screen app: the iPhone draws white status bar text over
+   the top of the page (index.html, black-translucent), which can't be read on a
+   light page. A dark band behind the clock and battery keeps them readable. */
+@media (display-mode: standalone) and (max-width: 900px) {
+  [data-theme="light"] body::before {
+    content: ""; position: fixed; z-index: 150; top: 0; left: 0; right: 0;
+    height: env(safe-area-inset-top, 0px); background: #16231c; pointer-events: none;
+  }
+}
+
+/* The amber warning colour is too pale to read on the light background. */
+[data-theme="light"] { --warn: #a96a06; }
+@media (pointer: coarse) {
+  .installhint__close { width: 44px; height: 44px; }
+  .mobile-top__back { width: 44px; height: 44px; margin-left: -14px; }
+}
