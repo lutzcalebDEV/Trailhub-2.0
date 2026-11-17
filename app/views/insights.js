@@ -18,8 +18,13 @@ export function Insights(app) {
   const { captures, filters, setFilter, setView, spList, data, ov, camName } = app;
   // Choosing Person, Vehicle or Empty on purpose still charts them.
   const filtered = NOT_GAME.has(filters.species) ? app.filtered : animalActivity(app.filtered, ov);
-  // Open Photos with an extra filter layered on the current ones.
-  const go = (patch) => { setFilter(patch); setView("gallery"); };
+  // Open Photos with an extra filter layered on the current ones. With no species
+  // picked the charts leave out people, vehicles and empty photos, so Photos does too.
+  const go = (patch) => {
+    const species = patch.species || filters.species;
+    setFilter(species === "All" ? { ...patch, gameOnly: true } : patch);
+    setView("gallery");
+  };
 
   const filterBar = html`<${FilterBar} filters=${filters} set=${setFilter}
     cameras=${data.cameras} speciesList=${spList} count=${filtered.length} camName=${camName} />`;
@@ -45,7 +50,10 @@ export function Insights(app) {
   // When one species is selected we still compare it against the others (ignoring
   // only the species filter) so its timing reads in context, with that row lit up.
   const sel = filters.species !== "All" ? filters.species : null;
-  const activityBase = sel ? filterCaptures(captures, { ...filters, species: "All" }, ov) : filtered;
+  // People, vehicles and empty photos stay out of the comparison too, unless one of
+  // them is the species picked.
+  const others = sel ? filterCaptures(captures, { ...filters, species: "All", gameOnly: false }, ov) : filtered;
+  const activityBase = sel && !NOT_GAME.has(sel) ? animalActivity(others, ov) : others;
   const activity = speciesActivity(activityBase, ov, 6);
   const selPeak = sel ? peakWindow(hourHistogram(filtered)) : null;
   const dielLabel = (dp) => (dp >= 65 ? "mostly daytime" : dp <= 35 ? "mostly nocturnal" : "active day & night");

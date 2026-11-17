@@ -26,7 +26,8 @@ export function Overview(app) {
   const cams = cameraStatus(captures, data.cameras);
   const sit = bestSit(captures, ov);
   const showCamera = (camera) => { setFilter({ camera }); setView("gallery"); };
-  const go = (patch) => { setFilter(patch); setView("gallery"); };
+  // The charts here count animals only, so the photos a bar opens are animals only.
+  const go = (patch) => { setFilter({ ...patch, gameOnly: true }); setView("gallery"); };
   const seeAll = (label) => html`<${Btn} sm variant="ghost" iconRight="arrowRight"
     onClick=${() => setView("gallery")}>${label}</${Btn}>`;
 

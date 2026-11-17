@@ -3,7 +3,7 @@ import { html, useState, useEffect, useRef, Fragment, createPortal } from "./rea
 import { Icon, BrandMark } from "./icons.js";
 import { IconBtn, Select, Segmented, Switch, Chip, edgeBackHere } from "./ui.js";
 import { speciesColor, LS, labelHour, getScrollY, faceIdName } from "./core.js";
-import { RANGE_OPTIONS, rangeLabel, WEEKDAY_PLURAL } from "./analytics.js";
+import { RANGE_OPTIONS, rangeLabel, WEEKDAY_PLURAL, NOT_GAME } from "./analytics.js";
 import { UserMenu } from "./account.js";
 
 const cx = (...xs) => xs.filter(Boolean).join(" ");
@@ -451,10 +451,12 @@ export function PullToRefresh({ onRefresh }) {
 }
 
 /* ------------------------------ Filter bar ------------------------------ */
-// `hour` and `wday` have no control of their own: they're set by tapping a bar on
-// the Patterns or Home charts, and cleared from their chips.
+// `hour`, `wday` and `gameOnly` have no control of their own: they're set by tapping
+// a bar on the Patterns or Home charts, and cleared from their chips. `gameOnly`
+// leaves out people, vehicles and empty photos, as those charts do, so the photos
+// a bar opens are the ones it counted.
 const EMPTY_FILTERS = {
-  species: "All", camera: "All", tod: "all", bucksOnly: false,
+  species: "All", camera: "All", tod: "all", bucksOnly: false, gameOnly: false,
   range: "all", from: "", to: "", hour: -1, wday: -1,
 };
 export const defaultFilters = () => ({ ...EMPTY_FILTERS });
@@ -488,6 +490,7 @@ export function FilterBar({ filters, set, cameras, speciesList, count, camName, 
     (filters.camera !== "All" ? 1 : 0) +
     (filters.tod !== "all" ? 1 : 0) +
     (filters.bucksOnly ? 1 : 0) +
+    (filters.gameOnly && !NOT_GAME.has(filters.species) ? 1 : 0) +
     (filters.range !== "all" ? 1 : 0) +
     (filters.hour >= 0 ? 1 : 0) +
     (filters.wday >= 0 ? 1 : 0);
@@ -523,6 +526,7 @@ export function FilterBar({ filters, set, cameras, speciesList, count, camName, 
   if (filters.hour >= 0) chips.push({ k: "hour", label: `${labelHour(filters.hour)} hour`, clear: () => set({ hour: -1 }) });
   if (filters.wday >= 0) chips.push({ k: "wday", label: WEEKDAY_PLURAL[filters.wday], clear: () => set({ wday: -1 }) });
   if (filters.bucksOnly) chips.push({ k: "buck", label: "Bucks only", clear: () => set({ bucksOnly: false }) });
+  if (filters.gameOnly && !NOT_GAME.has(filters.species)) chips.push({ k: "game", label: "Animals only", clear: () => set({ gameOnly: false }) });
 
   return html`<div>
     <div className="filterbar">

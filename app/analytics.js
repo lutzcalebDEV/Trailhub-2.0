@@ -73,6 +73,8 @@ export function filterCaptures(captures, filters, ov) {
     if (filters.tod === "day" && c.isNight) return false;
     if (filters.tod === "night" && !c.isNight) return false;
     if (filters.bucksOnly && !tags.includes("Buck")) return false;
+    // "Animals only" (set from a chart). Picking Person, Vehicle or Empty outranks it.
+    if (filters.gameOnly && NOT_GAME.has(species) && !NOT_GAME.has(filters.species)) return false;
     if (start && c.date < start) return false;
     if (end && c.date >= end) return false;
     if (hour >= 0 && c.date.getHours() !== hour) return false;
