@@ -56,6 +56,7 @@ const P = {
   bell: html`<g><path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9Z"/><path d="M10.3 20a1.9 1.9 0 0 0 3.4 0"/></g>`,
   zoomIn: html`<g><circle cx="11" cy="11" r="7"/><path d="m20.5 20.5-4.5-4.5M11 8v6M8 11h6"/></g>`,
   zoomOut: html`<g><circle cx="11" cy="11" r="7"/><path d="m20.5 20.5-4.5-4.5M8 11h6"/></g>`,
+  key: html`<g><circle cx="8" cy="15" r="4.2"/><path d="m11 12 9-9"/><path d="m16.5 6.5 2.5 2.5"/><path d="m14 9 2 2"/></g>`,
   logout: html`<g><path d="M9 21H5.5A1.5 1.5 0 0 1 4 19.5v-15A1.5 1.5 0 0 1 5.5 3H9"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></g>`,
   panelLeft: html`<g><rect x="3" y="3" width="18" height="18" rx="2.6"/><path d="M9 3v18"/><path d="m16 15-3-3 3-3"/></g>`,
   note: html`<g><path d="M5 3.5h9L19 8.5V19a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 19V5A1.5 1.5 0 0 1 5 3.5Z"/><path d="M13.5 3.5V9H19"/><path d="M7.5 12.5h7M7.5 15.5h5"/></g>`,

@@ -16,7 +16,7 @@ import {
 import { Lightbox, Toast } from "./ui.js";
 import { UploadDialog, SignInDialog } from "./upload.js";
 import { Comments } from "./comments.js";
-import { AccountsDialog, usePendingAccounts } from "./account.js";
+import { AccountsDialog, PasswordDialog, usePendingAccounts } from "./account.js";
 import { AlertsDialog } from "./alerts.js";
 import { FaceIdDialog, usePasskeySupport } from "./faceid.js";
 import { InstallHint } from "./install.js";
@@ -125,6 +125,7 @@ function App() {
   const [accountsOpen, setAccountsOpen] = useState(false);
   const [alertsOpen, setAlertsOpen] = useState(false);
   const [faceIdOpen, setFaceIdOpen] = useState(false);
+  const [passwordOpen, setPasswordOpen] = useState(false);
   const faceIdSupported = usePasskeySupport();
   const [signIn, setSignIn] = useState(null);
   const [uploadEdits, setUploadEdits] = useState(loadUploadEdits);
@@ -685,9 +686,9 @@ function App() {
   const pageTitle = view === "overview" ? "Vale Trails" : meta.label;
   // Anything open on top (a photo, a pop-up): the tab bar stays visible over it, and
   // tapping a tab closes it and goes to that tab. An upload in progress stays open.
-  const overlayOpen = !!(lightbox || alertsOpen || accountsOpen || faceIdOpen || signIn || uploadOpen);
+  const overlayOpen = !!(lightbox || alertsOpen || accountsOpen || faceIdOpen || passwordOpen || signIn || uploadOpen);
   const tabFromBar = (v) => {
-    setAlertsOpen(false); setAccountsOpen(false); setFaceIdOpen(false); setSignIn(null);
+    setAlertsOpen(false); setAccountsOpen(false); setFaceIdOpen(false); setPasswordOpen(false); setSignIn(null);
     switchTab(v);
   };
   // Swipe from the left edge goes back from Uploads, Patterns and Identify.
@@ -696,6 +697,7 @@ function App() {
     more: {
       onPush: pushScreen, onAlerts: () => setAlertsOpen(true),
       onFaceId: faceIdSupported ? () => setFaceIdOpen(true) : null,
+      onPassword: () => setPasswordOpen(true),
       onAccounts: () => setAccountsOpen(true), pending: pendingAccounts,
       onSignIn: () => openSignIn(), onSignOut: signOut, status, theme, toggleTheme,
     },
@@ -720,6 +722,7 @@ function App() {
     pending: pendingAccounts, onAccounts: () => setAccountsOpen(true),
     onAlerts: () => setAlertsOpen(true),
     onFaceId: faceIdSupported ? () => setFaceIdOpen(true) : null,
+    onPassword: () => setPasswordOpen(true),
   };
 
   return html`<${Fragment}>
@@ -777,6 +780,11 @@ function App() {
     ${faceIdOpen && uploadAuth && html`<${FaceIdDialog} auth=${uploadAuth} showToast=${showToast}
       onClose=${() => setFaceIdOpen(false)}
       onSignedOut=${() => { setFaceIdOpen(false); setUploadAuth(null); openSignIn("Your session ended. Sign in again."); }} />`}
+
+    ${passwordOpen && uploadAuth && html`<${PasswordDialog} auth=${uploadAuth} showToast=${showToast}
+      onClose=${() => setPasswordOpen(false)}
+      onChanged=${(auth) => setUploadAuth(auth)}
+      onSignedOut=${() => { setPasswordOpen(false); setUploadAuth(null); openSignIn("Your session ended. Sign in again."); }} />`}
 
     ${alertsOpen && html`<${AlertsDialog} auth=${uploadAuth} showToast=${showToast}
       cameras=${data.cameras || []} camName=${camName}

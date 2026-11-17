@@ -326,11 +326,41 @@ export async function loadPushKey() {
 export const savePushSubscription = (auth, subscription, species, cameras = [], quiet = null) =>
   postJSON(TAGS_API + "/push/subscribe", { subscription, species, cameras, quiet }, auth);
 
+/* ------------------------------- Password -------------------------------- */
+// Whether the signed-in account has a password ({ shared, hasPassword }): one made
+// with Face ID may not, and the shared login's is set in the Worker, not here.
+export async function loadPasswordInfo(auth) {
+  if (!auth || !auth.token) throw new NotSignedIn("Sign in");
+  const r = await fetch(TAGS_API + "/password", { headers: { Authorization: authHeader(auth) }, cache: "no-store" });
+  if (r.status === 401) throw new NotSignedIn("Sign in");
+  if (!r.ok) throw new Error("Couldn't load (" + r.status + ")");
+  return r.json();
+}
+// Change it. Returns { status: "ok", auth } (a fresh session: the account's other
+// devices are signed out), or "wrong" / "invalid" / "limited" / "signedout" / "error".
+export async function changePassword(auth, current, password) {
+  try {
+    const r = await fetch(TAGS_API + "/password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: authHeader(auth) },
+      body: JSON.stringify({ current, password }),
+    });
+    const body = await r.json().catch(() => ({}));
+    if (r.ok && body.token) {
+      return { status: "ok", auth: { user: body.user, token: body.token, exp: body.exp, admin: !!body.admin } };
+    }
+    const status = { 401: "signedout", 403: "wrong", 400: "invalid", 429: "limited" }[r.status] || "error";
+    return { status, error: body.error || "" };
+  } catch (e) { return { status: "error" }; }
+}
+
 /* ---------------------------- Phone app frame ---------------------------- */
-// On phones the page itself never scrolls: only the content area (.main) does, in
-// a fixed frame, so the top bar and tab bar can't bounce, slide or jump the way a
-// web page's do (styles.css, "Phone app frame"). Desktop scrolls the page as usual.
-const framed = () => window.matchMedia("(max-width: 900px)").matches;
+// In the Home Screen app on a phone the page itself never scrolls: only the content
+// area (.main) does, in a fixed frame, so the top bar and tab bar can't bounce,
+// slide or jump the way a web page's do (styles.css, "Phone app frame"). In Safari
+// and on computers the page scrolls as usual, so Safari can shrink its toolbar and
+// the tab bar sits at the bottom of the screen.
+const framed = () => window.matchMedia("(max-width: 900px) and (display-mode: standalone)").matches;
 export const scrollBox = () => (framed() && document.querySelector(".main")) || null;
 export const getScrollY = () => { const el = scrollBox(); return el ? el.scrollTop : window.scrollY; };
 export const scrollToY = (top, smooth) => {

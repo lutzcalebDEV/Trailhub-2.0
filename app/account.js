@@ -2,14 +2,14 @@
 import { html, useState, useEffect, useRef, useCallback } from "./react.js";
 import { Icon } from "./icons.js";
 import { Btn, IconBtn } from "./ui.js";
-import { loadAccounts, accountAction, timeAgo, NotSignedIn, faceIdName } from "./core.js";
+import { loadAccounts, accountAction, timeAgo, NotSignedIn, faceIdName, loadPasswordInfo, changePassword } from "./core.js";
 
 const cx = (...xs) => xs.filter(Boolean).join(" ");
 
 /* ------------------------------ Account menu ----------------------------- */
 // Signed out it's a plain "Sign in" button. Signed in it opens a small menu, so a
 // stray tap on your name never signs you out.
-export function UserMenu({ auth, pending = 0, onSignIn, onSignOut, onAccounts, onAlerts, onFaceId, compact }) {
+export function UserMenu({ auth, pending = 0, onSignIn, onSignOut, onAccounts, onAlerts, onFaceId, onPassword, compact }) {
   const [open, setOpen] = useState(false);
   const wrap = useRef(null);
 
@@ -62,10 +62,106 @@ export function UserMenu({ auth, pending = 0, onSignIn, onSignOut, onAccounts, o
       ${onFaceId && auth.token && html`<button role="menuitem" className="usermenu__item" onClick=${pick(onFaceId)}>
         <${Icon} name="faceid" size=${16} /><span>${faceIdName()}</span>
       </button>`}
+      ${onPassword && auth.token && html`<button role="menuitem" className="usermenu__item" onClick=${pick(onPassword)}>
+        <${Icon} name="key" size=${16} /><span>Change password</span>
+      </button>`}
       <button role="menuitem" className="usermenu__item" onClick=${pick(onSignOut)}>
         <${Icon} name="logout" size=${16} /><span>Sign out</span>
       </button>
     </div>`}
+  </div>`;
+}
+
+/* ---------------------------- Change password ---------------------------- */
+// From the name menu (or the More tab on a phone). The boxes aren't tied to state
+// and the form checks itself, so iOS's password autofill works and every problem
+// gets a visible message (see SignIn in upload.js). On success the other devices
+// signed in to this account are signed out; this one gets a fresh session.
+export function PasswordDialog({ auth, onClose, onChanged, onSignedOut, showToast }) {
+  const [info, setInfo] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const errRef = useRef(null);
+
+  useEffect(() => {
+    let alive = true;
+    loadPasswordInfo(auth)
+      .then((i) => { if (alive) setInfo(i); })
+      .catch((e) => {
+        if (!alive) return;
+        if (e instanceof NotSignedIn) onSignedOut();
+        else setInfo({ hasPassword: true, failed: true });
+      });
+    return () => { alive = false; };
+  }, [auth]);
+  useEffect(() => {
+    if (error && errRef.current && errRef.current.scrollIntoView) errRef.current.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [error]);
+
+  const needsCurrent = !info || info.hasPassword;
+  const submit = async (e) => {
+    e.preventDefault();
+    const form = new FormData(e.currentTarget);
+    const current = String(form.get("current") || "");
+    const password = String(form.get("password") || "");
+    const confirm = String(form.get("confirm") || "");
+    setError("");
+    if (needsCurrent && !current) { setError("Enter your current password."); return; }
+    if (password.length < 8) {
+      setError(password ? `The new password is only ${password.length} character${password.length === 1 ? "" : "s"}. Use at least 8.` : "Enter a new password.");
+      return;
+    }
+    if (password !== confirm) { setError("The new passwords don't match."); return; }
+    if (needsCurrent && password === current) { setError("That's the same as your current password."); return; }
+    setBusy(true);
+    const r = await changePassword(auth, current, password);
+    setBusy(false);
+    if (r.status === "ok") {
+      onChanged(r.auth);
+      showToast("ok", needsCurrent ? "Password changed. Other devices are signed out." : "Password set");
+      onClose();
+      return;
+    }
+    if (r.status === "signedout") { onSignedOut(); return; }
+    setError(r.status === "wrong" ? "Your current password isn't right."
+      : r.status === "limited" ? "Too many tries. Wait a minute, then try again."
+      : r.status === "error" && !r.error ? "Couldn't reach the server. Try again."
+      : r.error || "That didn't work. Try again.");
+  };
+
+  const title = info && !info.hasPassword ? "Set a password" : "Change password";
+  return html`<div className="modal" onClick=${onClose}>
+    <div className="modal__box" role="dialog" aria-modal="true" aria-label=${title} onClick=${(e) => e.stopPropagation()}>
+      <div className="modal__head">
+        <h2 className="h-sec"><${Icon} name="key" size=${17} /> ${title}</h2>
+        <${IconBtn} icon="x" bare onClick=${onClose} aria-label="Close" />
+      </div>
+      ${!info ? html`<p className="form-note">Loading…</p>`
+        : info.shared ? html`<div className="col" style=${{ gap: 12 }}>
+            <p className="form-note"><b>${auth.user}</b> is the shared family login. Its password is
+              <code>UPLOAD_PASSWORD</code> in the Worker's settings, so it's changed there, not here.
+              Changing it signs everyone using the shared login out.</p>
+            <${Btn} onClick=${onClose}>OK</${Btn}>
+          </div>`
+        : html`<form className="col" style=${{ gap: 12 }} onSubmit=${submit} noValidate>
+            <p className="form-note">${info.hasPassword
+              ? html`For <b>${auth.user}</b>. Other devices signed in to this account will need the new password.`
+              : html`<b>${auth.user}</b> signs in with ${faceIdName()} only. Add a password to sign in on other devices too.`}</p>
+            <input type="text" name="username" autoComplete="username" value=${auth.user} readOnly hidden />
+            ${info.hasPassword && html`<label className="field-row"><span>Current password</span>
+              <input className="input" type="password" name="current" autoComplete="current-password" />
+            </label>`}
+            <label className="field-row"><span>New password</span>
+              <input className="input" type="password" name="password" autoComplete="new-password" />
+              <small className="form-note faint">At least 8 characters.</small>
+            </label>
+            <label className="field-row"><span>Confirm new password</span>
+              <input className="input" type="password" name="confirm" autoComplete="new-password" />
+            </label>
+            ${error && html`<p className="form-error" role="alert" ref=${errRef}>${error}</p>`}
+            <${Btn} variant="primary" disabled=${busy}>${busy ? "Saving…" : info.hasPassword ? "Change password" : "Set password"}</${Btn}>
+          </form>`}
+    </div>
   </div>`;
 }
 

@@ -49,6 +49,9 @@
 //   POST /passkey/register  { purpose, ticket, credential, label } saves a passkey
 //   POST /passkey/login     { ticket, credential } -> same answer as /login
 //   GET  /passkeys          this account's Face ID sign-ins; POST { remove: id } removes one
+//   GET  /password          { shared, hasPassword } for the signed-in account
+//   POST /password          { current, password } -> a fresh session like /login; signs
+//                           out the account's other devices
 //   Writes take "Authorization: Bearer <token>" (or Basic, for older copies of the site).
 //   POST /thumb       ?id=up_<uuid>  body: a small JPEG preview, stored as <id>_t.jpg
 //   POST /upload      stores one JPEG or video in R2 and lists it in uploads.json;
@@ -333,7 +336,10 @@ async function authenticate(request, env) {
     if (await isShared(env, claims.u)) return { user: env.UPLOAD_USER, admin: true };
     // Looked up each time, so removing an account or changing its role applies at once.
     const acct = await getAccount(env, claims.u);
-    return acct && acct.status === "approved" ? { user: acct.name, admin: !!acct.admin } : null;
+    if (!acct || acct.status !== "approved") return null;
+    // Sessions from before a password change are signed out (see handlePassword).
+    if (acct.sessionsFrom && claims.exp - SESSION_DAYS * 86400000 < acct.sessionsFrom) return null;
+    return { user: acct.name, admin: !!acct.admin };
   }
   if (header.startsWith("Basic ")) {
     let decoded;
@@ -360,6 +366,38 @@ async function handleLogin(request, env) {
   if (who.pending) return json({ error: "This account is waiting for approval.", pending: true }, 403);
   const { token, exp } = await makeToken(env, who.user);
   return json({ ok: true, user: who.user, admin: who.admin, token, exp });
+}
+
+// Your own password. GET says whether the account has one (an account made with
+// Face ID may not). POST { current, password } changes it; an account without one
+// sets it with no current password. Every other device signed in to the account is
+// signed out, and this one gets a fresh session. The shared login's password is the
+// UPLOAD_PASSWORD secret, so it can't be changed here.
+async function handlePassword(request, env, who) {
+  const shared = await isShared(env, who.user);
+  const acct = shared ? null : await getAccount(env, who.user);
+  if (request.method === "GET") return json({ shared, hasPassword: shared || !!(acct && acct.hash) });
+  if (request.method !== "POST") return json({ error: "Method not allowed." }, 405);
+  if (shared) {
+    return json({ error: "The shared login's password is set in the Worker's settings (UPLOAD_PASSWORD)." }, 400);
+  }
+  if (!acct) return json({ error: "No such account." }, 404);
+  const payload = await request.json().catch(() => null);
+  const current = String((payload && payload.current) || "");
+  const password = String((payload && payload.password) || "");
+  if (acct.hash) {
+    const hash = await hashPassword(current, fromB64url(acct.salt), acct.iter || PBKDF2_ITER);
+    if (!sameBytes(hash, fromB64url(acct.hash))) return json({ error: "Your current password isn't right." }, 403);
+  }
+  if (password.length < 8 || password.length > 200) return json({ error: "Use a password of at least 8 characters." }, 400);
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  acct.salt = b64url(salt);
+  acct.hash = b64url(await hashPassword(password, salt, PBKDF2_ITER));
+  acct.iter = PBKDF2_ITER;
+  acct.sessionsFrom = Date.now();
+  await env.ACCOUNTS.put(accountKey(acct.name), JSON.stringify(acct));
+  const { token, exp } = await makeToken(env, acct.name);
+  return json({ ok: true, user: acct.name, admin: !!acct.admin, token, exp });
 }
 
 // Best effort: a push alert to every admin's phone that has alerts turned on, so a
@@ -1181,7 +1219,7 @@ export default {
       if (request.method === "GET" && path === "/push/key") {
         return json({ enabled: pushReady(env), publicKey: pushReady(env) ? env.VAPID_PUBLIC_KEY : null });
       }
-      if (request.method === "GET" && path !== "/accounts" && path !== "/passkeys") {
+      if (request.method === "GET" && path !== "/accounts" && path !== "/passkeys" && path !== "/password") {
         const file = path === "/comments" ? COMMENTS_FILE : isCameras ? CAMERA_FILE : isMeta ? META_FILE : TAGS_FILE;
         const { data } = await readFile(env, file);
         return json(data);
@@ -1192,7 +1230,8 @@ export default {
       // Every write is signed in. Reads above stay public.
       // Challenges check no password, so they get the looser limit (a sign-up asks
       // for one as the username is typed).
-      const strict = path === "/login" || path === "/register" || path === "/passkey/register" || path === "/passkey/login";
+      const strict = path === "/login" || path === "/register" || path === "/passkey/register" || path === "/passkey/login" ||
+        (path === "/password" && request.method === "POST");
       if (await overLimit(env, strict ? "LOGIN_LIMITER" : "WRITE_LIMITER", request)) {
         return json({ error: "Too many attempts. Wait a minute and try again." }, 429);
       }
@@ -1209,6 +1248,7 @@ export default {
 
       if (path === "/accounts") return await handleAccounts(request, env, who);
       if (path === "/passkeys") return await handlePasskeys(request, env, who);
+      if (path === "/password") return await handlePassword(request, env, who);
       if ((path === "/push/subscribe" || path === "/push/unsubscribe") && request.method === "POST") {
         return await handlePushPrefs(request, env, who, path);
       }
