@@ -731,7 +731,7 @@ function usePhotoShare(c, species, cameraLabel, onToast) {
    gesture (closing the photo through history, see main.js), so this stays off there
    to never go back twice. */
 const EDGE_PX = 28;
-const edgeBackHere = () => {
+export const edgeBackHere = () => {
   const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
   return ios && (navigator.standalone === true || window.matchMedia("(display-mode: standalone)").matches);
 };

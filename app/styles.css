@@ -1515,3 +1515,88 @@ html[data-nav="pop"]::view-transition-new(root) { animation-name: navFromUnder; 
 .alerts__quiet { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13.5px; }
 .alerts__quiet input[type="time"] { width: auto; min-width: 110px; }
 .alerts__quiet label { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+
+/* ============================ Phone app frame ============================= */
+/* On phones the page itself never scrolls. The app is a fixed frame and only its
+   content area (.main) scrolls, so the top bar and tab bar can't bounce, slide or
+   jump the way a web page's do. Content scrolls under the see-through tab bar, as
+   in iPhone apps. The tab bar's height is --tab-bar-h (MobileNav in shell.js). */
+@media (max-width: 900px) {
+  html, body { height: 100%; overflow: hidden; }
+  .app { position: fixed; inset: 0; min-height: 0; display: block; }
+  .main {
+    height: 100%; overflow-x: hidden; overflow-y: auto; -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: none; background: var(--bg);
+  }
+  .view { padding-bottom: calc(var(--tab-bar-h, 64px) + 24px); }
+
+  /* Tab bar: always on top, iOS sizing. */
+  .mobilenav { z-index: 120; padding-top: 6px; padding-bottom: max(6px, env(safe-area-inset-bottom, 0px)); }
+  .mobilenav button { gap: 2px; font-size: 10.5px; font-weight: 600; letter-spacing: .01em; padding: 4px 2px 2px; }
+  .mobilenav button.is-active svg { stroke-width: 2.3; }
+  /* The keyboard covers the tab bar while typing, as in iPhone apps. */
+  html[data-keyboard] .mobilenav { visibility: hidden; }
+
+  /* Everything that opens on top ends just above the tab bar, which stays usable. */
+  .modal { bottom: var(--tab-bar-h, 0px); padding-bottom: 16px; }
+  .modal__box { max-height: calc(100dvh - var(--tab-bar-h, 0px) - env(safe-area-inset-top, 0px) - 32px); }
+  .scrim, .drawer { bottom: var(--tab-bar-h, 0px); }
+  .drawer { padding-bottom: 20px; max-height: calc(100dvh - var(--tab-bar-h, 0px) - env(safe-area-inset-top, 0px) - 24px); }
+  .toast, .lb ~ .toast { bottom: calc(var(--tab-bar-h, 0px) + 12px); }
+  .installhint { bottom: calc(var(--tab-bar-h, 0px) + 12px); }
+
+  /* Photo view: fills the screen down to the tab bar. --lbh is its height. */
+  .lb { bottom: var(--tab-bar-h, 0px); --lbh: calc(100dvh - var(--tab-bar-h, 0px)); }
+  .lb__stage { height: var(--lbh); }
+  .lb__zoom .lb__img, .lb__stage > .lb__img {
+    max-height: calc(var(--lbh) - var(--peek) - 64px - env(safe-area-inset-top, 0px));
+  }
+  .lb__nav { top: calc((var(--lbh) - var(--peek)) / 2); }
+  .lb__panel { max-height: calc(var(--lbh) * .86); padding-bottom: 24px; }
+  .lb__infobtn { bottom: 18px; }
+  .lb__stage.is-zoomed .lb__zoom { height: var(--lbh); }
+  .lb__stage.is-zoomed .lb__zoom .lb__img { max-height: var(--lbh); }
+  /* Full screen and zoomed in take the whole screen, tab bar included. */
+  .lb.is-immersive, .lb:has(.lb__stage.is-zoomed) { bottom: 0; --lbh: 100dvh; }
+  body:has(.lb.is-immersive) .mobilenav, body:has(.lb__stage.is-zoomed) .mobilenav { visibility: hidden; }
+}
+@media (max-width: 900px) and (orientation: landscape) {
+  .lb__zoom .lb__img, .lb__stage > .lb__img { max-height: calc(var(--lbh) - var(--peek)); }
+}
+
+/* -------------------------------- More tab -------------------------------- */
+.morepage { display: flex; flex-direction: column; gap: 22px; max-width: 640px; }
+.ios-group {
+  display: flex; flex-direction: column; overflow: hidden;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+}
+.ios-row {
+  display: flex; align-items: center; gap: 13px; width: 100%; min-height: 50px; padding: 8px 14px;
+  background: none; border: 0; color: var(--text); font: inherit; font-size: 16px; font-weight: 500;
+  text-align: left; position: relative; touch-action: manipulation;
+}
+.ios-row + .ios-row::before {
+  content: ""; position: absolute; top: 0; right: 0; left: 56px; height: 1px; background: var(--border);
+}
+.ios-row:not(.is-static):active { background: var(--surface-2); }
+.ios-row__icon {
+  width: 29px; height: 29px; flex: none; display: grid; place-items: center; border-radius: 8px; color: #fff;
+}
+.ios-row__label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ios-row__value { color: var(--text-faint); font-size: 15px; }
+.ios-row__chev { flex: none; color: var(--text-faint); }
+.ios-row .nav__badge { position: static; margin: 0; }
+.ios-row.is-danger { color: var(--danger); }
+.ios-row.is-accent { color: var(--accent); }
+.ios-row.is-danger::before, .ios-row.is-accent:first-child::before { left: 14px; }
+.ios-switch {
+  width: 51px; height: 31px; flex: none; border-radius: 999px; background: var(--border-strong);
+  position: relative; transition: background .2s ease;
+}
+.ios-switch > span {
+  position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 999px; background: #fff;
+  box-shadow: 0 2px 4px rgba(0,0,0,.25); transition: transform .2s ease;
+}
+.ios-switch.is-on { background: var(--accent); }
+.ios-switch.is-on > span { transform: translateX(20px); }
+.ios-foot { margin: 0; text-align: center; font-size: 12.5px; color: var(--text-faint); line-height: 1.5; }

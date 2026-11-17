@@ -1,8 +1,8 @@
 // Vale Trails — app chrome: sidebar, topbar, mobile nav and the shared filter bar.
 import { html, useState, useEffect, useRef, Fragment, createPortal } from "./react.js";
 import { Icon, BrandMark } from "./icons.js";
-import { IconBtn, Select, Segmented, Switch, Chip } from "./ui.js";
-import { speciesColor, LS, labelHour } from "./core.js";
+import { IconBtn, Select, Segmented, Switch, Chip, edgeBackHere } from "./ui.js";
+import { speciesColor, LS, labelHour, getScrollY, faceIdName } from "./core.js";
 import { RANGE_OPTIONS, rangeLabel, WEEKDAY_PLURAL } from "./analytics.js";
 import { UserMenu } from "./account.js";
 
@@ -87,14 +87,15 @@ export function Topbar({ title, sub, theme, toggleTheme, onRefresh, refreshing, 
 // the page name itself, as iPhone apps do.
 const LARGE_TITLE_PX = 40;
 function useScrolledPast(px) {
-  const [past, setPast] = useState(() => window.scrollY > px);
+  const [past, setPast] = useState(() => getScrollY() > px);
   useEffect(() => {
     let frame = 0;
-    const check = () => { frame = 0; setPast(window.scrollY > px); };
+    const check = () => { frame = 0; setPast(getScrollY() > px); };
     const onScroll = () => { if (!frame) frame = requestAnimationFrame(check); };
-    window.addEventListener("scroll", onScroll, { passive: true });
+    // Capture catches the phone frame's own scrolling (.main) as well as the page's.
+    document.addEventListener("scroll", onScroll, { passive: true, capture: true });
     check();
-    return () => { window.removeEventListener("scroll", onScroll); cancelAnimationFrame(frame); };
+    return () => { document.removeEventListener("scroll", onScroll, { capture: true }); cancelAnimationFrame(frame); };
   }, [px]);
   return past;
 }
@@ -200,49 +201,189 @@ export function useSheetDrag(open, onClose) {
   return ref;
 }
 
-// Phones get four main tabs plus "More", which opens a sheet with the rest. Seven
-// tabs at phone width made every label tiny and easy to mis-tap.
-export const MOBILE_MAIN = ["overview", "gallery", "bucks", "map"];
+// Phones get five tabs: four main screens and "More", a list of everything else.
+// Seven tabs at phone width made every label tiny and easy to mis-tap.
+export const MOBILE_MAIN = ["overview", "gallery", "bucks", "map", "more"];
 export const MOBILE_MORE = ["uploads", "insights", "review"];
+const TABS = [...VIEWS.filter((v) => MOBILE_MAIN.includes(v.id)), { id: "more", label: "More", icon: "grid" }];
 
-// `onTab` switches tabs (or scrolls the current one to the top); `onPush` opens a
-// "More" screen on top of the current tab.
-export function MobileNav({ view, onTab, onPush, counts, onAlerts }) {
-  const [more, setMore] = useState(false);
-  const sheet = useSheetDrag(more, () => setMore(false));
-  const inMore = MOBILE_MORE.includes(view);
-  const tab = (id) => { setMore(false); onTab(id); };
-  const push = (id) => { setMore(false); onPush(id); };
-  const reviewBadge = counts.review > 0 && html`<span className="nav__badge">${badgeCount(counts.review)}</span>`;
-  return html`<${Fragment}>
-    <nav className="mobilenav">
-      ${VIEWS.filter((v) => MOBILE_MAIN.includes(v.id)).map((v) => html`<button key=${v.id}
-        className=${view === v.id && !more ? "is-active" : ""} onClick=${() => tab(v.id)}
-        aria-current=${view === v.id ? "page" : undefined}>
-        <${Icon} name=${v.icon} size=${21} />${v.label}
-      </button>`)}
-      <button className=${inMore || more ? "is-active" : ""} onClick=${() => setMore((m) => !m)}
-        aria-haspopup="dialog" aria-expanded=${more}>
-        <${Icon} name="grid" size=${21} />More
-        ${reviewBadge}
-      </button>
-    </nav>
-    ${more && createPortal(html`<div className="scrim scrim--nav" onClick=${() => setMore(false)}>
-      <div className="drawer morenav" ref=${sheet} role="dialog" aria-label="More pages" onClick=${(e) => e.stopPropagation()}>
-        <div className="drawer__grip" />
-        ${VIEWS.filter((v) => MOBILE_MORE.includes(v.id)).map((v) => html`<button key=${v.id}
-          className=${cx("morenav__item", view === v.id && "is-active")} onClick=${() => push(v.id)}>
-          <${Icon} name=${v.icon} size=${20} /><span>${v.label}</span>
-          ${v.id === "review" && reviewBadge}
-          <${Icon} name="chevronRight" size=${18} className="morenav__chev" />
-        </button>`)}
-        ${onAlerts && html`<button className="morenav__item" onClick=${() => { setMore(false); onAlerts(); }}>
-          <${Icon} name="bell" size=${20} /><span>Alerts</span>
-          <${Icon} name="chevronRight" size=${18} className="morenav__chev" />
-        </button>`}
-      </div>
-    </div>`, document.body)}
-  </${Fragment}>`;
+// The tab bar. `onTab` switches tabs, scrolls the current one to the top, or closes
+// whatever is open on top of it. Its height is shared as --tab-bar-h so pages, photos
+// and pop-ups end just above it (styles.css, "Phone app frame").
+export function MobileNav({ view, onTab, counts }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return undefined;
+    const set = () => document.documentElement.style.setProperty("--tab-bar-h", el.offsetHeight + "px");
+    set();
+    const ro = typeof ResizeObserver === "function" ? new ResizeObserver(set) : null;
+    if (ro) ro.observe(el);
+    window.addEventListener("resize", set);
+    return () => { if (ro) ro.disconnect(); window.removeEventListener("resize", set); };
+  }, []);
+  useKeyboardFlag();
+  const activeTab = MOBILE_MORE.includes(view) ? "more" : view;
+  return html`<nav className="mobilenav" ref=${ref} aria-label="Tabs">
+    ${TABS.map((v) => html`<button key=${v.id} type="button"
+      className=${activeTab === v.id ? "is-active" : ""} onClick=${() => onTab(v.id)}
+      aria-current=${activeTab === v.id ? "page" : undefined}>
+      <${Icon} name=${v.icon} size=${22} />${v.label}
+      ${v.id === "more" && counts.review > 0 && html`<span className="nav__badge">${badgeCount(counts.review)}</span>`}
+    </button>`)}
+  </nav>`;
+}
+
+// While the keyboard is up it covers the tab bar, as in iPhone apps; the bar is
+// hidden then, so it never floats over the page as the screen shifts for the field.
+// When typing ends, the page is put back where the frame expects it.
+const TEXT_FIELD = 'input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="button"]):not([type="submit"]), textarea';
+function useKeyboardFlag() {
+  useEffect(() => {
+    if (!window.matchMedia("(pointer: coarse)").matches) return undefined;
+    const root = document.documentElement;
+    let timer = 0;
+    const onIn = (e) => {
+      if (!e.target.matches || !e.target.matches(TEXT_FIELD)) return;
+      clearTimeout(timer);
+      root.dataset.keyboard = "1";
+    };
+    const onOut = () => {
+      clearTimeout(timer);
+      // Moving from one field to the next keeps the keyboard up.
+      timer = setTimeout(() => {
+        const a = document.activeElement;
+        if (a && a.matches && a.matches(TEXT_FIELD)) return;
+        delete root.dataset.keyboard;
+        if (window.scrollY || window.scrollX) window.scrollTo(0, 0);
+      }, 120);
+    };
+    document.addEventListener("focusin", onIn);
+    document.addEventListener("focusout", onOut);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("focusin", onIn);
+      document.removeEventListener("focusout", onOut);
+      delete root.dataset.keyboard;
+    };
+  }, []);
+}
+
+/* -------------------------------- More tab ------------------------------- */
+// A Settings-style list: the other pages (they open on top with a Back button),
+// then alerts, Face ID, accounts and appearance, then the account itself.
+function MoreRow({ icon, tint, label, value, badge, chevron = true, tone, onClick, children }) {
+  return html`<button type="button" className=${cx("ios-row", tone && "is-" + tone)} onClick=${onClick}>
+    ${icon && html`<span className="ios-row__icon" style=${{ background: tint }}><${Icon} name=${icon} size=${17} /></span>`}
+    <span className="ios-row__label">${label}</span>
+    ${value && html`<span className="ios-row__value">${value}</span>`}
+    ${badge > 0 && html`<span className="nav__badge">${badgeCount(badge)}</span>`}
+    ${children}
+    ${chevron && html`<${Icon} name="chevronRight" size=${17} className="ios-row__chev" />`}
+  </button>`;
+}
+
+const MORE_TINT = { uploads: "#2f7de1", insights: "#e8892b", review: "#8e5bd8" };
+export function MoreScreen({ more, counts, auth }) {
+  const m = more || {};
+  const status = m.status || {};
+  return html`<div className="morepage">
+    <section className="ios-group" aria-label="Pages">
+      ${VIEWS.filter((v) => MOBILE_MORE.includes(v.id)).map((v) => html`<${MoreRow} key=${v.id}
+        icon=${v.icon} tint=${MORE_TINT[v.id]} label=${v.label}
+        badge=${v.id === "review" ? counts.review : 0} onClick=${() => m.onPush(v.id)} />`)}
+    </section>
+
+    <section className="ios-group" aria-label="Settings">
+      <${MoreRow} icon="bell" tint="#e5484d" label="Alerts" onClick=${m.onAlerts} />
+      ${m.onFaceId && auth && auth.token && html`<${MoreRow} icon="faceid" tint="#30a46c" label=${faceIdName()} onClick=${m.onFaceId} />`}
+      ${auth && auth.admin && auth.token && html`<${MoreRow} icon="users" tint="#6e7781" label="Manage accounts"
+        badge=${m.pending} onClick=${m.onAccounts} />`}
+      <${MoreRow} icon=${m.theme === "light" ? "sun" : "moon"} tint="#5b5bd6" label="Dark mode" chevron=${false}
+        onClick=${m.toggleTheme}>
+        <span className=${cx("ios-switch", m.theme !== "light" && "is-on")} aria-hidden="true"><span /></span>
+      </${MoreRow}>
+    </section>
+
+    <section className="ios-group" aria-label="Account">
+      ${auth
+        ? html`<div className="ios-row is-static">
+            <span className="ios-row__icon" style=${{ background: "#3a8f63" }}><${Icon} name="user" size=${17} /></span>
+            <span className="ios-row__label">${auth.user}</span>
+            <span className="ios-row__value">${auth.admin ? "Admin" : "Member"}</span>
+          </div>
+          <${MoreRow} label="Sign out" tone="danger" chevron=${false} onClick=${m.onSignOut} />`
+        : html`<${MoreRow} icon="user" tint="#3a8f63" label="Sign in" tone="accent" onClick=${m.onSignIn} />`}
+    </section>
+
+    <p className="ios-foot">
+      ${status.checked ? "Checked " + status.checked : "Waiting for the first sync"}
+      ${status.newest && html`<br />Newest photo ${status.newest}`}
+    </p>
+  </div>`;
+}
+
+/* ---------------------------- Swipe to go back ---------------------------- */
+// The installed iPhone app has no browser around it, so no system swipe-back. On a
+// page opened from More, a drag from the left edge slides the page away with the
+// finger and goes back, as in iPhone apps. Off in Safari, which has its own.
+export function useEdgeBack(enabled, onBack) {
+  useEffect(() => {
+    if (!enabled || !edgeBackHere()) return undefined;
+    const EDGE = 24;
+    const frame = () => document.querySelector(".main");
+    const blocked = (t) => t.closest && t.closest(".lb, .modal, .drawer, .scrim, .mobilenav, .leaflet-container");
+    let g = null;
+    const onStart = (e) => {
+      g = null;
+      if (e.touches.length !== 1) return;
+      const t = e.touches[0];
+      if (t.clientX > EDGE || blocked(e.target)) return;
+      g = { x: t.clientX, y: t.clientY, at: e.timeStamp, dx: 0, live: false };
+    };
+    const onMove = (e) => {
+      if (!g || e.touches.length !== 1) return;
+      const t = e.touches[0];
+      const dx = t.clientX - g.x, dy = t.clientY - g.y;
+      const el = frame();
+      if (!g.live) {
+        if (Math.abs(dy) > 12 && Math.abs(dy) > dx) { g = null; return; } // a scroll
+        if (dx < 8 || !el) return;
+        g.live = true;
+        el.style.transition = "none";
+        el.style.boxShadow = "-14px 0 34px rgba(0,0,0,.35)";
+      }
+      if (e.cancelable) e.preventDefault();
+      g.dx = Math.max(0, dx);
+      g.t2 = e.timeStamp;
+      el.style.transform = `translateX(${g.dx}px)`;
+    };
+    const onEnd = (e) => {
+      const s = g;
+      g = null;
+      if (!s || !s.live) return;
+      const el = frame();
+      if (!el) return;
+      const speed = s.dx / Math.max(1, (s.t2 || e.timeStamp) - s.at); // px per ms
+      const back = s.dx > window.innerWidth * 0.33 || (speed > 0.5 && s.dx > 40);
+      el.style.transition = "transform .22s cubic-bezier(.2,.8,.2,1)";
+      el.style.transform = back ? `translateX(${window.innerWidth}px)` : "translateX(0px)";
+      setTimeout(() => {
+        if (back) { onBack(); return; }
+        el.style.transition = ""; el.style.transform = ""; el.style.boxShadow = "";
+      }, 230);
+    };
+    document.addEventListener("touchstart", onStart, { passive: true });
+    document.addEventListener("touchmove", onMove, { passive: false });
+    document.addEventListener("touchend", onEnd);
+    document.addEventListener("touchcancel", onEnd);
+    return () => {
+      document.removeEventListener("touchstart", onStart);
+      document.removeEventListener("touchmove", onMove);
+      document.removeEventListener("touchend", onEnd);
+      document.removeEventListener("touchcancel", onEnd);
+    };
+  }, [enabled, onBack]);
 }
 
 /* ---------------------------- Pull to refresh --------------------------- */
@@ -260,7 +401,7 @@ export function PullToRefresh({ onRefresh }) {
     const blocked = (t) => t.closest && t.closest(".lb, .modal, .drawer, .leaflet-container, .scrim, input, textarea, select");
     const onStart = (e) => {
       start.current = null;
-      if (!phone.matches || busyRef.current || e.touches.length !== 1 || window.scrollY > 0) return;
+      if (!phone.matches || busyRef.current || e.touches.length !== 1 || getScrollY() > 0) return;
       if (document.body.style.overflow === "hidden" || blocked(e.target)) return;
       start.current = { y: e.touches[0].clientY, x: e.touches[0].clientX };
     };
@@ -268,7 +409,7 @@ export function PullToRefresh({ onRefresh }) {
       if (!start.current) return;
       const dy = e.touches[0].clientY - start.current.y;
       const dx = e.touches[0].clientX - start.current.x;
-      if (dy <= 0 || window.scrollY > 0 || Math.abs(dx) > dy) { if (pullRef.current) { pullRef.current = 0; setPull(0); } if (dy < -4 || Math.abs(dx) > 12) start.current = null; return; }
+      if (dy <= 0 || getScrollY() > 0 || Math.abs(dx) > dy) { if (pullRef.current) { pullRef.current = 0; setPull(0); } if (dy < -4 || Math.abs(dx) > 12) start.current = null; return; }
       if (e.cancelable) e.preventDefault();
       // Resistance: the indicator moves slower than the finger and stops at 96px.
       pullRef.current = Math.min(96, dy * 0.5);

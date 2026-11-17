@@ -6,10 +6,13 @@ import {
   loadCameraNames, remoteLoadCameraNames, remoteSaveCameraName, displayCamera,
   loadMetadata, remoteLoadMetadata, remoteSaveMetadata, applyMeta, metaOf, cameraLabels,
   remoteLoadComments, saveComment, updateUpload, NotSignedIn, TooManyAttempts,
-  loadSession, saveSession, faceIdOn, faceIdName,
+  loadSession, saveSession, faceIdOn, faceIdName, getScrollY, scrollToY,
 } from "./core.js";
 import { filterCaptures, speciesList, reviewQueue } from "./analytics.js";
-import { Sidebar, Topbar, MobileTopbar, LargeTitle, MobileNav, PullToRefresh, VIEWS, MOBILE_MAIN, MOBILE_MORE, loadFilters } from "./shell.js";
+import {
+  Sidebar, Topbar, MobileTopbar, LargeTitle, MobileNav, MoreScreen, PullToRefresh, useEdgeBack,
+  VIEWS, MOBILE_MAIN, MOBILE_MORE, loadFilters,
+} from "./shell.js";
 import { Lightbox, Toast } from "./ui.js";
 import { UploadDialog, SignInDialog } from "./upload.js";
 import { Comments } from "./comments.js";
@@ -46,15 +49,18 @@ function readRoute() {
   if (old) return { view: null, photo: decodeURIComponent(old[1]), old: true };
   const m = /^#\/([a-z]+)(?:\/photo\/(.+))?$/.exec(h);
   if (!m) return { view: null, photo: null };
-  return { view: VIEWS.some((v) => v.id === m[1]) ? m[1] : null, photo: m[2] ? decodeURIComponent(m[2]) : null };
+  return { view: knownView(m[1]) ? m[1] : null, photo: m[2] ? decodeURIComponent(m[2]) : null };
 }
+// "more" is the phone's More tab (a list of the other pages); desktop has the sidebar.
+const knownView = (v) => VIEWS.some((x) => x.id === v) || v === "more";
+const MORE_META = { id: "more", label: "More" };
 const routeUrl = (view, photo) => "#/" + view + (photo != null ? "/photo/" + encodeURIComponent(photo) : "");
 const historyState = () => window.history.state || {};
 const inPhotoStep = () => !!historyState().photo;
 // Each screen is drawn fresh, so the app puts the scroll back itself (saved per entry).
 if ("scrollRestoration" in window.history) window.history.scrollRestoration = "manual";
 const markScroll = () => {
-  try { window.history.replaceState({ ...historyState(), scrollY: window.scrollY }, ""); } catch (e) {}
+  try { window.history.replaceState({ ...historyState(), scrollY: getScrollY() }, ""); } catch (e) {}
 };
 
 // Phones work like an iPhone app: the four tab bar screens are tabs (switching adds no
@@ -93,10 +99,10 @@ function App() {
   // exactly where you left it (validated against the known views / filter keys).
   const [view, setViewState] = useState(() => {
     const routed = readRoute().view;
-    if (routed) return routed;
+    if (routed && (routed !== "more" || isPhone())) return routed;
     try {
       const v = localStorage.getItem(LS.view);
-      return v && VIEWS.some((x) => x.id === v) ? v : "overview";
+      return v && knownView(v) && (v !== "more" || isPhone()) ? v : "overview";
     } catch (e) { return "overview"; }
   });
   const [filters, setFilters] = useState(loadFilters);
@@ -148,11 +154,13 @@ function App() {
   const switchTab = useCallback((v, fresh) => {
     // A Back is already on its way (a quick second tap): just change where it lands.
     if (pendingTab.current) { pendingTab.current = v; if (fresh) tabScroll.current[v] = 0; return; }
-    if (v === viewRef.current) { window.scrollTo({ top: 0, behavior: "smooth" }); return; }
-    tabScroll.current[viewRef.current] = window.scrollY;
+    // A photo or a pushed screen on top: the tab closes it, like iPhone apps.
+    const covered = inPhotoStep() || historyState().pushed;
+    if (v === viewRef.current && !covered) { scrollToY(0, true); return; }
+    tabScroll.current[viewRef.current] = getScrollY();
     if (fresh) tabScroll.current[v] = 0;
-    // On a pushed screen: drop its step first, then put the tab in place (popstate).
-    if (historyState().pushed) { pendingTab.current = v; window.history.back(); return; }
+    // Drop those steps first, then put the tab in place (popstate).
+    if (covered) { pendingTab.current = v; window.history.back(); return; }
     const y = tabScroll.current[v] || 0;
     window.history.replaceState({ scrollY: y }, "", routeUrl(v));
     pendingScroll.current = y;
@@ -160,7 +168,7 @@ function App() {
   }, []);
   const pushScreen = useCallback((v) => {
     if (v === viewRef.current) return;
-    tabScroll.current[viewRef.current] = window.scrollY;
+    tabScroll.current[viewRef.current] = getScrollY();
     markScroll();
     // One pushed screen at a time: going from one "More" page to another swaps it.
     if (historyState().pushed) window.history.replaceState({ scrollY: 0, pushed: true }, "", routeUrl(v));
@@ -168,15 +176,20 @@ function App() {
     pendingScroll.current = 0;
     transition("push", () => setViewState(v));
   }, []);
-  // The back button on a pushed screen. Opened straight from a link there's no step
-  // to go back to, so it returns to Home.
-  const goBack = useCallback(() => {
-    if (historyState().pushed) { navAnim.current = "pop"; window.history.back(); return; }
-    tabScroll.current[viewRef.current] = window.scrollY;
-    window.history.replaceState({ scrollY: 0 }, "", routeUrl("overview"));
-    pendingScroll.current = tabScroll.current.overview || 0;
-    transition("pop", () => setViewState("overview"));
+  // The back button on a pushed screen, or a swipe from the left edge ({ swiped }:
+  // the page already slid away under the finger, so no second animation). Opened
+  // straight from a link there's no step to go back to, so it returns to the More
+  // tab on a phone (where these pages live) or Home on a computer.
+  const goBack = useCallback((opts) => {
+    const swiped = !!(opts && opts.swiped === true);
+    if (historyState().pushed) { navAnim.current = swiped ? null : "pop"; window.history.back(); return; }
+    const home = isPhone() ? "more" : "overview";
+    tabScroll.current[viewRef.current] = getScrollY();
+    window.history.replaceState({ scrollY: 0 }, "", routeUrl(home));
+    pendingScroll.current = tabScroll.current[home] || 0;
+    if (swiped) setViewState(home); else transition("pop", () => setViewState(home));
   }, []);
+  const swipeBack = useCallback(() => goBack({ swiped: true }), [goBack]);
   // Links inside pages (and the desktop sidebar).
   const setView = useCallback((v) => {
     if (v === viewRef.current) return;
@@ -191,11 +204,18 @@ function App() {
   }, [switchTab, pushScreen]);
   // A new screen opens at the top; one you come back to opens where you left it.
   useLayoutEffect(() => {
+    // After a swipe back the page was slid off to the right; the new screen sits in place.
+    const frame = document.querySelector(".main");
+    if (frame && frame.style.transform) {
+      frame.style.transition = "none";
+      frame.style.transform = "";
+      frame.style.boxShadow = "";
+    }
     const y = pendingScroll.current;
     if (y == null) return;
     pendingScroll.current = null;
-    window.scrollTo(0, y);
-    requestAnimationFrame(() => window.scrollTo(0, y)); // for content drawn a frame later
+    scrollToY(y);
+    requestAnimationFrame(() => scrollToY(y)); // for content drawn a frame later
   }, [view]);
 
   // Once a tag or name is saved for everyone, the shared copy is the truth. Dropping
@@ -461,7 +481,9 @@ function App() {
       const anim = navAnim.current;
       navAnim.current = null;
       if (pendingTab.current) {
-        // The pushed screen's step is gone; the chosen tab takes this entry.
+        // A photo over a pushed screen is two steps: keep going back until neither is left.
+        if (historyState().pushed || historyState().photo) { window.history.back(); return; }
+        // The pushed screen's (or photo's) step is gone; the chosen tab takes this entry.
         const t = pendingTab.current;
         pendingTab.current = null;
         const y = tabScroll.current[t] || 0;
@@ -658,10 +680,25 @@ function App() {
   }, [uploadAuth, openSignIn, showToast, syncFailed, closeLightbox]);
 
   /* ----------------------------- Render --------------------------------- */
-  const meta = VIEWS.find((v) => v.id === view) || VIEWS[0];
-  const View = VIEW_COMPONENTS[view] || Overview;
+  const meta = VIEWS.find((v) => v.id === view) || (view === "more" ? MORE_META : VIEWS[0]);
+  const View = view === "more" ? MoreScreen : VIEW_COMPONENTS[view] || Overview;
   const pageTitle = view === "overview" ? "Vale Trails" : meta.label;
+  // Anything open on top (a photo, a pop-up): the tab bar stays visible over it, and
+  // tapping a tab closes it and goes to that tab. An upload in progress stays open.
+  const overlayOpen = !!(lightbox || alertsOpen || accountsOpen || faceIdOpen || signIn || uploadOpen);
+  const tabFromBar = (v) => {
+    setAlertsOpen(false); setAccountsOpen(false); setFaceIdOpen(false); setSignIn(null);
+    switchTab(v);
+  };
+  // Swipe from the left edge goes back from Uploads, Patterns and Identify.
+  useEdgeBack(MOBILE_MORE.includes(view) && !overlayOpen, swipeBack);
   const app = {
+    more: {
+      onPush: pushScreen, onAlerts: () => setAlertsOpen(true),
+      onFaceId: faceIdSupported ? () => setFaceIdOpen(true) : null,
+      onAccounts: () => setAccountsOpen(true), pending: pendingAccounts,
+      onSignIn: () => openSignIn(), onSignOut: signOut, status, theme, toggleTheme,
+    },
     data, captures, ov, theme,
     filters, setFilter, filtered, spList,
     gridSize, setGridSize,
@@ -700,7 +737,7 @@ function App() {
       </main>
     </div>
 
-    <${MobileNav} view=${view} onTab=${switchTab} onPush=${pushScreen} counts=${counts} onAlerts=${() => setAlertsOpen(true)} />
+    <${MobileNav} view=${view} onTab=${tabFromBar} counts=${counts} />
     <${PullToRefresh} onRefresh=${manualRefresh} />
     <${InstallHint} />
 

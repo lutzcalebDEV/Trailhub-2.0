@@ -326,6 +326,18 @@ export async function loadPushKey() {
 export const savePushSubscription = (auth, subscription, species, cameras = [], quiet = null) =>
   postJSON(TAGS_API + "/push/subscribe", { subscription, species, cameras, quiet }, auth);
 
+/* ---------------------------- Phone app frame ---------------------------- */
+// On phones the page itself never scrolls: only the content area (.main) does, in
+// a fixed frame, so the top bar and tab bar can't bounce, slide or jump the way a
+// web page's do (styles.css, "Phone app frame"). Desktop scrolls the page as usual.
+const framed = () => window.matchMedia("(max-width: 900px)").matches;
+export const scrollBox = () => (framed() && document.querySelector(".main")) || null;
+export const getScrollY = () => { const el = scrollBox(); return el ? el.scrollTop : window.scrollY; };
+export const scrollToY = (top, smooth) => {
+  const el = scrollBox();
+  (el || window).scrollTo({ top, behavior: smooth ? "smooth" : "auto" });
+};
+
 /* --------------------------- Face ID (passkeys) -------------------------- */
 // Sign in with Face ID (Touch ID on a Mac) instead of a password. The phone keeps
 // the key in its keychain; the Worker only ever sees the public half.
