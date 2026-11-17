@@ -11,7 +11,7 @@ import {
 import { filterCaptures, speciesList, reviewQueue } from "./analytics.js";
 import {
   Sidebar, Topbar, MobileTopbar, LargeTitle, MobileNav, MoreScreen, PullToRefresh, useEdgeBack,
-  VIEWS, MOBILE_MAIN, MOBILE_MORE, loadFilters,
+  VIEWS, MOBILE_MAIN, MOBILE_MORE, loadFilters, defaultFilters,
 } from "./shell.js";
 import { Lightbox, Toast } from "./ui.js";
 import { UploadDialog, SignInDialog } from "./upload.js";
@@ -522,6 +522,16 @@ function App() {
 
   /* --------------------------- Actions ---------------------------------- */
   const setFilter = useCallback((patch) => setFilters((f) => ({ ...f, ...patch })), []);
+  // Back to every photo. Returns whether anything was filtered.
+  const filtersRef = useRef(filters);
+  filtersRef.current = filters;
+  const clearFilters = useCallback(() => {
+    const blank = defaultFilters();
+    const f = filtersRef.current;
+    if (Object.keys(blank).every((k) => f[k] === blank[k])) return false;
+    setFilters(blank);
+    return true;
+  }, []);
   const toggleTheme = useCallback(() => setTheme((t) => (t === "light" ? "dark" : "light")), [setTheme]);
 
   const changeComment = useCallback(async (body) => {
@@ -537,14 +547,16 @@ function App() {
     }
   }, [uploadAuth, showToast, openSignIn]);
 
-  // Manual refresh says what it found, so a tap never looks like it did nothing.
+  // Manual refresh starts over from every photo, and says what it found, so a tap
+  // never looks like it did nothing.
   const manualRefresh = useCallback(async () => {
+    clearFilters();
     const before = new Set(data.captures.map((c) => c.id));
     const fresh = await refresh();
     if (!fresh) { showToast("err", "Couldn’t reach the site — try again"); return; }
     const added = fresh.captures.filter((c) => !before.has(c.id)).length;
     showToast("ok", added ? `${added} new photo${added === 1 ? "" : "s"}` : "No new photos yet");
-  }, [data.captures, refresh, showToast]);
+  }, [data.captures, refresh, showToast, clearFilters]);
 
   const setOverrideTags = useCallback((id, tags) => {
     setLocalOverrides((prev) => {
@@ -692,9 +704,18 @@ function App() {
   // Anything open on top (a photo, a pop-up): the tab bar stays visible over it, and
   // tapping a tab closes it and goes to that tab. An upload in progress stays open.
   const overlayOpen = !!(lightbox || alertsOpen || accountsOpen || faceIdOpen || passwordOpen || signIn || uploadOpen);
+  // Going to another tab from the tab bar (or sidebar) starts it unfiltered. Links in
+  // pages that set a filter on purpose (a camera card, a chart bar) use setView instead.
+  // Saved scroll spots were for the filtered lists, so those tabs open at the top.
   const tabFromBar = (v) => {
     setAlertsOpen(false); setAccountsOpen(false); setFaceIdOpen(false); setPasswordOpen(false); setSignIn(null);
-    switchTab(v);
+    const cleared = v !== view && clearFilters();
+    switchTab(v, cleared);
+    if (cleared) tabScroll.current = { [v]: 0 };
+  };
+  const viewFromSidebar = (v) => {
+    if (v !== view) clearFilters();
+    setView(v);
   };
   // Swipe from the left edge goes back from Uploads, Patterns and Identify.
   useEdgeBack(MOBILE_MORE.includes(view) && !overlayOpen, swipeBack);
@@ -735,7 +756,7 @@ function App() {
 
   return html`<${Fragment}>
     <div className=${sidebarCollapsed === "true" ? "app app--sidebar-collapsed" : "app"}>
-      <${Sidebar} view=${view} setView=${setView} counts=${counts} status=${status}
+      <${Sidebar} view=${view} setView=${viewFromSidebar} counts=${counts} status=${status}
         onCollapse=${() => setSidebarCollapsed("true")} />
       <main className="main">
         <${MobileTopbar} ...${chrome} title=${pageTitle} onBack=${MOBILE_MORE.includes(view) ? goBack : null} />
