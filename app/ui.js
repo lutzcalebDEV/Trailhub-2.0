@@ -290,7 +290,7 @@ function checkInAge(health) {
   const t = health && health.lastCheckIn ? Date.parse(health.lastCheckIn) : NaN;
   return Number.isFinite(t) ? Math.max(0, Date.now() - t) : null;
 }
-function healthItems(health) {
+export function healthItems(health) {
   if (!health) return [];
   const out = [];
   const battery = num(health.battery);

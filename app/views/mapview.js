@@ -2,8 +2,9 @@
 import { html, useEffect, useRef, useMemo, useState } from "../react.js";
 import { FilterBar } from "../shell.js";
 import { Icon } from "../icons.js";
-import { Empty, Btn, Chip } from "../ui.js";
-import { filterCaptures } from "../analytics.js";
+import { Empty, Btn, Chip, healthItems } from "../ui.js";
+import { filterCaptures, cameraStatus } from "../analytics.js";
+import { LS, usePersistent, timeAgo } from "../core.js";
 
 const cx = (...xs) => xs.filter(Boolean).join(" ");
 const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]);
@@ -11,6 +12,19 @@ const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (ch) => ({ "&": "&amp;",
 // requires the attribution below and a Referer header.
 const OSM_TILES = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 const OSM_CREDIT = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+// Aerial photos from the USGS National Map: public domain, no key, US only. Its
+// photos go to zoom 16 here; Leaflet enlarges them for the last two levels.
+const SAT_TILES = "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}";
+const SAT_CREDIT = 'Imagery: <a href="https://www.usgs.gov/programs/national-geospatial-program/national-map">USGS The National Map</a>';
+
+// A marker: a circle sized by photo count, ringed when it's the chosen camera.
+function markerIcon(L, size, count, active) {
+  const ring = active ? "outline:3px solid var(--accent);outline-offset:2px;" : "";
+  return L.divIcon({
+    className: "", iconSize: [size, size], iconAnchor: [size / 2, size / 2],
+    html: `<div class="vt-marker" style="width:${size}px;height:${size}px;${ring}">${count}</div>`,
+  });
+}
 
 // Leaflet (~160 KB) is only needed here, so it loads the first time the map opens
 // instead of on every app start. Its stylesheet goes in before app/styles.css so the
@@ -52,6 +66,12 @@ export function MapView(app) {
   const mapRef = useRef(null);
   const layerRef = useRef(null);
   const [full, setFull] = useState(false);
+  const [layer, setLayer] = usePersistent(LS.mapLayer, "map");
+  const sat = layer === "satellite";
+  const tilesRef = useRef(null);
+  const markersRef = useRef(new Map());
+  const cameraRef = useRef(filters.camera);
+  cameraRef.current = filters.camera;
   const [editing, setEditing] = useState(null);
   const [draft, setDraft] = useState("");
 
@@ -76,19 +96,27 @@ export function MapView(app) {
     const L = window.L;
     if (!auth || !L || !elRef.current || !cams.length) return;
     const map = L.map(elRef.current, { zoomControl: true, scrollWheelZoom: true, dragging: !coarse() });
-    L.tileLayer(OSM_TILES, {
-      maxZoom: 19,
-      attribution: OSM_CREDIT,
-      referrerPolicy: "strict-origin-when-cross-origin",
-    }).addTo(map);
     mapRef.current = map;
     const pts = cams.map((c) => [c.latitude, c.longitude]);
     if (pts.length === 1) map.setView(pts[0], 13);
     else map.fitBounds(pts, { padding: [44, 44], maxZoom: 14 });
-    return () => { map.remove(); mapRef.current = null; layerRef.current = null; };
+    return () => { map.remove(); mapRef.current = null; layerRef.current = null; tilesRef.current = null; };
   }, [auth, cams, theme, leafletReady]);
 
-  // Redraw markers whenever counts or the active camera change.
+  // Street map or aerial photos, swapped without moving the map.
+  useEffect(() => {
+    const L = window.L;
+    const map = mapRef.current;
+    if (!L || !map) return;
+    if (tilesRef.current) tilesRef.current.remove();
+    tilesRef.current = sat
+      ? L.tileLayer(SAT_TILES, { maxZoom: 18, maxNativeZoom: 16, attribution: SAT_CREDIT })
+      : L.tileLayer(OSM_TILES, { maxZoom: 19, attribution: OSM_CREDIT, referrerPolicy: "strict-origin-when-cross-origin" });
+    tilesRef.current.addTo(map);
+  }, [sat, auth, cams, theme, leafletReady]);
+
+  // Markers are rebuilt when counts or names change. Choosing a camera only re-rings
+  // them (below): rebuilding would close the popup the tap just opened.
   useEffect(() => {
     const L = window.L;
     const map = mapRef.current;
@@ -96,19 +124,35 @@ export function MapView(app) {
     if (layerRef.current) layerRef.current.remove();
     const group = L.layerGroup().addTo(map);
     layerRef.current = group;
+    markersRef.current = new Map();
     const maxC = Math.max(1, ...cams.map((c) => countByCam.get(c.name) || 0));
     cams.forEach((cam) => {
       const count = countByCam.get(cam.name) || 0;
       const size = Math.round(28 + (count / maxC) * 26);
-      const active = filters.camera === cam.name;
-      const markup = `<div class="vt-marker" style="width:${size}px;height:${size}px;${active ? "outline:3px solid var(--accent);outline-offset:2px;" : ""}">${count}</div>`;
-      const icon = L.divIcon({ className: "", html: markup, iconSize: [size, size], iconAnchor: [size / 2, size / 2] });
-      const mk = L.marker([cam.latitude, cam.longitude], { icon }).addTo(group);
-      // Leaflet renders popups as HTML and camera names are user-editable, so escape them.
-      mk.bindPopup(`<b>${escapeHtml(camName(cam.name))}</b><br>${count} photo${count === 1 ? "" : "s"}`);
-      mk.on("click", () => setFilter({ camera: filters.camera === cam.name ? "All" : cam.name }));
+      const mk = L.marker([cam.latitude, cam.longitude], { icon: markerIcon(L, size, count, cameraRef.current === cam.name) }).addTo(group);
+      markersRef.current.set(cam.name, { mk, size, count });
+      // Built as elements, not HTML: camera names are user-editable.
+      const pop = document.createElement("div");
+      pop.className = "vt-popup";
+      const title = document.createElement("b");
+      title.textContent = camName(cam.name);
+      const sub = document.createElement("span");
+      sub.textContent = `${count} photo${count === 1 ? "" : "s"}`;
+      const go = document.createElement("button");
+      go.className = "btn btn--primary btn--sm";
+      go.textContent = "View photos";
+      go.addEventListener("click", () => { setFilter({ camera: cam.name }); setView("gallery"); });
+      pop.append(title, sub, go);
+      mk.bindPopup(pop);
+      mk.on("click", () => setFilter({ camera: cameraRef.current === cam.name ? "All" : cam.name }));
     });
-  }, [auth, cams, countByCam, filters.camera, camName, leafletReady]);
+  }, [auth, cams, countByCam, camName, leafletReady, setFilter, setView]);
+
+  useEffect(() => {
+    const L = window.L;
+    if (!L) return;
+    for (const [name, m] of markersRef.current) m.mk.setIcon(markerIcon(L, m.size, m.count, filters.camera === name));
+  }, [filters.camera, auth, cams, countByCam, camName, leafletReady]);
 
   // Full-screen map: dragging on, the page held still, Escape or the X to close.
   useEffect(() => {
@@ -156,6 +200,16 @@ export function MapView(app) {
   }
 
   const selected = filters.camera !== "All" ? cams.find((c) => c.name === filters.camera) : null;
+  const lastByCam = new Map(cameraStatus(captures, data.cameras).map((r) => [r.camera, r.last]));
+  // Under each camera: its newest photo, battery and signal, and anything needing a visit.
+  const rowMeta = (cam) => {
+    const last = lastByCam.get(cam.name);
+    const items = healthItems(cam.health).filter((h) => h.key === "bat" || h.key === "sig" || h.warn);
+    return html`<div className="camrow__meta">
+      <span>${last ? `Last photo ${timeAgo(last)}` : "No photos yet"}</span>
+      ${items.map((h) => html`<span key=${h.key} className=${cx("camrow__stat", h.warn && "is-warn")} title=${h.title}>${h.text}</span>`)}
+    </div>`;
+  };
   const rows = [...cams].sort((a, b) => (countByCam.get(b.name) || 0) - (countByCam.get(a.name) || 0));
 
   return html`<div className="col" style=${{ gap: 4 }}>
@@ -190,7 +244,7 @@ export function MapView(app) {
                 <span className="camrow__pin"><${Icon} name="pin" size=${18} /></span>
                 <div className="camrow__body">
                   <div className="camrow__name">${camName(cam.name)}</div>
-                  <div className="camrow__meta">Approximate location</div>
+                  ${rowMeta(cam)}
                 </div>
                 <span className="camrow__count tnum">${countByCam.get(cam.name) || 0}</span>
               </button>
@@ -200,12 +254,18 @@ export function MapView(app) {
             </div>`)}
       </div>
       <div className=${cx("mapbox", full && "is-full")}>
-        <div className="map" ref=${elRef} />
-        <button className="mapbox__toggle" onClick=${() => setFull(!full)}
-          title=${full ? "Close the full-screen map" : "Full-screen map"}
-          aria-label=${full ? "Close the full-screen map" : "Full-screen map"}>
-          <${Icon} name=${full ? "x" : "expand"} size=${17} />
-        </button>
+        <div className=${cx("map", sat && "is-sat")} ref=${elRef} />
+        <div className="mapbox__tools">
+          <button className="mapbox__toggle" onClick=${() => setFull(!full)}
+            title=${full ? "Close the full-screen map" : "Full-screen map"}
+            aria-label=${full ? "Close the full-screen map" : "Full-screen map"}>
+            <${Icon} name=${full ? "x" : "expand"} size=${17} />
+          </button>
+          <button className=${cx("mapbox__toggle", sat && "is-on")} onClick=${() => setLayer(sat ? "map" : "satellite")}
+            title=${sat ? "Street map" : "Satellite view"} aria-label="Satellite view" aria-pressed=${sat}>
+            <${Icon} name="layers" size=${17} />
+          </button>
+        </div>
       </div>
     </div>
   </div>`;

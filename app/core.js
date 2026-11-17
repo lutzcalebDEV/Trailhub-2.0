@@ -777,6 +777,7 @@ export const LS = {
   archived: "trailhub-archived-ids",
   reviewed: "trailhub-reviewed-ids",
   gridSize: "trailhub-grid-size",
+  mapLayer: "trailhub-map-layer",
   camCoords: "trailhub-camera-coords",
   camNames: "trailhub-camera-names",
   meta: "trailhub-metadata",
