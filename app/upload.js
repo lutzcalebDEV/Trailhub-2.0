@@ -77,8 +77,9 @@ function videoPoster(file) {
 export function SignIn({ onDone, message }) {
   const [mode, setMode] = useState("signin");
   const [user, setUser] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
+  // The password boxes aren't tied to state: iOS can fill them (saved passwords,
+  // "Use Strong Password") without the events a controlled input needs, and the
+  // next redraw would wipe them. They're read from the form when it's sent.
   const [state, setState] = useState("idle");
   const [error, setError] = useState("");
   const registering = mode === "register";
@@ -118,15 +119,20 @@ export function SignIn({ onDone, message }) {
     setError(r.status === "limited" ? "Too many tries. Wait a minute, then try again." : r.error || "That didn't work. Try again.");
   };
 
-  const switchMode = (m) => { setMode(m); setState("idle"); setError(""); setPassword(""); setConfirm(""); };
+  const switchMode = (m) => { setMode(m); setState("idle"); setError(""); };
 
   const submit = async (e) => {
     e.preventDefault();
     setError("");
+    const form = new FormData(e.currentTarget);
+    const name = String(form.get("username") || user).trim();
+    const password = String(form.get("password") || "");
+    const confirm = String(form.get("confirm") || "");
+    if (name !== user) setUser(name);
     if (registering) {
       if (password !== confirm) { setState("idle"); setError("The passwords don't match."); return; }
       setState("checking");
-      const r = await registerAccount(user.trim(), password);
+      const r = await registerAccount(name, password);
       if (r.status === "ok") { setState("requested"); return; }
       setState("idle");
       setError(r.status === "limited" ? "Too many tries. Wait a minute, then try again."
@@ -135,7 +141,7 @@ export function SignIn({ onDone, message }) {
       return;
     }
     setState("checking");
-    const result = await uploadLogin(user.trim(), password);
+    const result = await uploadLogin(name, password);
     if (result.status === "ok") onDone(result.auth);
     else setState(result.status);
   };
@@ -161,8 +167,8 @@ export function SignIn({ onDone, message }) {
       </${Btn}>
       <div className="or-divider">or use your password</div>`}
     <label className="field-row"><span>Username</span>
-      <input className="input" autoComplete="username" autoCapitalize="none" value=${user}
-        onInput=${(e) => setUser(e.target.value)} required minLength=${registering ? 3 : undefined} maxLength=${registering ? 24 : undefined} />
+      <input className="input" name="username" autoComplete="username" autoCapitalize="none" autoCorrect="off" spellCheck=${false} value=${user}
+        onChange=${(e) => setUser(e.target.value)} required minLength=${registering ? 3 : undefined} maxLength=${registering ? 24 : undefined} />
     </label>
     ${faceId && registering && html`
       ${validUser && signupTicket && signupTicket.error && html`<p className="form-error" role="alert">${signupTicket.error}</p>`}
@@ -171,12 +177,11 @@ export function SignIn({ onDone, message }) {
       </${Btn}>
       <div className="or-divider">or choose a password</div>`}
     <label className="field-row"><span>Password</span>
-      <input className="input" type="password" autoComplete=${registering ? "new-password" : "current-password"} value=${password}
-        onInput=${(e) => setPassword(e.target.value)} required minLength=${registering ? 8 : undefined} />
+      <input className="input" type="password" name="password" key=${mode} autoComplete=${registering ? "new-password" : "current-password"}
+        required minLength=${registering ? 8 : undefined} />
     </label>
     ${registering && html`<label className="field-row"><span>Confirm password</span>
-      <input className="input" type="password" autoComplete="new-password" value=${confirm}
-        onInput=${(e) => setConfirm(e.target.value)} required />
+      <input className="input" type="password" name="confirm" autoComplete="new-password" required />
     </label>`}
     ${state === "denied" && html`<p className="form-error" role="alert">That username or password isn't right.</p>`}
     ${state === "pending" && html`<p className="form-error" role="alert">This account is still waiting for an admin to approve it.</p>`}
