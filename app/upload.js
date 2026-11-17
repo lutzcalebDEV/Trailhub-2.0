@@ -73,13 +73,25 @@ function videoPoster(file) {
   });
 }
 
-// The same rule the Worker uses for usernames.
-const USERNAME_RE = /^[a-z0-9][a-z0-9 ._@'-]{2,31}$/i;
-const USERNAME_RULE = "Usernames are 3–32 letters, numbers or spaces (. _ - @ ' are OK too), starting with a letter or number.";
-// Cleaned like the Worker does: curly apostrophes and long dashes from the iPhone
-// keyboard become plain ones, and runs of spaces one space.
-const cleanUsername = (s) => String(s || "").normalize("NFC")
-  .replace(/[‘’ʼ]/g, "'").replace(/[‐-―]/g, "-").replace(/\s+/g, " ").trim();
+// Usernames, checked and cleaned exactly like the Worker does (tag-worker.js):
+// 3–32 letters, numbers, spaces and . _ - @ ', starting with a letter or number.
+// The iPhone's "Smart Punctuation" swaps (curly apostrophes, long dashes, "…",
+// full-width punctuation) and invisible characters become plain ones.
+const cleanUsername = (s) => String(s || "").normalize("NFKC")
+  .replace(/[\u200B-\u200D\u2060\uFEFF]/g, "")
+  .replace(/[\u2018\u2019\u02BC\u0060]/g, "'")
+  .replace(/[\u2010-\u2015\u2212\uFE58\uFE63\uFF0D]/g, "-")
+  .replace(/\s+/g, " ").trim();
+// What's wrong with a (cleaned) username, naming any character that can't be used.
+function usernameProblem(name) {
+  const n = name.length;
+  if (n < 3) return n ? `"${name}" is too short. Usernames need at least 3 characters.` : "Choose a username.";
+  if (n > 32) return `That username is ${n} characters. Use at most 32.`;
+  const bad = [...new Set(name.replace(/[a-z0-9 ._@'-]/gi, ""))];
+  if (bad.length) return `Usernames can't use ${bad.map((c) => `"${c}"`).join(" ")}. Use letters, numbers, spaces and . _ - @ '`;
+  if (!/^[a-z0-9]/i.test(name)) return "Start the username with a letter or number.";
+  return "";
+}
 
 // Sign in, or ask for an account (which an admin approves before it can sign in).
 export function SignIn({ onDone, message }) {
@@ -105,7 +117,8 @@ export function SignIn({ onDone, message }) {
   const faceId = usePasskeySupport();
   const fid = faceIdName();
   const typedUser = cleanUsername(user);
-  const validUser = USERNAME_RE.test(typedUser);
+  const nameProblem = usernameProblem(typedUser);
+  const validUser = !nameProblem;
   const [loginTicket, renewLogin] = usePasskeyTicket("login", { enabled: faceId && !registering });
   const [signupTicket, renewSignup] = usePasskeyTicket("signup", { enabled: faceId && registering && validUser, user: typedUser });
   const signupReady = passkeyTicketFresh(signupTicket) && signupTicket.user === typedUser;
@@ -127,7 +140,7 @@ export function SignIn({ onDone, message }) {
 
   const faceSignup = async () => {
     setError("");
-    if (!validUser) { setFaceError(typedUser ? USERNAME_RULE : "Choose a username first."); return; }
+    if (!validUser) { setFaceError(nameProblem); return; }
     if (!signupReady) return;
     setFaceError("");
     setState("checking");
@@ -156,7 +169,8 @@ export function SignIn({ onDone, message }) {
     setState("idle");
     if (!name || !password) { setError("Enter a username and a password."); return; }
     if (registering) {
-      if (!USERNAME_RE.test(name)) { setError(USERNAME_RULE); return; }
+      const badName = usernameProblem(name);
+      if (badName) { setError(badName); return; }
       const weak = passwordProblem(password);
       if (weak) { setError(weak); return; }
       if (password !== confirm) { setError("The passwords don't match."); return; }

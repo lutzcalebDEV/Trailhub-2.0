@@ -275,10 +275,24 @@ const PBKDF2_ITER = 20000;
 // lookalike letters from other alphabets. The iPhone keyboard's curly apostrophes
 // and long dashes count as plain ones, and runs of spaces as one. Names are
 // case-insensitive: the key is the cleaned, lowercased name.
-const USERNAME = /^[a-z0-9][a-z0-9 ._@'-]{2,31}$/i;
-const USERNAME_RULE = "Usernames are 3–32 letters, numbers or spaces (. _ - @ ' are OK too), starting with a letter or number.";
-const cleanUsername = (s) => String(s || "").normalize("NFC")
-  .replace(/[‘’ʼ]/g, "'").replace(/[‐-―]/g, "-").replace(/\s+/g, " ").trim();
+// NFKC turns the iPhone's "…" into "..." and full-width punctuation into plain;
+// the rest catches what NFKC keeps: curly apostrophes, dashes and minus signs, and
+// invisible zero-width characters.
+const cleanUsername = (s) => String(s || "").normalize("NFKC")
+  .replace(/[\u200B-\u200D\u2060\uFEFF]/g, "")
+  .replace(/[\u2018\u2019\u02BC\u0060]/g, "'")
+  .replace(/[\u2010-\u2015\u2212\uFE58\uFE63\uFF0D]/g, "-")
+  .replace(/\s+/g, " ").trim();
+// What's wrong with a (cleaned) username, said plainly, or "" if nothing.
+function usernameProblem(name) {
+  const n = name.length;
+  if (n < 3) return n ? `"${name}" is too short. Usernames need at least 3 characters.` : "Choose a username.";
+  if (n > 32) return `That username is ${n} characters. Use at most 32.`;
+  const bad = [...new Set(name.replace(/[a-z0-9 ._@'-]/gi, ""))];
+  if (bad.length) return `Usernames can't use ${bad.map((c) => `"${c}"`).join(" ")}. Use letters, numbers, spaces and . _ - @ '`;
+  if (!/^[a-z0-9]/i.test(name)) return "Start the username with a letter or number.";
+  return "";
+}
 const accountKey = (name) => "user:" + cleanUsername(name).toLowerCase();
 
 const b64url = (bytes) => btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
@@ -471,7 +485,8 @@ const squashName = (name) => cleanUsername(name).toLowerCase().replace(/[^a-z0-9
 
 // Whether a new account may take this (cleaned) name: null, or [error, status].
 async function signupBlocked(env, user) {
-  if (!USERNAME.test(user)) return [USERNAME_RULE, 400];
+  const bad = usernameProblem(user);
+  if (bad) return [bad, 400];
   const sq = squashName(user);
   if (RESERVED_NAMES.has(sq) || sq.startsWith("admin") || (await isShared(env, user)) ||
       (env.UPLOAD_USER && squashName(env.UPLOAD_USER) === sq)) return ["That username is taken.", 409];
@@ -507,7 +522,8 @@ async function handleRegister(request, env) {
   if (payload && payload.website) return json({ ok: true, pending: true });
   const user = cleanUsername(payload && payload.user);
   const password = String((payload && payload.password) || "");
-  if (!USERNAME.test(user)) return json({ error: USERNAME_RULE }, 400);
+  const badName = usernameProblem(user);
+  if (badName) return json({ error: badName }, 400);
   const problem = passwordProblem(password);
   if (problem) return json({ error: problem }, 400);
   const blocked = await signupBlocked(env, user);
