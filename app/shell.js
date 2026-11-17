@@ -316,10 +316,7 @@ export function MoreScreen({ more, counts, auth }) {
         : html`<${MoreRow} icon="user" tint="#3a8f63" label="Sign in" tone="accent" onClick=${m.onSignIn} />`}
     </section>
 
-    <p className="ios-foot">
-      ${status.checked ? "Checked " + status.checked : "Waiting for the first sync"}
-      ${status.newest && html`<br />Newest photo ${status.newest}`}
-    </p>
+    ${status.newest && html`<p className="ios-foot">Newest photo ${status.newest}</p>`}
   </div>`;
 }
 
