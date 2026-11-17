@@ -365,14 +365,11 @@ export async function changePassword(auth, current, password) {
   } catch (e) { return { status: "error" }; }
 }
 
-/* ---------------------------- Phone app frame ---------------------------- */
-// In the Home Screen app on a phone the page itself never scrolls: only the content
-// area (.main) does, in a fixed frame, so the top bar and tab bar can't bounce,
-// slide or jump the way a web page's do (styles.css, "Phone app frame"). In Safari
-// and on computers the page scrolls as usual, so Safari can shrink its toolbar and
-// the tab bar sits at the bottom of the screen.
-const framed = () => window.matchMedia("(max-width: 900px) and (display-mode: standalone)").matches;
-export const scrollBox = () => (framed() && document.querySelector(".main")) || null;
+/* ------------------------------- Scrolling ------------------------------- */
+// The page scrolls everywhere (styles.css, "Phone app frame" says why the fixed
+// frame was dropped). These stay as the one place scrolling is read and set, so a
+// scrolling box can come back without touching every caller.
+export const scrollBox = () => null;
 export const getScrollY = () => { const el = scrollBox(); return el ? el.scrollTop : window.scrollY; };
 export const scrollToY = (top, smooth) => {
   const el = scrollBox();

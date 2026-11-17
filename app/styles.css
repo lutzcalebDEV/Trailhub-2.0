@@ -1517,21 +1517,12 @@ html[data-nav="pop"]::view-transition-new(root) { animation-name: navFromUnder; 
 .alerts__quiet label { display: flex; align-items: center; gap: 8px; font-weight: 600; }
 
 /* ============================ Phone app frame ============================= */
-/* In the Home Screen app the page itself never scrolls. The app is a fixed frame
-   and only its content area (.main) scrolls, so the top bar and tab bar can't
-   bounce, slide or jump the way a web page's do. Content scrolls under the
-   see-through tab bar, as in iPhone apps. The tab bar's height is --tab-bar-h
-   (MobileNav in shell.js).
-   Not in Safari: there the page has to scroll for Safari to shrink its own toolbar,
-   which lets the tab bar sit at the bottom of the screen (framed() in core.js). */
-@media (max-width: 900px) and (display-mode: standalone) {
-  html, body { height: 100%; overflow: hidden; }
-  .app { position: fixed; inset: 0; min-height: 0; display: block; }
-  .main {
-    height: 100%; overflow-x: hidden; overflow-y: auto; -webkit-overflow-scrolling: touch;
-    overscroll-behavior-y: none; background: var(--bg);
-  }
-}
+/* The page itself scrolls, in Safari and in the Home Screen app alike. A fixed frame
+   (only .main scrolling) was tried and dropped: in the Home Screen app iOS can keep
+   a shorter screen height after the keyboard closes, and with nothing scrolling
+   it never corrects it, so the tab bar floated well above the bottom of the
+   screen. Content scrolls under the see-through tab bar, as in iPhone apps. The
+   tab bar's height is --tab-bar-h (MobileNav in shell.js). */
 @media (max-width: 900px) {
   .view { padding-bottom: calc(var(--tab-bar-h, 64px) + 24px); }
 

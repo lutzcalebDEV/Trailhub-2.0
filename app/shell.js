@@ -236,7 +236,9 @@ export function MobileNav({ view, onTab, counts }) {
 
 // While the keyboard is up it covers the tab bar, as in iPhone apps; the bar is
 // hidden then, so it never floats over the page as the screen shifts for the field.
-// When typing ends, the page is put back where the frame expects it.
+// When typing ends, the page is nudged by a pixel and back: iPhone Home Screen apps
+// can otherwise keep the shorter keyboard-up screen height, leaving the tab bar
+// floating above the bottom of the screen until the page next scrolls.
 const TEXT_FIELD = 'input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="button"]):not([type="submit"]), textarea';
 function useKeyboardFlag() {
   useEffect(() => {
@@ -255,7 +257,9 @@ function useKeyboardFlag() {
         const a = document.activeElement;
         if (a && a.matches && a.matches(TEXT_FIELD)) return;
         delete root.dataset.keyboard;
-        if (window.scrollY || window.scrollX) window.scrollTo(0, 0);
+        const y = window.scrollY;
+        window.scrollTo(0, y + 1);
+        requestAnimationFrame(() => window.scrollTo(0, y));
       }, 120);
     };
     document.addEventListener("focusin", onIn);
