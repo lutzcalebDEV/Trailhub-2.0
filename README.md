@@ -12,7 +12,8 @@ just static files — no server, no AI, no credentials in the cloud.
 - `data.js` — generated photo data (starts as sample data so you can preview)
 - `store.json` — durable history of every photo seen (created on first run; the source of truth, not uploaded)
 - `photos/` — downloaded images (created on first real run)
-- `requirements.txt` — the one required dependency (`pyspypoint`)
+- `spypoint_api.py` — TrailHub's own SPYPOINT client (logins, cameras, photos, camera health)
+- `requirements.txt` — optional extras (R2 hosting, photo resizing, temperature OCR)
 - `config.js` — site config (optional tag-sharing endpoint; safe to commit, no secrets)
 - `tags.json` — your photo tags/reclassifications (shared source of truth, baked into `data.js`)
 - `tag-worker.js` — optional Cloudflare Worker that saves tags for everyone (see "Shared tags")
@@ -88,7 +89,7 @@ computer of yours running. Your SPYPOINT login is stored as an encrypted GitHub
 secret — used only by the automated job, never visible to site visitors, and not
 exposed even though the repo is public.
 
-**First, validate locally (do not skip).** `pyspypoint` is unofficial, so confirm
+**First, validate locally (do not skip).** SPYPOINT has no public API, so confirm
 it works with your account before automating, or the site will just silently stop
 updating. Set your creds (step 2) and run:
 
@@ -382,8 +383,10 @@ images are kept full-size — everything still works.
 
 ## If something looks off
 
-`pyspypoint` is an **unofficial** client, so SPYPOINT can change things without
-notice. If species labels, dates, or camera names come through wrong, run:
+SPYPOINT has no public API: `spypoint_api.py` uses the same endpoints as their
+app, so SPYPOINT can change things without notice. Every request has a timeout and
+gentle retries, and a failed run says whether the login, the connection or the API
+is at fault. If species labels, dates, or camera names come through wrong, run:
 
 ```
 python pull.py --inspect
@@ -392,6 +395,10 @@ python pull.py --inspect
 That prints the actual fields SPYPOINT returns. Share that output and the field
 mapping in `pull.py` (the `extract_meta` function) can be adjusted to match —
 nothing else needs to change.
+
+Camera health (battery, signal, SD card, plan usage) comes from
+`camera_health()` in `spypoint_api.py`. If a run logs `[health] nothing recognised`,
+that line lists the field names SPYPOINT sent, so the extractor can be matched to them.
 
 ### Notes & limits
 

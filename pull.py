@@ -35,6 +35,8 @@ import argparse
 import datetime as dt
 from pathlib import Path
 
+import spypoint_api
+
 HERE = Path(__file__).resolve().parent
 PHOTOS_DIR = HERE / "photos"
 DATA_FILE = HERE / "data.js"
@@ -1347,13 +1349,25 @@ def extract_camera_meta(cam):
     # "label" so that "name" stays the stable key captures, filters and renames use.
     config = raw.get("config") if isinstance(raw, dict) else None
     label = _first(config, "name", default=None) if isinstance(config, dict) else None
-    return {
+    meta = {
         "id": str(cid) if cid is not None else str(name or "unknown"),
         "name": name or (f"Camera {cid}" if cid is not None else "Camera"),
         "label": str(label).strip() if label else None,
         "latitude": blur_location(lat),
         "longitude": blur_location(lng),
     }
+    # Battery, signal, SD card and plan usage. SPYPOINT doesn't document these, so
+    # if none are recognised, name the fields it did send (names only, no values)
+    # so the extractor in spypoint_api.camera_health() can be adjusted.
+    health = spypoint_api.camera_health(raw) if isinstance(raw, dict) else {}
+    if health:
+        meta["health"] = health
+    elif isinstance(raw, dict):
+        status = raw.get("status")
+        names = sorted(status) if isinstance(status, dict) else []
+        print(f"  [health] nothing recognised for {meta['label'] or meta['id'][-6:]}; "
+              f"camera fields: {sorted(raw)}; status fields: {names}")
+    return meta
 
 
 # ---- modes -----------------------------------------------------------------
@@ -1413,71 +1427,11 @@ def _demo_svg(species, night):
 
 
 def best_photo_url(photo):
-    """Return the largest image URL SPYPOINT offers for this photo.
-
-    pyspypoint's url() defaults to "large" and raises (or builds a hostless URL) if
-    that size is missing, which used to drop the photo with no way to notice.
-    """
-    for size in ("large", "medium", "small"):
-        section = getattr(photo, size, None)
-        if getattr(section, "host", "") and getattr(section, "path", ""):
-            return photo.url(size)
-    raise ValueError("no large, medium or small image on this photo")
-
-
-HD_PROBE_FILE = HERE / "_hd_probe.json"
-
-
-def _jpeg_size(data: bytes):
-    """(width, height) from a JPEG's header, or None."""
-    i = 2
-    while i + 9 < len(data):
-        if data[i] != 0xFF:
-            i += 1
-            continue
-        marker = data[i + 1]
-        if 0xC0 <= marker <= 0xC3:
-            return int.from_bytes(data[i + 7:i + 9], "big"), int.from_bytes(data[i + 5:i + 7], "big")
-        i += 2 + int.from_bytes(data[i + 2:i + 4], "big")
-    return None
-
-
-def probe_hd(client, cameras, limit=10):
-    """TEMP DIAGNOSTIC: does asking SPYPOINT for HD return bigger photos?
-
-    Runs once (until _hd_probe.json exists) and records only sizes and field names.
-    Image URLs are signed links, so they're never written down. Never fails a pull.
-    """
-    if HD_PROBE_FILE.exists():
-        return
-    import urllib.request
-    result = {"checkedAt": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")}
-    try:
-        photos = list(client.photos(cameras, limit=limit, hd=True))
-        result["returned"] = len(photos)
-        rows = []
-        for p in photos[:limit]:
-            raw = _raw(p)
-            row = {"id": str(raw.get("id", ""))[-6:], "fields": sorted(raw.keys()), "sizes": {}}
-            for size in ("hd", "large", "medium", "small"):
-                section = getattr(p, size, None)
-                if not (getattr(section, "host", "") and getattr(section, "path", "")):
-                    row["sizes"][size] = "missing"
-                    continue
-                try:
-                    req = urllib.request.Request(p.url(size), headers={"User-Agent": "TrailHub/1.0"})
-                    with urllib.request.urlopen(req, timeout=30) as response:
-                        data = response.read()
-                    dims = _jpeg_size(data)
-                    row["sizes"][size] = {"bytes": len(data), "px": f"{dims[0]}x{dims[1]}" if dims else None}
-                except Exception as e:
-                    row["sizes"][size] = f"error: {type(e).__name__}"
-            rows.append(row)
-        result["photos"] = rows
-    except Exception as e:
-        result["error"] = f"{type(e).__name__}: {str(e)[:200]}"
-    atomic_write_text(HD_PROBE_FILE, json.dumps(result, indent=1))
-    print(f"Wrote {HD_PROBE_FILE.name} (one-time HD check).")
+    """Return the largest image URL SPYPOINT offers for this photo (a signed link)."""
+    url = spypoint_api.image_url(photo)
+    if not url:
+        raise ValueError("no large, medium or small image on this photo")
+    return url
 
 
 def report_skip(message):
@@ -1488,22 +1442,18 @@ def report_skip(message):
 
 
 def run_pull(limit, inspect):
-    try:
-        import spypoint
-    except ImportError:
-        sys.exit("ERROR: pyspypoint not installed. Run: pip install -r requirements.txt")
-
     user, pw = load_credentials()
     print("Logging in to SPYPOINT...")
-    client = spypoint.Client(user, pw)
-
-    cameras = client.cameras()
-    print(f"Found {len(cameras)} camera(s).")
-
-    photos = client.photos(cameras, limit=limit)
-    photos = list(photos)
+    client = spypoint_api.Client(user, pw)
+    try:
+        cameras = client.cameras()
+        print(f"Found {len(cameras)} camera(s).")
+        photos = client.photos([c.get("id") for c in cameras if c.get("id")], limit=limit)
+    except spypoint_api.SpypointError as e:
+        if os.environ.get("GITHUB_ACTIONS"):
+            print(f"::error title=SPYPOINT::{e}")
+        sys.exit(f"ERROR: {e}")
     print(f"Retrieved {len(photos)} photo record(s).")
-    probe_hd(client, cameras)
 
     # --- TEMP DIAGNOSTIC (remove once the real species field is confirmed) ---
     # Writes a sanitized snapshot of the first few photos so we can see SPYPOINT's

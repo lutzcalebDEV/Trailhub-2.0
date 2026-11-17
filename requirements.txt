@@ -1,4 +1,4 @@
-pyspypoint
+# SPYPOINT is reached with our own spypoint_api.py (standard library only).
 
 # Cloudflare R2 image hosting (S3-compatible). Needed only when the R2_* env vars
 # are set to host photos outside the repo; harmless to have installed otherwise.
