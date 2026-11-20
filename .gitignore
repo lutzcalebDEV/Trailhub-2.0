@@ -19,3 +19,20 @@ _schema_probe.json
 # Photos move to Cloudflare R2 on their own once the R2_* secrets are set: pull.py
 # copies each one, checks the public URL, and removes the repo copy on later runs.
 # Add "photos/" here after that finishes.
+
+# Private data: the photo list, photo history, camera spots, tags, notes, comments
+# and uploads live in the private R2 bucket under state/ (state_sync.py and the
+# Worker). Never commit them: GitHub Pages would serve them to anyone.
+data.js
+.prev-data.js
+.state-hashes
+store.json
+tags.json
+ai-tags.json
+comments.json
+uploads.json
+cameras.json
+camera-names.json
+metadata.json
+weather.json
+_hd_probe.json

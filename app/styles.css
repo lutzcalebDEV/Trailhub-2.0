@@ -1632,23 +1632,88 @@ html[data-nav="pop"]::view-transition-new(root) { animation-name: navFromUnder; 
 /* ------------------------------ Sign-in screen ------------------------------ */
 /* The whole app until someone signs in (login.js). */
 .login {
+  position: relative; isolation: isolate; overflow: hidden;
   min-height: 100vh; min-height: 100dvh; display: grid; place-items: center;
-  padding: max(28px, env(safe-area-inset-top, 0px)) 20px max(28px, env(safe-area-inset-bottom, 0px));
+  padding: max(28px, env(safe-area-inset-top, 0px)) 16px max(28px, env(safe-area-inset-bottom, 0px));
+  background: var(--bg);
+}
+/* First light over a ridge, behind the card. */
+.login__sky {
+  position: absolute; inset: 0; z-index: -1; pointer-events: none;
   background:
-    radial-gradient(120% 70% at 50% -10%, color-mix(in srgb, var(--accent) 22%, transparent) 0%, transparent 60%),
-    var(--bg);
+    radial-gradient(90% 55% at 50% 0%, color-mix(in srgb, var(--accent) 20%, transparent) 0%, transparent 70%),
+    linear-gradient(180deg, color-mix(in srgb, var(--day) 7%, transparent) 0%, transparent 45%);
 }
-.login__card { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 22px; }
+.login__sun {
+  position: absolute; left: 50%; bottom: 120px; width: 220px; height: 220px; margin-left: -110px; border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--day) 30%, transparent) 0%, transparent 65%);
+  animation: login-rise 1.6s var(--ease-out) both;
+}
+.login__ridge { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 180px; }
+.login__ridge-far { fill: color-mix(in srgb, var(--accent) 9%, var(--bg)); }
+.login__ridge-near { fill: color-mix(in srgb, var(--accent) 5%, var(--surface)); }
+@keyframes login-rise { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+.login__card {
+  width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 22px;
+  animation: login-in .5s var(--ease-out) both;
+}
+@keyframes login-in { from { transform: translateY(10px); opacity: 0; } to { transform: none; opacity: 1; } }
 .login__brand { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
-.login__brand .brand__mark { border-radius: 20px; box-shadow: 0 12px 32px rgba(0, 0, 0, .35); margin-bottom: 8px; }
-.login__brand h1 { margin: 0; font-size: 30px; font-weight: 750; letter-spacing: -.02em; color: var(--text); }
-.login__brand p { margin: 0; font-size: 15px; color: var(--text-faint); }
+.login__brand .brand__mark { border-radius: 20px; box-shadow: 0 14px 36px -8px rgba(0, 0, 0, .5); margin-bottom: 10px; }
+.login__brand h1 { margin: 0; font-size: 28px; font-weight: 750; letter-spacing: -.02em; color: var(--text); text-wrap: balance; overflow-wrap: anywhere; }
+.login__brand p { margin: 0; font-size: 15px; color: var(--text-muted); }
 .login__panel {
-  background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 20px;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, .25);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  border: 1px solid var(--border-2); border-radius: 22px; padding: 22px 20px;
+  box-shadow: var(--sh-3);
 }
-.login__panel .btn { min-height: 48px; font-size: 16px; }
-.login__foot { margin: 0; text-align: center; font-size: 12.5px; color: var(--text-faint); }
+.login__panel .btn { min-height: 50px; font-size: 16px; border-radius: 14px; }
+/* 16px stops iOS zooming into the box when it's tapped. */
+.login__panel .input { min-height: 48px; font-size: 16px; border-radius: 12px; }
+.login__foot {
+  margin: 0; display: flex; align-items: flex-start; justify-content: center; gap: 6px;
+  text-align: center; font-size: 12.5px; line-height: 1.45; color: var(--text-faint);
+}
+.login__foot svg { flex: none; margin-top: 2px; }
+.login__pwtoggle {
+  align-self: center; background: none; border: 0; padding: 8px 12px; min-height: 44px;
+  color: var(--text-muted); font: inherit; font-size: 14.5px; font-weight: 600; cursor: pointer;
+}
+.login__pwtoggle:hover { color: var(--text); }
+
+/* The big Face ID button: a ring with the Face ID glyph, its label under it. */
+.faceid {
+  display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%;
+  padding: 10px 0 4px; background: none; border: 0; color: var(--text); font: inherit; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.faceid__ring {
+  position: relative; display: grid; place-items: center; width: 92px; height: 92px; border-radius: 28px;
+  color: var(--accent-contrast);
+  background: linear-gradient(160deg, var(--accent) 0%, var(--accent-3) 100%);
+  box-shadow: 0 12px 30px -10px color-mix(in srgb, var(--accent) 70%, transparent), inset 0 1px 0 rgba(255, 255, 255, .25);
+  transition: transform .18s var(--ease), box-shadow .18s var(--ease);
+}
+.faceid__ring::after {
+  content: ""; position: absolute; inset: -6px; border-radius: 33px; border: 2px solid var(--accent-line);
+  opacity: 0; transition: opacity .2s var(--ease);
+}
+.faceid:hover .faceid__ring { transform: translateY(-1px); }
+.faceid:active .faceid__ring { transform: scale(.95); }
+.faceid:focus-visible { outline: none; }
+.faceid:focus-visible .faceid__ring::after { opacity: 1; }
+.faceid__label { font-size: 17px; font-weight: 650; letter-spacing: -.01em; }
+.faceid__user { margin-top: -6px; font-size: 13.5px; color: var(--text-faint); }
+.faceid:disabled { cursor: default; }
+.faceid:disabled:not(.is-busy) .faceid__ring { filter: saturate(.5); opacity: .6; }
+.faceid.is-busy .faceid__ring::after { opacity: 1; animation: faceid-pulse 1.1s ease-in-out infinite; }
+@keyframes faceid-pulse { 0%, 100% { transform: scale(1); opacity: .9; } 50% { transform: scale(1.06); opacity: .3; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .login__sun, .login__card, .faceid.is-busy .faceid__ring::after { animation: none; }
+}
 
 /* =========================== Photo size on a phone ========================== */
 /* Small, medium and large are three, two and one photos a row. (Small used to be

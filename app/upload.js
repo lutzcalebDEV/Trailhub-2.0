@@ -5,7 +5,7 @@ import { Icon } from "./icons.js";
 import {
   hasUploads, uploadLogin, registerAccount, uploadPhoto, uploadThumb, newUploadId, displayCamera, TAG_OPTIONS,
   StorageFull, NotSignedIn, TooManyAttempts, MAX_VIDEO_BYTES, LS, usePersistent, toLocalInput,
-  passkeySignIn, passkeyCreate, passkeyTicketFresh, faceIdName, passwordProblem,
+  passkeySignIn, passkeyCreate, passkeyTicketFresh, faceIdName, passwordProblem, passkeyAutofillAvailable, faceIdOn,
 } from "./core.js";
 import { captureDate } from "./exif.js";
 import { usePasskeySupport, usePasskeyTicket } from "./faceid.js";
@@ -94,7 +94,9 @@ function usernameProblem(name) {
 }
 
 // Sign in, or ask for an account (which an admin approves before it can sign in).
-export function SignIn({ onDone, message, initialUser = "", startMode = "signin" }) {
+// page: the full-screen sign-in (login.js). Face ID is the big button there, and the
+// password form folds away on a device that already signs in with Face ID.
+export function SignIn({ onDone, message, initialUser = "", startMode = "signin", page = false }) {
   const [mode, setMode] = useState(startMode);
   const [user, setUser] = useState(initialUser);
   // The password boxes aren't tied to state: iOS can fill them (saved passwords,
@@ -123,19 +125,50 @@ export function SignIn({ onDone, message, initialUser = "", startMode = "signin"
   const [signupTicket, renewSignup] = usePasskeyTicket("signup", { enabled: faceId && registering && validUser, user: typedUser });
   const signupReady = passkeyTicketFresh(signupTicket) && signupTicket.user === typedUser;
 
-  const faceSignIn = async () => {
-    setError("");
-    setState("checking");
-    const r = await passkeySignIn(loginTicket);
-    renewLogin();
+  // On the sign-in page the password form starts folded away when this device
+  // already signed in here with Face ID; one tap opens it.
+  const [showPw, setShowPw] = useState(() => !page || !faceIdOn(initialUser));
+  const pwOpen = !page || registering || !faceId || showPw;
+
+  const faceResult = (r) => {
     if (r.status === "ok") { onDone(r.auth); return; }
     if (r.status === "cancelled") { setState("idle"); return; }
     if (r.status === "unknown") {
       setState("idle");
+      setShowPw(true);
       setError(`That ${fid} isn't linked to an account here. Sign in with your password once, then turn on ${fid} from your name in the top bar.`);
       return;
     }
     setState(r.status === "pending" || r.status === "limited" ? r.status : "error");
+  };
+
+  // Passkey autofill: tapping the username box on an iPhone offers "Sign in with
+  // Face ID" right above the keyboard. It waits quietly in the background with the
+  // same ticket the big button uses; the button stops it before starting its own.
+  const autofill = useRef(null);
+  const autofillOn = page && faceId && !registering && pwOpen;
+  useEffect(() => {
+    if (!autofillOn || !passkeyTicketFresh(loginTicket)) return undefined;
+    const ctrl = new AbortController();
+    autofill.current = ctrl;
+    passkeyAutofillAvailable().then(async (ok) => {
+      if (!ok || ctrl.signal.aborted) return;
+      const r = await passkeySignIn(loginTicket, { autofill: true, signal: ctrl.signal });
+      if (ctrl.signal.aborted || r.status === "cancelled") return;
+      renewLogin();
+      faceResult(r);
+    });
+    return () => ctrl.abort();
+  }, [autofillOn, loginTicket]);
+
+  // No await before passkeySignIn: Face ID has to start straight from the tap.
+  const faceSignIn = async () => {
+    if (autofill.current) autofill.current.abort();
+    setError("");
+    setState("checking");
+    const r = await passkeySignIn(loginTicket);
+    renewLogin();
+    faceResult(r);
   };
 
   const faceSignup = async () => {
@@ -204,13 +237,20 @@ export function SignIn({ onDone, message, initialUser = "", startMode = "signin"
           ? `Choose a username, then create the account with ${fid} or a password. You can sign in once an admin approves it.`
           : "Choose a username and password. You can sign in once an admin approves the account."}</p>`
       : message && html`<p className="form-note">${message}</p>`}
-    ${faceId && !registering && html`
-      <${Btn} type="button" variant="primary" icon="faceid" disabled=${busy || !passkeyTicketFresh(loginTicket)} onClick=${faceSignIn}>
-        ${busy ? "Checking…" : `Sign in with ${fid}`}
-      </${Btn}>
-      <div className="or-divider">or use your password</div>`}
-    <label className="field-row"><span>Username</span>
-      <input className="input" name="username" autoComplete="username" autoCapitalize="none" autoCorrect="off" spellCheck=${false} value=${user}
+    ${faceId && !registering && (page
+      ? html`<button type="button" className=${cx("faceid", busy && "is-busy")} disabled=${busy || !passkeyTicketFresh(loginTicket)} onClick=${faceSignIn}>
+          <span className="faceid__ring"><${Icon} name="faceid" size=${44} strokeWidth=${1.6} /></span>
+          <span className="faceid__label">${busy ? "Checking…" : `Sign in with ${fid}`}</span>
+          ${initialUser && html`<span className="faceid__user">as ${initialUser}</span>`}
+        </button>`
+      : html`<${Btn} type="button" variant="primary" icon="faceid" disabled=${busy || !passkeyTicketFresh(loginTicket)} onClick=${faceSignIn}>
+          ${busy ? "Checking…" : `Sign in with ${fid}`}
+        </${Btn}>`)}
+    ${faceId && !registering && (pwOpen
+      ? html`<div className="or-divider">or use your password</div>`
+      : html`<button type="button" className="login__pwtoggle" onClick=${() => setShowPw(true)}>Use password instead</button>`)}
+    ${pwOpen && html`<label className="field-row"><span>Username</span>
+      <input className="input" name="username" autoComplete=${autofillOn ? "username webauthn" : "username"}autoCapitalize="none" autoCorrect="off" spellCheck=${false} value=${user}
         onChange=${(e) => setUser(e.target.value)} required maxLength=${registering ? 40 : undefined} />
       ${registering && html`<small className="form-note faint">3–32 letters, numbers or spaces. Your name or email works.</small>`}
     </label>
@@ -231,15 +271,15 @@ export function SignIn({ onDone, message, initialUser = "", startMode = "signin"
     </label>
     ${registering && html`<label className="field-row"><span>Confirm password</span>
       <input className="input" type="password" name="confirm" autoComplete="new-password" required />
-    </label>`}
+    </label>`}`}
     ${state === "denied" && html`<p className="form-error" role="alert">That username or password isn't right.</p>`}
     ${state === "pending" && html`<p className="form-error" role="alert">This account is still waiting for an admin to approve it.</p>`}
     ${state === "limited" && html`<p className="form-error" role="alert">Too many tries. Wait a minute, then try again.</p>`}
     ${state === "error" && html`<p className="form-error" role="alert">Couldn't reach the server. Try again.</p>`}
     ${error && html`<p className="form-error" role="alert">${error}</p>`}
-    <${Btn} variant=${faceId ? undefined : "primary"} disabled=${busy}>
+    ${pwOpen && html`<${Btn} variant=${faceId && !registering ? undefined : "primary"} disabled=${busy}>
       ${busy ? "Checking…" : registering ? "Request account" : "Sign in"}
-    </${Btn}>
+    </${Btn}>`}
     <p className="form-note center">
       ${registering
         ? html`Already have an account? <button type="button" className="linkbtn" onClick=${() => switchMode("signin")}>Sign in</button>`

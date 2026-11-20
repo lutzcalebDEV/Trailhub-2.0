@@ -502,14 +502,27 @@ export function setFaceIdOn(user, on = true) {
   } catch (e) {}
 }
 
+// Whether the phone can offer Face ID from the keyboard, above the username box
+// ("passkey autofill"): Safari on iOS 16+, Chrome and Edge.
+export async function passkeyAutofillAvailable() {
+  try {
+    return !!window.PublicKeyCredential && !!PublicKeyCredential.isConditionalMediationAvailable &&
+      (await PublicKeyCredential.isConditionalMediationAvailable());
+  } catch (e) { return false; }
+}
+
 // Call straight from the tap with a fresh ticket. Returns like uploadLogin, plus
 // "cancelled" and "unknown" (a passkey this site doesn't know).
-export async function passkeySignIn(t) {
+// { autofill: true, signal } instead waits quietly for the keyboard's Face ID
+// suggestion; abort the signal before starting a tap's own request.
+export async function passkeySignIn(t, { autofill = false, signal } = {}) {
   let cred;
   try {
-    cred = await navigator.credentials.get({ publicKey: {
-      challenge: fromB64urlBytes(t.challenge), rpId: t.rpId, userVerification: "required", timeout: 60000,
-    } });
+    cred = await navigator.credentials.get({
+      publicKey: { challenge: fromB64urlBytes(t.challenge), rpId: t.rpId, userVerification: "required", timeout: autofill ? undefined : 60000 },
+      ...(autofill ? { mediation: "conditional" } : {}),
+      ...(signal ? { signal } : {}),
+    });
   } catch (e) { return { status: "cancelled" }; }
   if (!cred) return { status: "cancelled" };
   try {
