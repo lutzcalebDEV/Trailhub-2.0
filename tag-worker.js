@@ -182,29 +182,13 @@ function ghHeaders(env) {
    - "state/<file>": data.js from the photo job (the workflow writes it), and the
      JSON files edited from the site (tags, notes, comments, camera names, uploads).
    - every other key: a photo, its small copy, or an uploaded video (/media/).
-   A file not moved here yet is read once from the repo, its old home, and saved
-   here on its first change. */
+   Nothing is ever read from the (public) repo: a file that isn't here yet starts
+   empty. */
 const STATE_PREFIX = "state/";
-
-// The repo copy of a JSON file, for anything not moved to the bucket yet.
-async function readRepoFile(env, path) {
-  const branch = env.GITHUB_BRANCH || "main";
-  const url = `https://api.github.com/repos/${env.GITHUB_OWNER}/${env.GITHUB_REPO}/contents/${path}?ref=${branch}`;
-  const r = await fetch(url, { headers: ghHeaders(env) });
-  if (r.status === 404) return {};
-  if (!r.ok) throw new Error(`GitHub read failed: ${r.status}`);
-  const body = await r.json();
-  try {
-    const parsed = JSON.parse(b64decode((body.content || "").replace(/\n/g, "")));
-    return parsed && typeof parsed === "object" ? parsed : {};
-  } catch (_) {
-    return {};
-  }
-}
 
 async function readFile(env, path) {
   const obj = await env.PHOTOS.get(STATE_PREFIX + path);
-  if (!obj) return { data: await readRepoFile(env, path), etag: null };
+  if (!obj) return { data: {}, etag: null };
   let data = {};
   try {
     const parsed = JSON.parse(await obj.text());
@@ -233,14 +217,10 @@ async function saveEntry(env, path, mutate, _message) {
   return { ok: false, status: 409, error: "Conflict after retries, please try again." };
 }
 
-// data.js as the photo job last wrote it (the repo copy until it moves here).
+// data.js as the photo job last wrote it.
 async function readDataScript(env) {
   const obj = await env.PHOTOS.get(STATE_PREFIX + "data.js");
-  if (obj) return obj.text();
-  const branch = env.GITHUB_BRANCH || "main";
-  const r = await fetch(`https://raw.githubusercontent.com/${env.GITHUB_OWNER}/${env.GITHUB_REPO}/${branch}/data.js`,
-    { headers: { "User-Agent": "trailhub-tags" } });
-  return r.ok ? r.text() : "window.TRAILHUB_DATA = {};\n";
+  return obj ? obj.text() : "window.TRAILHUB_DATA = {};\n";
 }
 
 /* Photos and videos: GET /media/<key>?m=<photo pass>. An <img> or <video> can't
@@ -1335,7 +1315,16 @@ async function handlePushNotify(request, env) {
       if (inQuietHours(entry.quiet)) continue;
       const wanted = new Set(entry.species || []);
       const cams = entry.cameras && entry.cameras.length ? new Set(entry.cameras) : null;
-      const mine = sightings.filter((s) => wanted.has(s.species) && (!cams || cams.has(s.camera)));
+      // One alert per photo: a deer tagged both Deer and Buck is one sighting, told
+      // by its more specific name.
+      const byPhoto = new Map();
+      for (const s of sightings) {
+        if (!wanted.has(s.species) || (cams && !cams.has(s.camera))) continue;
+        const key = s.tag || `${s.title}\n${s.body}`;
+        const had = byPhoto.get(key);
+        if (!had || (had.species === "Deer" && s.species !== "Deer")) byPhoto.set(key, s);
+      }
+      const mine = [...byPhoto.values()];
       if (!mine.length) continue;
       let messages = mine;
       if (mine.length > PUSH_MAX_PER_PHONE) {

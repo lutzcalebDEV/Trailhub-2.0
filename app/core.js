@@ -789,6 +789,7 @@ export const LS = {
   legacyOverrides: "trailhub-species-overrides",
   archived: "trailhub-archived-ids",
   reviewed: "trailhub-reviewed-ids",
+  deerUnsure: "trailhub-deer-unsure-ids",
   gridSize: "trailhub-grid-size",
   mapLayer: "trailhub-map-layer",
   camCoords: "trailhub-camera-coords",

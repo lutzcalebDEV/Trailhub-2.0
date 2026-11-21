@@ -134,7 +134,8 @@ export function cameraStatus(captures, cameras, now = Date.now()) {
 }
 
 // One tile per trigger: cameras fire multi-shot bursts of near-identical frames.
-// Expects date-sorted captures (either direction); returns [{ capture, count }] in the same order.
+// Expects date-sorted captures (either direction); returns [{ capture, count, frames }]
+// in the same order, `frames` being every photo in the burst.
 export function collapseBursts(captures, limit = Infinity, gapMs = 120000) {
   const out = [];
   const open = new Map();
@@ -143,10 +144,11 @@ export function collapseBursts(captures, limit = Infinity, gapMs = 120000) {
     if (group && Math.abs(group.oldest - c.date) <= gapMs) {
       group.count++;
       group.oldest = c.date;
+      group.frames.push(c);
       continue;
     }
     if (out.length >= limit) break;
-    const next = { capture: c, count: 1, oldest: c.date };
+    const next = { capture: c, count: 1, oldest: c.date, frames: [c] };
     open.set(c.camera, next);
     out.push(next);
   }

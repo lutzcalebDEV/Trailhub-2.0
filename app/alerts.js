@@ -7,6 +7,7 @@ import { Icon } from "./icons.js";
 import {
   SPECIES_ORDER, speciesColor, LS, loadPushKey, savePushSubscription, removePushSubscription, NotSignedIn,
 } from "./core.js";
+import { DEER_KINDS, ALL_DEER_HINT } from "./analytics.js";
 
 const cx = (...xs) => xs.filter(Boolean).join(" ");
 const ALERT_SPECIES = SPECIES_ORDER.filter((s) => s !== "Empty");
@@ -95,6 +96,12 @@ export function AlertsDialog({ auth, cameras = [], camName, onClose, onSignIn, o
   useEffect(() => { try { localStorage.setItem(LS.alertSpecies, JSON.stringify(chosen)); } catch (e) {} }, [chosen]);
 
   const toggle = (sp) => setChosen((cur) => (cur.includes(sp) ? cur.filter((x) => x !== sp) : [...cur, sp]));
+  // "All deer" turns on (or off) Buck, Doe and Deer together, since a deer can be
+  // tagged any of the three ways.
+  const allDeer = DEER_KINDS.every((k) => chosen.includes(k));
+  const toggleDeer = () => setChosen((cur) => (allDeer
+    ? cur.filter((x) => !DEER_KINDS.includes(x))
+    : [...cur.filter((x) => !DEER_KINDS.includes(x)), ...DEER_KINDS]));
   const failed = (e) => {
     if (e instanceof NotSignedIn) { onSignedOut(); return; }
     showToast("err", "That didn't work. Try again in a moment.");
@@ -162,6 +169,12 @@ export function AlertsDialog({ auth, cameras = [], camName, onClose, onSignIn, o
         ? "This phone gets an alert when a new photo shows one of these:"
         : "Pick what you want to hear about. You'll get an alert when a new photo shows one, even with the app closed."}</p>
       <div className="alerts__grid" role="group" aria-label="Species">
+        <button type="button" role="checkbox" aria-checked=${allDeer}
+          className=${cx("alerts__opt alerts__opt--wide", allDeer && "is-on")} onClick=${toggleDeer}>
+          <span className="sdot" style=${{ background: speciesColor("Deer") }} />All deer
+          <small className="alerts__hint">${ALL_DEER_HINT}</small>
+          <span className="alerts__check">${allDeer && html`<${Icon} name="check" size=${14} />`}</span>
+        </button>
         ${ALERT_SPECIES.map((sp) => html`<button key=${sp} type="button" role="checkbox" aria-checked=${chosen.includes(sp)}
           className=${cx("alerts__opt", chosen.includes(sp) && "is-on")} onClick=${() => toggle(sp)}>
           <span className="sdot" style=${{ background: speciesColor(sp) }} />${sp}
