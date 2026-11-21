@@ -59,6 +59,16 @@ export function rangeLabel(filters) {
   return opt ? opt.label : "";
 }
 
+// "All deer": one species choice that counts every deer, whichever way it was
+// tagged (Buck, Doe, or just Deer), for the best picture of when deer move.
+export const ALL_DEER = "All deer";
+export const DEER_KINDS = ["Buck", "Doe", "Deer"];
+export const ALL_DEER_HINT = "Buck, Doe & Deer";
+export const pickColor = (pick) => speciesColor(pick === ALL_DEER ? "Deer" : pick);
+const isDeer = (species, tags) => DEER_KINDS.some((k) => species === k || tags.includes(k));
+export const speciesMatches = (pick, species, tags) =>
+  pick === ALL_DEER ? isDeer(species, tags) : species === pick || tags.includes(pick);
+
 export const WEEKDAY_PLURAL = ["Sundays", "Mondays", "Tuesdays", "Wednesdays", "Thursdays", "Fridays", "Saturdays"];
 
 export function filterCaptures(captures, filters, ov) {
@@ -68,7 +78,7 @@ export function filterCaptures(captures, filters, ov) {
   return captures.filter((c) => {
     const species = effectiveSpecies(c, ov);
     const tags = effectiveTags(c, ov);
-    if (filters.species !== "All" && species !== filters.species && !tags.includes(filters.species)) return false;
+    if (filters.species !== "All" && !speciesMatches(filters.species, species, tags)) return false;
     if (filters.camera !== "All" && c.camera !== filters.camera) return false;
     if (filters.tod === "day" && c.isNight) return false;
     if (filters.tod === "night" && !c.isNight) return false;
@@ -313,20 +323,40 @@ export function peakWindow(hours, span = 3) {
 
 // Per-species hourly activity, peak window and day/night mix (top N by volume).
 // This is the core of "when is each species most active".
+const activityRow = (species) => ({ species, color: pickColor(species), hours: new Array(24).fill(0), day: 0, night: 0, total: 0 });
+const countInto = (row, c) => {
+  row.hours[c.date.getHours()]++;
+  c.isNight ? row.night++ : row.day++;
+  row.total++;
+};
+const finishRow = (r) => ({ ...r, peak: peakWindow(r.hours), dayPct: Math.round((r.day / r.total) * 100) });
+
 export function speciesActivity(captures, ov, top = 6) {
   const m = new Map();
   for (const c of captures) {
     const s = effectiveSpecies(c, ov);
-    let row = m.get(s);
-    if (!row) { row = { species: s, color: speciesColor(s), hours: new Array(24).fill(0), day: 0, night: 0, total: 0 }; m.set(s, row); }
-    row.hours[c.date.getHours()]++;
-    c.isNight ? row.night++ : row.day++;
-    row.total++;
+    if (!m.has(s)) m.set(s, activityRow(s));
+    countInto(m.get(s), c);
   }
   return [...m.values()]
     .sort((a, b) => b.total - a.total)
     .slice(0, top)
-    .map((r) => ({ ...r, peak: peakWindow(r.hours), dayPct: Math.round((r.day / r.total) * 100) }));
+    .map(finishRow);
+}
+
+// Every deer together (Buck, Doe and Deer), or null when they're all tagged one
+// way, since that row would just repeat the species row.
+export function allDeerActivity(captures, ov) {
+  const row = activityRow(ALL_DEER);
+  const kinds = new Set();
+  for (const c of captures) {
+    const species = effectiveSpecies(c, ov);
+    const tags = effectiveTags(c, ov);
+    if (!isDeer(species, tags)) continue;
+    kinds.add(species);
+    countInto(row, c);
+  }
+  return row.total && kinds.size > 1 ? finishRow(row) : null;
 }
 
 export function tempBuckets(captures) {

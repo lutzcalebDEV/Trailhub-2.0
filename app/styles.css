@@ -515,6 +515,7 @@ h1,h2,h3,h4 { line-height: 1.18; letter-spacing: -0.015em; font-weight: 700; }
 .actrow__head { display: flex; align-items: center; gap: 10px; margin-bottom: 7px; }
 .actrow__name { font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; }
 .actrow__peak { font-size: 12px; color: var(--text-muted); }
+.actrow__hint { font-size: 11.5px; font-weight: 500; color: var(--text-faint); }
 .actrow__total { margin-left: auto; font-size: 12.5px; font-weight: 700; color: var(--text-muted); font-variant-numeric: tabular-nums; }
 .hourstrip { display: flex; align-items: flex-end; gap: 2px; height: 40px; }
 .hourstrip__c { flex: 1; height: 100%; display: flex; align-items: flex-end; border-radius: 3px; background: var(--surface-3); overflow: hidden; }

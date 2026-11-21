@@ -3,7 +3,7 @@ import { html, useState, useEffect, useRef, Fragment, createPortal } from "./rea
 import { Icon, BrandMark } from "./icons.js";
 import { IconBtn, Select, Segmented, Switch, Chip, edgeBackHere, useSheetDrag } from "./ui.js";
 import { speciesColor, LS, labelHour, getScrollY, faceIdName, isoDay } from "./core.js";
-import { RANGE_OPTIONS, rangeLabel, WEEKDAY_PLURAL, NOT_GAME } from "./analytics.js";
+import { RANGE_OPTIONS, rangeLabel, WEEKDAY_PLURAL, NOT_GAME, ALL_DEER, ALL_DEER_HINT, DEER_KINDS, pickColor } from "./analytics.js";
 import { UserMenu } from "./account.js";
 
 const cx = (...xs) => xs.filter(Boolean).join(" ");
@@ -448,9 +448,16 @@ export function FilterBar({ filters, set, cameras, speciesList, count, camName, 
     (filters.wday >= 0 ? 1 : 0);
   const counted = `${count.toLocaleString()} ${noun}${count === 1 ? "" : "s"}`;
 
+  // "All deer" sits under "All species" once there's more than one kind of deer.
+  const deerKinds = speciesList.filter((s) => DEER_KINDS.includes(s));
+  const offerAllDeer = deerKinds.length > 1 || filters.species === ALL_DEER;
   const controls = html`<${Fragment}>
     <${Select} value=${filters.species} onChange=${(v) => set({ species: v })} aria-label="Species"
-      options=${[{ value: "All", label: "All species" }, ...speciesList.map((s) => ({ value: s, label: s }))]} />
+      options=${[
+        { value: "All", label: "All species" },
+        ...(offerAllDeer ? [{ value: ALL_DEER, label: `All deer (${ALL_DEER_HINT})` }] : []),
+        ...speciesList.map((s) => ({ value: s, label: s })),
+      ]} />
     <${Select} value=${filters.camera} onChange=${(v) => set({ camera: v })} aria-label="Camera"
       options=${[{ value: "All", label: "All cameras" }, ...cameras.map((c) => ({ value: c.name, label: cn(c.name) }))]} />
     <${Select} value=${filters.range} onChange=${(v) => set({ range: v })} aria-label="Date range"
@@ -475,11 +482,14 @@ export function FilterBar({ filters, set, cameras, speciesList, count, camName, 
   // that filter is on, and a second tap takes it off again.
   const today = isoDay(new Date());
   const isToday = filters.range === "custom" && filters.from === today && filters.to === today;
-  const quickSpecies = speciesList.filter((sp) => !NOT_GAME.has(sp) && sp !== "Buck" && sp !== "Animal").slice(0, 5);
+  const quickSpecies = [
+    ...(offerAllDeer ? [ALL_DEER] : []),
+    ...speciesList.filter((sp) => !NOT_GAME.has(sp) && sp !== "Buck" && sp !== "Animal"),
+  ].slice(0, 5);
   const quickChips = !quick ? [] : [
     { k: "game", label: "Animals", on: !!gameOnly, tap: () => set({ gameOnly: !gameOnly }) },
     { k: "buck", label: "Bucks", dot: speciesColor("Buck"), on: filters.bucksOnly, tap: () => set({ bucksOnly: !filters.bucksOnly }) },
-    ...quickSpecies.map((sp) => ({ k: "sp-" + sp, label: sp, dot: speciesColor(sp), on: filters.species === sp,
+    ...quickSpecies.map((sp) => ({ k: "sp-" + sp, label: sp, dot: pickColor(sp), on: filters.species === sp,
       tap: () => set({ species: filters.species === sp ? "All" : sp }) })),
     { k: "today", label: "Today", on: isToday,
       tap: () => set(isToday ? { range: "all", from: "", to: "" } : { range: "custom", from: today, to: today }) },
@@ -490,7 +500,7 @@ export function FilterBar({ filters, set, cameras, speciesList, count, camName, 
   // The chips that say which filters are on. `dup` marks the ones a lit quick chip
   // already shows, which a phone leaves out.
   const chips = [];
-  if (filters.species !== "All") chips.push({ k: "sp", label: filters.species, dot: speciesColor(filters.species), dup: quickSpecies.includes(filters.species), clear: () => set({ species: "All" }) });
+  if (filters.species !== "All") chips.push({ k: "sp", label: filters.species, dot: pickColor(filters.species), dup: quickSpecies.includes(filters.species), clear: () => set({ species: "All" }) });
   if (filters.camera !== "All") chips.push({ k: "cam", label: cn(filters.camera), dup: cameras.length > 1, clear: () => set({ camera: "All" }) });
   if (filters.range !== "all") chips.push({ k: "range", label: isToday ? "Today" : rangeLabel(filters), dup: isToday, clear: () => set({ range: "all", from: "", to: "" }) });
   if (filters.tod !== "all") chips.push({ k: "tod", label: filters.tod === "day" ? "Daytime" : "Night", clear: () => set({ tod: "all" }) });

@@ -8,7 +8,7 @@ import { Icon } from "../icons.js";
 import { labelHour } from "../core.js";
 import {
   filterCaptures, weatherRates, animalActivity, NOT_GAME, hourHistogram, dayNightSplit, daylightPct, peakHour,
-  weekdayCounts, speciesByDayNight, speciesActivity, peakWindow,
+  weekdayCounts, speciesByDayNight, speciesActivity, allDeerActivity, peakWindow, ALL_DEER, ALL_DEER_HINT, DEER_KINDS,
   tempBuckets, moonCounts, cameraCounts, isoDayCounts,
 } from "../analytics.js";
 
@@ -56,7 +56,12 @@ export function Insights(app) {
   // them is the species picked.
   const others = sel ? filterCaptures(captures, { ...filters, species: "All", gameOnly: false }, ov) : filtered;
   const activityBase = sel && !NOT_GAME.has(sel) ? animalActivity(others, ov) : others;
-  const activity = speciesActivity(activityBase, ov, 6);
+  // "All deer" leads the list when deer are tagged more than one way, so the best
+  // time to see any deer reads at a glance.
+  const deerRow = allDeerActivity(activityBase, ov);
+  const activity = [...(deerRow ? [deerRow] : []), ...speciesActivity(activityBase, ov, 6)];
+  const lit = (sp) => sp === sel || (sel === ALL_DEER && DEER_KINDS.includes(sp));
+  const selName = sel === ALL_DEER ? "deer" : sel && sel.toLowerCase();
   const selPeak = sel ? peakWindow(hourHistogram(filtered)) : null;
   const dielLabel = (dp) => (dp >= 65 ? "mostly daytime" : dp <= 35 ? "mostly nocturnal" : "active day & night");
 
@@ -95,9 +100,9 @@ export function Insights(app) {
     ${sel && selPeak && html`<div className="besttime">
       <div className="besttime__ico"><${Icon} name="target" size=${22} /></div>
       <div>
-        <div className="besttime__k">Best time to catch ${sel}</div>
+        <div className="besttime__k">Best time to catch ${sel === ALL_DEER ? "any deer" : sel}</div>
         <div className="besttime__v">${windowLabel(selPeak)}</div>
-        <div className="besttime__sub">${selPeak.pct}% of ${sel.toLowerCase()} sightings fall in this window · ${dielLabel(daylightPct(filtered))}</div>
+        <div className="besttime__sub">${selPeak.pct}% of ${selName} sightings${sel === ALL_DEER ? ` (${ALL_DEER_HINT})` : ""} fall in this window · ${dielLabel(daylightPct(filtered))}</div>
       </div>
     </div>`}
 
@@ -110,11 +115,12 @@ export function Insights(app) {
       ${activity.length
         ? html`<${Fragment}>
             <div className="actclock">
-              ${activity.map((r) => html`<div key=${r.species} className=${"actrow" + (r.species === sel ? " is-sel" : "")}>
+              ${activity.map((r) => html`<div key=${r.species} className=${"actrow" + (lit(r.species) ? " is-sel" : "")}>
                 <div className="actrow__head">
                   <button className="actrow__name" title=${`Only ${r.species}`}
                     onClick=${() => setFilter({ species: r.species === sel ? "All" : r.species })}>
                     <span className="sdot" style=${{ background: r.color }} />${r.species}
+                    ${r.species === ALL_DEER && html`<span className="actrow__hint">${ALL_DEER_HINT}</span>`}
                   </button>
                   ${r.peak && html`<span className="actrow__peak">Peak ${windowLabel(r.peak)} · ${dielLabel(r.dayPct)}</span>`}
                   <span className="actrow__total tnum">${r.total}</span>
