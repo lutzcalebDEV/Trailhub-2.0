@@ -22,6 +22,7 @@ import { AlertsDialog } from "./alerts.js";
 import { FaceIdDialog, usePasskeySupport } from "./faceid.js";
 import { InstallHint } from "./install.js";
 import { Overview } from "./views/overview.js";
+import { DeerCast } from "./views/deercast.js";
 import { Gallery } from "./views/gallery.js";
 import { MapView } from "./views/mapview.js";
 import { Insights } from "./views/insights.js";
@@ -35,7 +36,7 @@ const STALE_SYNC_MS = 12 * 3600000;
 // data.js carries it for real, so the overlay only needs to outlive a pull run.
 const UPLOAD_EDIT_TTL_MS = 30 * 60000;
 
-const VIEW_COMPONENTS = { overview: Overview, gallery: Gallery, uploads: Uploads, bucks: Bucks, insights: Insights, map: MapView, review: Review };
+const VIEW_COMPONENTS = { overview: Overview, deercast: DeerCast, gallery: Gallery, uploads: Uploads, bucks: Bucks, insights: Insights, map: MapView, review: Review };
 
 // Every screen and photo has its own address, like screens in an app. The phone's
 // back gesture (or the browser's Back) steps back through the screens you visited,
@@ -628,7 +629,7 @@ function App() {
       return;
     }
     const before = new Set(data.captures.map((c) => c.id));
-    const fresh = await refresh();
+    const fresh = await refresh({ byHand: true });
     if (!fresh) { showToast("err", "Couldn’t reach the site — try again"); return; }
     const added = fresh.captures.filter((c) => !before.has(c.id)).length;
     showToast("ok", added ? `${added} new photo${added === 1 ? "" : "s"}` : "No new photos yet");
@@ -809,7 +810,7 @@ function App() {
     if (v !== view) clearFilters();
     setView(v);
   };
-  // Swipe from the left edge goes back from the pages on More (Map, Identify).
+  // Swipe from the left edge goes back from the pages on More (DeerCast, Map, Identify).
   useEdgeBack(MOBILE_MORE.includes(view) && !overlayOpen, swipeBack);
   const app = {
     more: {

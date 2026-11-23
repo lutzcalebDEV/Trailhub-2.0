@@ -7,7 +7,7 @@
 // Always trying the network first means a deploy is picked up on the next load
 // and the app's modules can never be served from two different versions. Map
 // tiles and fonts are other origins and are left to the browser cache.
-const VERSION = "vale-trails-v7";
+const VERSION = "vale-trails-v8";
 // Kept across app updates (only "vale-trails-v*" caches are replaced on update).
 const PHOTO_CACHE = "vale-photos";
 const STATE_CACHE = "vale-state";
@@ -21,6 +21,7 @@ const SHELL = [
   "./app/react.js",
   "./app/core.js",
   "./app/analytics.js",
+  "./app/deercast.js",
   "./app/shell.js",
   "./app/ui.js",
   "./app/icons.js",
@@ -33,6 +34,8 @@ const SHELL = [
   "./app/login.js",
   "./app/faceid.js",
   "./app/views/overview.js",
+  "./app/views/deercast.js",
+  "./app/views/windmap.js",
   "./app/views/gallery.js",
   "./app/views/uploads.js",
   "./app/views/bucks.js",

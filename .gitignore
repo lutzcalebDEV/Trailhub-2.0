@@ -35,4 +35,7 @@ cameras.json
 camera-names.json
 metadata.json
 weather.json
+forecast.json
+deercast-log.json
+stands.json
 _hd_probe.json

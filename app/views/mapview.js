@@ -14,8 +14,8 @@ const OSM_TILES = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 const OSM_CREDIT = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 // Aerial photos from the USGS National Map: public domain, no key, US only. Its
 // photos go to zoom 16 here; Leaflet enlarges them for the last two levels.
-const SAT_TILES = "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}";
-const SAT_CREDIT = 'Imagery: <a href="https://www.usgs.gov/programs/national-geospatial-program/national-map">USGS The National Map</a>';
+export const SAT_TILES = "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}";
+export const SAT_CREDIT = 'Imagery: <a href="https://www.usgs.gov/programs/national-geospatial-program/national-map">USGS The National Map</a>';
 
 // A marker: a circle sized by photo count, ringed when it's the chosen camera.
 function markerIcon(L, size, count, active) {
@@ -30,7 +30,7 @@ function markerIcon(L, size, count, active) {
 // instead of on every app start. Its stylesheet goes in before app/styles.css so the
 // app's .leaflet-* overrides still win. Both files are in the service worker shell.
 let leafletLoad = null;
-function loadLeaflet() {
+export function loadLeaflet() {
   if (window.L) return Promise.resolve(window.L);
   if (!leafletLoad) {
     leafletLoad = new Promise((resolve, reject) => {

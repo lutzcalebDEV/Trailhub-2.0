@@ -65,7 +65,7 @@ export const ALL_DEER = "All deer";
 export const DEER_KINDS = ["Buck", "Doe", "Deer"];
 export const ALL_DEER_HINT = "Buck, Doe & Deer";
 export const pickColor = (pick) => speciesColor(pick === ALL_DEER ? "Deer" : pick);
-const isDeer = (species, tags) => DEER_KINDS.some((k) => species === k || tags.includes(k));
+export const isDeer = (species, tags) => DEER_KINDS.some((k) => species === k || tags.includes(k));
 export const speciesMatches = (pick, species, tags) =>
   pick === ALL_DEER ? isDeer(species, tags) : species === pick || tags.includes(pick);
 
@@ -155,16 +155,16 @@ export function collapseBursts(captures, limit = Infinity, gapMs = 120000) {
   return out;
 }
 
-// Where and when to sit: the camera and 3-hour window with the most recent activity.
-// Sightings fade by half each week, so a pattern from last week beats an old one.
+// The busiest camera lately: the camera and 3-hour daylight window with the most
+// recent deer. Sightings fade by half each week, so last week's pattern beats an old
+// one. `light` is today's daylight ({ start, end }) and `has`, whether a photo fell in
+// its own day's.
 export const NOT_GAME = new Set(["Person", "Vehicle", "Empty"]);
 const MIN_SIGHTINGS = 8;
-export function bestSit(captures, ov, now = Date.now(), days = 21) {
-  const recent = captures.filter((c) =>
-    now - c.date.getTime() < days * 86400000 && !NOT_GAME.has(effectiveSpecies(c, ov)));
-  const bucks = collapseBursts(recent.filter((c) => effectiveSpecies(c, ov) === "Buck"));
-  const useBucks = bucks.length >= MIN_SIGHTINGS;
-  const events = useBucks ? bucks : collapseBursts(recent);
+export function bestSit(captures, ov, light, now = Date.now(), days = 21) {
+  if (!light) return null;
+  const events = collapseBursts(captures.filter((c) => now - c.date.getTime() < days * 86400000
+    && !c.uploadedBySite && isDeer(effectiveSpecies(c, ov), effectiveTags(c, ov)) && light.has(c.date)));
   if (events.length < MIN_SIGHTINGS) return null;
 
   const byCamera = new Map();
@@ -175,17 +175,19 @@ export function bestSit(captures, ov, now = Date.now(), days = 21) {
     row.score[h] += 0.5 ** ((now - c.date.getTime()) / (7 * 86400000));
     row.count[h]++;
   }
+  const first = new Date(light.start).getHours();
+  const last = new Date(light.end).getHours();
   let best = null;
   for (const [camera, row] of byCamera) {
-    for (let start = 0; start < 24; start++) {
-      const hours = [start, (start + 1) % 24, (start + 2) % 24];
-      const score = hours.reduce((s, h) => s + row.score[h], 0);
+    for (let start = first; start + 2 <= last; start++) {
+      const hours = [start, start + 1, start + 2];
+      const score = hours.reduce((t, h) => t + row.score[h], 0);
       if (!best || score > best.score) {
-        best = { camera, start, end: (start + 3) % 24, score, count: hours.reduce((s, h) => s + row.count[h], 0) };
+        best = { camera, start, end: start + 3, score, count: hours.reduce((t, h) => t + row.count[h], 0) };
       }
     }
   }
-  return { ...best, total: events.length, subject: useBucks ? "buck" : "animal" };
+  return best && best.count ? { ...best, total: events.length } : null;
 }
 
 // One profile per named buck. A sighting is a trigger, not a frame.

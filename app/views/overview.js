@@ -1,4 +1,4 @@
-// Vale Trails — Home: where to sit, how the cameras are doing, the newest deer,
+// Vale Trails — Home: the deer forecast, the busiest camera, how the cameras are doing, the newest deer,
 // then a short summary of activity.
 import { html } from "../react.js";
 import { Stat, Panel, Sparkbars, Histogram, Shot, Empty, Btn, CameraCard, Segmented } from "../ui.js";
@@ -8,6 +8,8 @@ import {
 } from "../analytics.js";
 import { AlertsNudge } from "../alerts.js";
 import { windowLabel } from "./insights.js";
+import { CastCard } from "./deercast.js";
+import { siteOf, daylight as sunWindow, inDaylight } from "../deercast.js";
 
 // "Deer" on Home means any deer: bucks, does, and deer nobody has told apart yet.
 const DEER = new Set(["Buck", "Doe", "Deer"]);
@@ -39,16 +41,19 @@ export function Overview(app) {
   const recent = collapseBursts(latestList, LATEST);
   const favorites = captures.filter((c) => c.favorite).slice(0, 6);
   const cams = cameraStatus(captures, data.cameras);
-  const sit = bestSit(captures, ov);
+  const site = siteOf(data);
+  const sit = bestSit(captures, ov, site && { ...sunWindow(new Date(), site), has: (d) => inDaylight(d, site) });
   const showCamera = (camera) => { setFilter({ camera }); setView("gallery"); };
   // The charts here count animals only, so the photos a bar opens are animals only.
   const go = (patch) => { setFilter({ ...patch, gameOnly: true }); setView("gallery"); };
 
   return html`<div className="col" style=${{ gap: 24 }}>
+    <${CastCard} ...${app} />
+
     ${sit && html`<div className="bestsit">
-      <span className="bestsit__k">Best bet</span>
+      <span className="bestsit__k">Busiest camera lately</span>
       <b>${camName(sit.camera)}, ${windowLabel(sit)}</b>
-      <span className="muted">${sit.count} of ${sit.total} recent ${sit.subject} sightings</span>
+      <span className="muted">${sit.count} of ${sit.total} daylight deer sightings in 21 days</span>
     </div>`}
 
     <div className="camcards">

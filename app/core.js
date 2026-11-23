@@ -2,7 +2,7 @@
 // Data model, species taxonomy, persistence, shared-tag sync and React hooks.
 // This preserves the original TrailHub data contract and localStorage keys so a
 // returning visitor keeps their theme, tags, archives and review progress.
-import { useState, useEffect, useRef, useCallback } from "./react.js";
+import { useState, useEffect, useRef, useCallback, useMemo } from "./react.js";
 
 /* ----------------------------- Species ---------------------------------- */
 // Recognized species and their accent color (CSS custom properties from styles.css).
@@ -153,6 +153,8 @@ function normalizePayload(d) {
     demo: !!d.demo,
     generatedAt: parseUtc(d.generatedAt),
     weatherHours: d.weatherHours || null,
+    forecast: d.forecast || null, // DeerCast (deercast.js)
+    stands: d.stands || {},
   };
 }
 
@@ -241,6 +243,28 @@ export async function fetchLatestData() {
   const data = normalizePayload(parseDataScript(text));
   rememberData(text);
   return data;
+}
+
+// The newest weather forecast for DeerCast, straight from the weather service, in the
+// form pull.py saves it. Only the rounded property point is sent. Resolves to null if
+// it can't be had; the copy in the photo list is used then.
+const FORECAST_VARS = ["temperature_2m", "precipitation", "pressure_msl", "wind_speed_10m",
+  "wind_direction_10m", "wind_gusts_10m", "precipitation_probability"];
+async function fetchForecast(data) {
+  const cam = (data.cameras || []).find((c) => c.latitude != null && c.longitude != null);
+  const at = data.forecast || (cam && { lat: cam.latitude, lng: cam.longitude });
+  if (!at || !Number.isFinite(at.lat) || !Number.isFinite(at.lng)) return null;
+  try {
+    const r = await fetch("https://api.open-meteo.com/v1/forecast"
+      + `?latitude=${at.lat.toFixed(2)}&longitude=${at.lng.toFixed(2)}&hourly=${FORECAST_VARS.join(",")}`
+      + "&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=GMT&past_days=7&forecast_days=9",
+      { cache: "no-store", referrerPolicy: "no-referrer", credentials: "omit", signal: AbortSignal.timeout(10000) });
+    if (!r.ok) return null;
+    const { hourly } = await r.json();
+    const hours = hourly.time.map((_, i) => FORECAST_VARS.map((v) => (hourly[v][i] == null ? "" : hourly[v][i])).join("|"));
+    if (!hours.length) return null;
+    return { fetchedAt: new Date().toISOString(), lat: at.lat, lng: at.lng, start: hourly.time[0] + "Z", hours };
+  } catch (e) { return null; }
 }
 
 export function loadInitialData() {
@@ -807,6 +831,7 @@ export const LS = {
   alertQuiet: "trailhub-alert-quiet",
   faceIdUsers: "trailhub-faceid-users",
   homeLatest: "trailhub-home-latest",
+  castHours: "trailhub-deercast-hours",
   alertsNudge: "trailhub-alerts-nudge",
 };
 
@@ -929,13 +954,18 @@ export function safeToReload() {
 export function useData(auth, onSignedOut, pollMs = 5 * 60 * 1000) {
   const [data, setData] = useState(loadInitialData);
   const [refreshing, setRefreshing] = useState(false);
+  // The forecast is fetched on opening and refreshing, at most every 10 minutes by
+  // itself and every minute by hand.
+  const [forecast, setForecast] = useState(null);
+  const forecastAt = useRef(0);
   const mounted = useRef(true);
   const signedOut = useRef(onSignedOut);
   signedOut.current = onSignedOut;
   const user = auth && auth.token ? auth.user : null;
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (opts) => {
     if (!user) return null;
+    const byHand = !!opts && opts.byHand === true;
     setRefreshing(true);
     try {
       const fresh = await fetchLatestData();
@@ -945,6 +975,15 @@ export function useData(auth, onSignedOut, pollMs = 5 * 60 * 1000) {
       const same = (prev) => prev.generatedAt && fresh.generatedAt &&
         prev.generatedAt.getTime() === fresh.generatedAt.getTime() && prev.captures.length === fresh.captures.length;
       if (mounted.current) setData((prev) => (same(prev) ? prev : fresh));
+      if (!document.hidden && Date.now() - forecastAt.current > (byHand ? 60000 : 600000)) {
+        const before = forecastAt.current;
+        forecastAt.current = Date.now();
+        const job = fetchForecast(fresh).then((f) => {
+          if (f && mounted.current) setForecast(f);
+          else if (!f) forecastAt.current = before; // try again next time
+        });
+        if (byHand) await job;
+      }
       return fresh;
     } catch (e) {
       if (e instanceof NotSignedIn && signedOut.current) signedOut.current();
@@ -954,7 +993,7 @@ export function useData(auth, onSignedOut, pollMs = 5 * 60 * 1000) {
 
   useEffect(() => {
     mounted.current = true;
-    if (!user) { setData(loadInitialData()); return undefined; }
+    if (!user) { setData(loadInitialData()); setForecast(null); forecastAt.current = 0; return undefined; }
     loadCachedData().then((kept) => {
       if (kept && mounted.current) setData((prev) => (prev.captures.length ? prev : kept));
     });
@@ -970,5 +1009,10 @@ export function useData(auth, onSignedOut, pollMs = 5 * 60 * 1000) {
     };
   }, [refresh, pollMs]);
 
-  return { data, refresh, refreshing };
+  const shown = useMemo(() => {
+    const kept = data.forecast;
+    const newer = forecast && !(kept && Date.parse(kept.fetchedAt) > Date.parse(forecast.fetchedAt));
+    return newer ? { ...data, forecast } : data;
+  }, [data, forecast]);
+  return { data: shown, refresh, refreshing };
 }

@@ -22,10 +22,11 @@ import sys
 from pull import HERE, make_r2_uploader
 
 PREFIX = "state/"
-# Written by pull.py and ai_tag.py.
-JOB_FILES = ["data.js", "store.json", "cameras.json", "weather.json", "ai-tags.json"]
-# Written by the Worker; the photo job reads them to bake edits into data.js.
-SITE_FILES = ["tags.json", "metadata.json", "uploads.json"]
+# Written by pull.py, ai_tag.py and deercast_log.mjs.
+JOB_FILES = ["data.js", "store.json", "cameras.json", "weather.json", "forecast.json", "deercast-log.json", "ai-tags.json"]
+# Written by the Worker (stands.json: by hand); the photo job only reads these, to
+# bake them into data.js.
+SITE_FILES = ["tags.json", "metadata.json", "uploads.json", "stands.json"]
 PREV_DATA = HERE / ".prev-data.js"
 HASHES = HERE / ".state-hashes"
 

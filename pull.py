@@ -45,6 +45,8 @@ CAMERA_FILE = HERE / "cameras.json"  # durable camera metadata for map rendering
 TAGS_FILE = HERE / "tags.json"     # user-applied tags/classifications (shared, baked into data.js)
 META_FILE = HERE / "metadata.json"  # per-photo metadata (notes, favorites, corrections; shared, baked into data.js)
 AI_TAGS_FILE = HERE / "ai-tags.json"  # labels from ai_tag.py, used only where nothing better exists
+FORECAST_FILE = HERE / "forecast.json"  # DeerCast: the last week and the next 8 days
+STANDS_FILE = HERE / "stands.json"  # DeerCast wind notes by camera; private, edited by hand
 WEATHER_FILE = HERE / "weather.json"  # hourly history from Open-Meteo, keyed by UTC hour
 UPLOADS_FILE = HERE / "uploads.json"  # photos added through the site, written by the Worker
 
@@ -1049,6 +1051,66 @@ def update_weather(captures):
     atomic_write_text(WEATHER_FILE, json.dumps(cache, separators=(",", ":")))
 
 
+# ---- DeerCast (the site's deer forecast, app/deercast.js) -------------------
+# The week behind is fetched too: "cooler than usual" needs something to compare with.
+_FORECAST_VARS = _WEATHER_VARS + ",wind_gusts_10m,precipitation_probability"
+FORECAST_MAX_AGE = 3 * 3600  # seconds between fetches
+
+
+def load_forecast():
+    try:
+        data = json.loads(FORECAST_FILE.read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) and data.get("hours") else None
+    except (OSError, ValueError):
+        return None
+
+
+def update_forecast():
+    """Refresh the hourly forecast when it's a few hours old. Never stops a pull."""
+    import urllib.request
+    now = dt.datetime.now(dt.timezone.utc)
+    old = load_forecast()
+    try:
+        if old and 0 <= (now - dt.datetime.fromisoformat(old["fetchedAt"])).total_seconds() < FORECAST_MAX_AGE:
+            return
+    except (KeyError, TypeError, ValueError):
+        pass
+    url = ("https://api.open-meteo.com/v1/forecast?"
+           + _WEATHER_QUERY.replace(_WEATHER_VARS, _FORECAST_VARS) + "&past_days=7&forecast_days=9")
+    try:
+        request = urllib.request.Request(url, headers={"User-Agent": "TrailHub/1.0"})
+        with urllib.request.urlopen(request, timeout=30) as response:
+            hourly = json.loads(response.read().decode("utf-8"))["hourly"]
+        columns = [hourly[v] for v in _FORECAST_VARS.split(",")]
+        rows = [[col[i] for col in columns] for i in range(len(hourly["time"]))]
+        # One short string per hour keeps data.js small; a missing value is blank.
+        data = {
+            "fetchedAt": now.isoformat(timespec="seconds"),
+            "lat": SITE_LATLNG[0], "lng": SITE_LATLNG[1],
+            "start": hourly["time"][0] + "Z",
+            "hours": ["|".join("" if v is None else f"{v:g}" for v in row) for row in rows],
+        }
+        if not rows:
+            raise ValueError("no hours returned")
+        atomic_write_text(FORECAST_FILE, json.dumps(data, separators=(",", ":")))
+    except Exception as e:
+        print(f"  [forecast] kept the last one: {e}")
+
+
+def load_stands():
+    """Wind notes by camera name: {"good": [...], "risky": [...], "avoid": [...]}."""
+    try:
+        data = json.loads(STANDS_FILE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    out = {}
+    for camera, winds in (data.items() if isinstance(data, dict) else []):
+        if isinstance(winds, dict):
+            out[str(camera)] = {k: [d for d in (winds.get(k) or []) if d in _COMPASS]
+                                for k in ("good", "risky", "avoid")}
+    return out
+
+
 def _wind_band(mph):
     if mph < 5:
         return "Under 5 mph"
@@ -1206,7 +1268,7 @@ def _recently_published(payload):
     if stamp.tzinfo is None:  # written before timestamps carried a timezone
         return False
     age = (dt.datetime.now(dt.timezone.utc) - stamp).total_seconds()
-    same = all(prev.get(k) == payload.get(k) for k in ("demo", "cameras", "captures", "weatherHours"))
+    same = all(prev.get(k) == payload.get(k) for k in ("demo", "cameras", "captures", "weatherHours", "forecast", "stands"))
     return same and age < HEARTBEAT_SECONDS
 
 
@@ -1268,6 +1330,12 @@ def write_data_js(captures, cameras=None, demo=False, tags_map=None, meta_map=No
     if weather and out_caps:
         payload["weatherHours"] = weather_hours(
             weather, weather_key(out_caps[-1]["date"]), weather_key(out_caps[0]["date"]))
+    if not demo:
+        forecast, stands = load_forecast(), load_stands()
+        if forecast:
+            payload["forecast"] = forecast
+        if stands:
+            payload["stands"] = stands
     if _recently_published(payload):
         print(f"{DATA_FILE.name} already up to date ({len(out_caps)} captures).")
         return
@@ -1608,6 +1676,7 @@ def run_pull(limit, inspect):
     save_store(store)
     save_cameras(camera_meta)
     update_weather(list(store.values()) + load_uploads())
+    update_forecast()
     write_data_js(list(store.values()), cameras=camera_meta, demo=False, tags_map=load_tags(), meta_map=load_metadata())
     print(f"\nStore: {before} -> {len(store)} captures (+{new_count} new, {skipped} skipped this run).")
     print("Done. Open index.html, or upload index.html + data.js + photos/ to Cloudflare.")

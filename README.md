@@ -18,8 +18,8 @@ just static files — no server, no AI, no credentials in the cloud.
 - `tags.json` — your photo tags/reclassifications (shared source of truth, baked into `data.js`)
 - `tag-worker.js` — optional Cloudflare Worker that saves tags for everyone (see "Shared tags")
 
-The site has seven pages: **Home** (camera status, the best bet for a sit, and the
-latest photos), **Photos** (everything from the cameras, grouped by day), **Uploads**
+The site has eight pages: **Home** (the deer forecast, the busiest camera, camera status
+and the latest photos), **DeerCast** (a 7-day deer movement forecast), **Photos** (everything from the cameras, grouped by day), **Uploads**
 (photos and videos people added), **Bucks** (a history for each
 deer you name), **Patterns** (when animals move, including by weather), **Map**, and
 **Identify** (put a name to untagged photos). Filters carry across Photos, Patterns
@@ -410,6 +410,15 @@ that line lists the field names SPYPOINT sent, so the extractor can be matched t
 - Anything you publish to the static site is public to anyone with the URL. Camera
   coordinates are rounded to about 1 km for that reason, but the photos themselves
   and this repo's history are public.
+- **DeerCast** is a starting estimate, not a tested prediction: time of day and the rut
+  count most and weather only nudges the score (`app/deercast.js`). The forecast is
+  refreshed every 3 hours by `pull.py` into `forecast.json`, and the app also gets the
+  newest one from Open-Meteo when it opens or is refreshed. Wind notes come from
+  `stands.json`, kept only in private storage (`state/stands.json`), in this form:
+  `{"<camera name>": {"good": ["W"], "risky": ["N"], "avoid": ["E"]}}`.
+- Once a day `deercast_log.mjs` saves that day's forecast for the days ahead to
+  `deercast-log.json` (private storage) and never changes it, so forecasts can be
+  checked later against what the cameras saw. Nothing on the site reads it yet.
 - Weather comes from [Open-Meteo](https://open-meteo.com/) (free, no key) for the
   whole property, not each camera. A `~` before a temperature means it's from that
   data because the photo's info bar couldn't be read.

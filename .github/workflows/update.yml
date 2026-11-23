@@ -27,6 +27,11 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Set up Node (saves the DeerCast forecast)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
       - name: Install dependencies
         run: pip install -r requirements.txt
 
@@ -58,6 +63,10 @@ jobs:
           # ...add optional AI labels (never allowed to stop new photos publishing)...
           python ai_tag.py || echo "::warning::AI tagging failed; photos still publish."
           python pull.py --rebuild
+
+          # Save what DeerCast says today about the days ahead, once a day, so it can
+          # later be checked against what the cameras saw.
+          node deercast_log.mjs || echo "::warning::DeerCast log failed; photos still publish."
 
           # ...and save it. Only the photo job's own files; site edits are the Worker's.
           python state_sync.py upload
