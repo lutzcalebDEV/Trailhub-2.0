@@ -73,9 +73,11 @@ export function CastCard(app) {
         <span className="cast__why">${day.why}${cast.stale ? " · forecast is out of date" : ""}</span>
       </span>
       <${Score} day=${day} />
-      <${Icon} name="chevronRight" size=${18} className="cast__chev" />
     </button>
     <${Week} days=${cast.days} onPick=${open} />
+    <button type="button" className="cast__more" onClick=${() => open(day.key)}>
+      <span>See hourly forecast and wind map</span><${Icon} name="chevronRight" size=${18} />
+    </button>
   </section>`;
 }
 
