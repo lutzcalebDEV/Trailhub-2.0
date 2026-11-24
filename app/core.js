@@ -1083,7 +1083,7 @@ export function reloadForDeploy(deployed) {
 export function safeToReload() {
   const a = document.activeElement;
   if (a && a.matches && a.matches("input, textarea, select, [contenteditable]")) return false;
-  return !document.querySelector(".lb, .modal, .drawer, .mapbox.is-full, .harvestform, .livewind");
+  return !document.querySelector(".lb, .modal, .drawer, .mapbox.is-full, .harvestform, .livewind, .asksheet");
 }
 
 export function useData(auth, onSignedOut, pollMs = 5 * 60 * 1000) {

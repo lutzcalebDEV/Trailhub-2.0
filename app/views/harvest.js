@@ -1,8 +1,9 @@
 // Vale Trails — Harvests: the deer taken, when and where. Shared with everyone signed
 // in; each person changes their own entries, and an admin can change any.
-import { html, useState, useEffect, useRef } from "../react.js";
-import { Btn, Empty, Panel, Stat, Segmented } from "../ui.js";
+import { html, useState, useEffect, useRef, createPortal } from "../react.js";
+import { Btn, Empty, Stat, Segmented, SwipeRow } from "../ui.js";
 import { Icon } from "../icons.js";
+import { confirmSheet, chooseSheet } from "../ask.js";
 import { isoDay, parseIsoDay, fmtDateLong, fmtTime, newUploadId, uploadPhoto, uploadThumb, uploadImageUrl, StorageFull } from "../core.js";
 import { siteOf, conditionsAt } from "../deercast.js";
 import { prepare } from "../upload.js";
@@ -146,15 +147,34 @@ function HarvestForm({ app, entry, startBuck, onDone }) {
     if (ok) onDone();
   };
   const remove = async () => {
-    if (!window.confirm("Delete this harvest for everyone?")) return;
+    if (!(await confirmSheet({ title: "Delete this harvest?", message: "It goes for everyone." }))) return;
     setBusy("deleting");
     const ok = await removeHarvest(entry.id);
     setBusy("");
     if (ok) onDone();
   };
 
-  return html`<form className="harvestform" onSubmit=${submit}>
-    <${Panel} title=${entry ? "Edit harvest" : "Log a harvest"}>
+  const sheet = useRef(null);
+  const close = () => { if (!busy) onDone(); };
+  const closeRef = useRef(close);
+  closeRef.current = close;
+  useEffect(() => {
+    const root = document.documentElement, before = root.style.overflow;
+    root.style.overflow = "hidden";
+    const onKey = (e) => { if (e.key === "Escape") closeRef.current(); };
+    const onPop = () => onDone();
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("popstate", onPop);
+    return () => { root.style.overflow = before; window.removeEventListener("keydown", onKey); window.removeEventListener("popstate", onPop); };
+  }, []);
+
+  return createPortal(html`<form className="harvestform" ref=${sheet} onSubmit=${submit} role="dialog" aria-modal="true" aria-label=${entry ? "Edit harvest" : "Log a harvest"}>
+    <div className="formbar">
+      <button type="button" disabled=${!!busy} onClick=${close}>Cancel</button>
+      <b>${entry ? "Edit harvest" : "New harvest"}</b>
+      <button type="submit" className="is-main" disabled=${!!busy}>${busy === "saving" ? "Saving" : "Save"}</button>
+    </div>
+    <div className="harvestform__body">
       <div className="harvestform__grid">
         <label className="field-row"><span>Date</span>
           <input className="input" type="date" required max=${isoDay(now)} value=${date} onInput=${(e) => setDate(e.target.value)} /></label>
@@ -167,7 +187,7 @@ function HarvestForm({ app, entry, startBuck, onDone }) {
       </div>
 
       ${kind === "Buck" && html`<label className="field-row"><span>Buck name (optional)</span>
-        <input className="input" list="harvest-bucks" maxLength=${40} value=${buck} placeholder="e.g. Big 8" onInput=${(e) => setBuck(e.target.value)} />
+        <input className="input" list="harvest-bucks" maxLength=${40} value=${buck} autoCapitalize="words" placeholder="e.g. Big 8" onInput=${(e) => setBuck(e.target.value)} />
         <datalist id="harvest-bucks">${(buckNames || []).map((n) => html`<option key=${n} value=${n} />`)}</datalist></label>`}
 
       <div className="harvestform__loc">
@@ -183,7 +203,7 @@ function HarvestForm({ app, entry, startBuck, onDone }) {
         <p className="form-note">${spot ? "Tap the map or drag the pin to adjust it." : "Choose a stand or tap the map where the deer was."}
           ${spot && html` <button type="button" className="lb__link" onClick=${() => setSpot(null)}>Clear pin</button>`}</p>
         <label className="field-row"><span>Place name (optional with a pin)</span>
-          <input className="input" maxLength=${60} value=${place} placeholder="e.g. Creek bottom" onInput=${(e) => setPlace(e.target.value)} /></label>
+          <input className="input" maxLength=${60} value=${place} autoCapitalize="words" placeholder="e.g. Creek bottom" onInput=${(e) => setPlace(e.target.value)} /></label>
       </div>
 
       <div className="harvestform__photo">
@@ -197,14 +217,9 @@ function HarvestForm({ app, entry, startBuck, onDone }) {
       <label className="field-row"><span>Notes (optional)</span>
         <textarea className="input" rows=${3} maxLength=${300} value=${notes} placeholder="Points, weight, weapon…" onInput=${(e) => setNotes(e.target.value)} /></label>
       ${error && html`<p className="form-error" role="alert">${error}</p>`}
-      <div className="harvestform__foot">
-        ${entry && html`<${Btn} type="button" icon="trash" variant="ghost" disabled=${!!busy} onClick=${remove}>${busy === "deleting" ? "Deleting" : "Delete"}</${Btn}>`}
-        <div className="spacer" />
-        <${Btn} type="button" disabled=${!!busy} onClick=${onDone}>Cancel</${Btn}>
-        <${Btn} type="submit" variant="primary" icon="check" disabled=${!!busy}>${busy === "saving" ? "Saving" : "Save"}</${Btn}>
-      </div>
-    </${Panel}>
-  </form>`;
+      ${entry && html`<button type="button" className="formdelete" disabled=${!!busy} onClick=${remove}>${busy === "deleting" ? "Deleting" : "Delete harvest"}</button>`}
+    </div>
+  </form>`, document.body);
 }
 
 function HarvestPhoto({ h, allCaptures, openLightbox }) {
@@ -228,18 +243,18 @@ export function Harvests(app) {
   const [startBuck] = useState(() => { const b = openWith; openWith = null; return b; });
   const [form, setForm] = useState(startBuck != null ? "new" : null); // null, "new", or an entry
   useEffect(() => { loadHarvests(); }, [loadHarvests]);
-  const close = () => { setForm(null); window.scrollTo(0, 0); };
-  if (form) return html`<${HarvestForm} app=${app} entry=${form === "new" ? null : form} startBuck=${startBuck} onDone=${close} />`;
+  const close = () => setForm(null);
+  const sheet = form && html`<${HarvestForm} app=${app} entry=${form === "new" ? null : form} startBuck=${startBuck} onDone=${close} />`;
 
   if (harvestsReady === "error" && !harvests.length) {
-    return html`<${Empty} icon="tag" title="Couldn't load harvests" message="Check your connection and try again."
+    return sheet || html`<${Empty} icon="tag" title="Couldn't load harvests" message="Check your connection and try again."
       action=${html`<${Btn} icon="refresh" onClick=${loadHarvests}>Try again</${Btn}>`} />`;
   }
-  if (harvestsReady === "loading" && !harvests.length) return html`<p className="faint">Loading harvests…</p>`;
+  if (harvestsReady === "loading" && !harvests.length) return sheet || html`<p className="faint">Loading harvests…</p>`;
   const list = [...harvests].sort((a, b) => whenOf(b).localeCompare(whenOf(a)));
   const add = html`<${Btn} variant="primary" icon="tag" onClick=${() => setForm("new")}>Log a harvest</${Btn}>`;
   if (!list.length) {
-    return html`<${Empty} icon="tag" title="No harvests yet" message="Log a deer with its date, time and location. Everyone signed in can see it." action=${add} />`;
+    return html`<div>${sheet}<${Empty} icon="tag" title="No harvests yet" message="Log a deer with its date, time and location. Everyone signed in can see it." action=${add} /></div>`;
   }
   const cur = season(isoDay(new Date()));
   const mine = list.filter((h) => season(h.date) === cur);
@@ -248,7 +263,18 @@ export function Harvests(app) {
   const seasons = [...new Set(list.map((h) => season(h.date)))];
   const canEdit = (h) => auth && (auth.admin || String(h.by).toLowerCase() === String(auth.user).toLowerCase());
 
+  const removeRow = async (h) => {
+    if (await confirmSheet({ title: "Delete this harvest?", message: "It goes for everyone." })) app.removeHarvest(h.id);
+  };
+  const menu = async (h) => {
+    const pick = await chooseSheet({ title: `${h.buck || h.kind}, ${fmtDateLong(parseIsoDay(h.date))}`,
+      options: [{ value: "edit", label: "Edit" }, { value: "delete", label: "Delete", danger: true }] });
+    if (pick === "edit") setForm(h);
+    else if (pick === "delete") removeRow(h);
+  };
+
   return html`<div className="col" style=${{ gap: 18 }}>
+    ${sheet}
     <div className="row">${add}</div>
     <div className="grid grid--stats">
       <${Stat} label="This season" value=${mine.length} sub=${seasonName(cur)} />
@@ -256,21 +282,25 @@ export function Harvests(app) {
       <${Stat} label="Does" value=${mine.filter((h) => h.kind === "Doe").length} sub="This season" />
     </div>
     ${spots.length > 0 && html`<${SpotMap} key=${spots.map((s) => s.id + s.lat + s.lng).join()} spots=${spots} />`}
-    ${seasons.map((y) => html`<${Panel} key=${y} title=${seasonName(y)}>
-      <ul className="harvests">
-        ${list.filter((h) => season(h.date) === y).map((h) => html`<li key=${h.id} className="harvest">
-          ${h.photo && html`<${HarvestPhoto} h=${h} allCaptures=${allCaptures} openLightbox=${openLightbox} />`}
-          <div className="harvest__body">
-            <b>${h.buck || h.kind} · ${h.hunter}</b>
-            <span>${fmtDateLong(parseIsoDay(h.date))}, ${timeLabel(h.time)}</span>
-            <span><${Icon} name="pin" size=${13} />${h.place || "Pinned on the map"}</span>
-            ${h.conditions && html`<span>${conditionsText(h.conditions)}</span>`}
-            ${h.notes && html`<p>${h.notes}</p>`}
+    ${seasons.map((y) => html`<section key=${y}>
+      <h2 className="grouphead">${seasonName(y)}</h2>
+      <ul className="inset harvests">
+        ${list.filter((h) => season(h.date) === y).map((h) => html`<${SwipeRow} key=${h.id} actions=${canEdit(h) ? [
+          { label: "Edit", icon: "pencil", onClick: () => setForm(h) }, { label: "Delete", icon: "trash", danger: true, onClick: () => removeRow(h) }] : []}>
+          <div className="harvest">
+            ${h.photo && html`<${HarvestPhoto} h=${h} allCaptures=${allCaptures} openLightbox=${openLightbox} />`}
+            <div className="harvest__body">
+              <b>${h.buck || h.kind} · ${h.hunter}</b>
+              <span>${fmtDateLong(parseIsoDay(h.date))}, ${timeLabel(h.time)}</span>
+              <span><${Icon} name="pin" size=${13} />${h.place || "Pinned on the map"}</span>
+              ${h.conditions && html`<span>${conditionsText(h.conditions)}</span>`}
+              ${h.notes && html`<p>${h.notes}</p>`}
+            </div>
           </div>
-          ${canEdit(h) && html`<${Btn} sm icon="pencil" onClick=${() => { setForm(h); window.scrollTo(0, 0); }}>Edit</${Btn}>`}
-        </li>`)}
+          ${canEdit(h) && html`<button type="button" className="insetrow__more" aria-label="More" onClick=${() => menu(h)}><${Icon} name="more" size=${20} /></button>`}
+        </${SwipeRow}>`)}
       </ul>
-    </${Panel}>`)}
+    </section>`)}
     <p className="form-note">This is your family's record. It doesn't report the harvest to the state.</p>
   </div>`;
 }

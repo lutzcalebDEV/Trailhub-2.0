@@ -2284,3 +2284,97 @@ button.harvest__photo { cursor: pointer; }
 .livewind .pagewait { min-height: 0; flex: 1; }
 @keyframes pagespin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .pagewait i { animation: none; } }
+
+/* ---------------------------- iPhone feel, part 2 --------------------------- */
+/* Action sheets (app/ask.js) */
+.asksheet { position: fixed; inset: 0; z-index: 300; display: flex; align-items: flex-end; justify-content: center; padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px)); background: rgba(0,0,0,0); transition: background-color .24s ease; }
+.asksheet.is-in { background: rgba(0,0,0,.46); }
+.asksheet__box { width: 100%; max-width: 430px; display: flex; flex-direction: column; gap: 8px; transform: translateY(calc(100% + 40px)); transition: transform .34s cubic-bezier(.2,.9,.25,1); }
+.asksheet.is-in .asksheet__box { transform: none; }
+.asksheet__group, .asksheet__cancel { border-radius: 15px; overflow: hidden; background: var(--surface-2); }
+.asksheet__head { display: flex; flex-direction: column; gap: 3px; padding: 15px 18px; text-align: center; font-size: 13.5px; color: var(--text-muted); overflow-wrap: anywhere; }
+.asksheet__head b { font-size: 14px; font-weight: 650; color: var(--text); }
+.asksheet__btn { display: block; width: 100%; min-height: 57px; padding: 8px 16px; border: 0; background: none; color: var(--accent); font: inherit; font-size: 19px; cursor: pointer; }
+.asksheet__group .asksheet__btn { border-top: 1px solid var(--border-2); }
+.asksheet__group .asksheet__btn:first-child { border-top: 0; }
+.asksheet__btn.is-danger { color: var(--danger); }
+.asksheet__cancel { background: var(--surface-2); font-weight: 650; }
+.asksheet__btn:active { background: var(--surface-3); }
+.asksheet__btn:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
+.asksheet__btn:focus:not(:focus-visible) { outline: none; }
+@media (min-width: 901px) { .asksheet { align-items: center; } .asksheet__box { max-width: 340px; transform: scale(.94); opacity: 0; transition: transform .18s ease, opacity .18s ease; } .asksheet.is-in .asksheet__box { opacity: 1; } .asksheet__btn { min-height: 48px; font-size: 16px; } }
+
+/* Grouped lists with swipe actions */
+.grouphead { margin: 0 4px 8px; font-size: 14px; font-weight: 600; color: var(--text-muted); }
+.groupfoot { margin: 8px 4px 0; font-size: 13px; color: var(--text-muted); }
+.inset { list-style: none; margin: 0; padding: 0; overflow: hidden; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); }
+.swiperow { position: relative; overflow: hidden; }
+.swiperow + .swiperow::before { content: ""; position: absolute; z-index: 2; top: 0; right: 0; left: 68px; height: 1px; background: var(--border); }
+.swiperow__face { position: relative; z-index: 1; display: flex; align-items: stretch; background: var(--surface); touch-action: pan-y; }
+.swiperow__acts { position: absolute; top: 0; right: 0; bottom: 0; display: flex; }
+.swiperow__acts button { width: 76px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border: 0; background: var(--border-strong); color: var(--text); font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+.swiperow__acts button.is-danger { background: #d92d2d; color: #fff; }
+@media (hover: hover) and (pointer: fine) { .swiperow__acts { visibility: hidden; } }
+.insetrow { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; min-height: 62px; padding: 10px 0 10px 14px; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.insetrow__text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.insetrow__text b { font-size: 16px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.insetrow__text small { font-size: 13px; line-height: 1.35; color: var(--text-muted); }
+.insetrow__more { flex: none; width: 48px; display: grid; place-items: center; border: 0; background: none; color: var(--text-faint); cursor: pointer; }
+.insetrow:active, .insetrow__more:active { background: var(--surface-2); }
+.inset .harvest { flex: 1; min-width: 0; padding: 13px 0 13px 14px; border: 0; flex-wrap: nowrap; }
+.inset .harvest:first-child { padding-top: 13px; }
+.inset .harvest__body b { font-size: 16px; font-weight: 600; }
+
+/* Full-screen form with Cancel and Save at the top */
+.harvestform { position: fixed; inset: 0; z-index: 130; display: flex; flex-direction: column; background: var(--bg); animation: sheetrise .36s cubic-bezier(.2,.9,.25,1); }
+.formbar { flex: none; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; min-height: 52px; padding: env(safe-area-inset-top, 0px) 8px 0; border-bottom: 1px solid var(--border); background: var(--surface); }
+.formbar b { font-size: 17px; font-weight: 650; }
+.formbar button { justify-self: start; min-height: 48px; padding: 0 10px; border: 0; background: none; color: var(--accent); font: inherit; font-size: 17px; cursor: pointer; }
+.formbar button.is-main { justify-self: end; font-weight: 650; }
+.formbar button:disabled { opacity: .45; }
+.formbar button:active { opacity: .5; }
+.harvestform__body { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 18px; width: 100%; max-width: 640px; margin: 0 auto; padding: 18px 16px calc(28px + env(safe-area-inset-bottom, 0px)); }
+.harvestform .input { min-height: 48px; font-size: 16px; border-radius: 12px; }
+.harvestform .segmented { align-self: stretch; }
+.formdelete { min-height: 50px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); color: var(--danger); font: inherit; font-size: 17px; cursor: pointer; }
+.formdelete:active { background: var(--surface-2); }
+@keyframes sheetrise { from { transform: translateY(100%); } }
+.livewind { animation: sheetrise .36s cubic-bezier(.2,.9,.25,1); }
+@media (min-width: 901px) { .harvestform, .livewind { animation: fade .18s ease; } }
+@media (prefers-reduced-motion: reduce) { .harvestform, .livewind { animation: none; } .asksheet, .asksheet__box, .segmented::before { transition: none !important; } }
+
+/* The segmented highlight slides */
+.segmented { position: relative; }
+.segmented[data-on] button { flex: 1 1 0; position: relative; z-index: 1; min-width: 0; justify-content: center; }
+.segmented[data-on] button.is-active, [data-theme="light"] .segmented[data-on] button.is-active { background: none; box-shadow: none; }
+.segmented[data-on]::before { content: ""; position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc((100% - 6px - (var(--n) - 1) * 2px) / var(--n)); transform: translateX(calc(var(--i) * (100% + 2px))); border-radius: calc(var(--r-md) - 3px); background: var(--surface-hover); box-shadow: 0 1px 4px rgba(0,0,0,.22); transition: transform .28s cubic-bezier(.2,.85,.25,1); }
+[data-theme="light"] .segmented[data-on]::before { background: #fff; }
+
+/* See-through controls over maps and photos */
+.mapbox__pill, .mapbox__move, .movebar, .mapbox__menu { -webkit-backdrop-filter: saturate(1.6) blur(18px); backdrop-filter: saturate(1.6) blur(18px); background: color-mix(in srgb, var(--surface) 82%, transparent); }
+.livewind__round, .livewind__badge, .livewind__tile:not([aria-pressed="true"]), .windmap__badge { -webkit-backdrop-filter: saturate(1.6) blur(16px); backdrop-filter: saturate(1.6) blur(16px); background: rgba(14,18,16,.74); }
+.livewind__panel { border-radius: 18px 18px 0 0; margin-top: -16px; position: relative; z-index: 700; padding-top: 14px; }
+.livewind__add, .livewind__side { bottom: 42px; }
+.livewind .leaflet-bottom { bottom: 16px; }
+@media (orientation: landscape) and (max-height: 520px) { .livewind__panel { border-radius: 0; margin-top: 0; } .livewind__add, .livewind__side { bottom: 28px; } .livewind .leaflet-bottom { bottom: 0; } }
+.mobilenav .is-active svg { fill: color-mix(in srgb, currentColor 18%, transparent); }
+
+/* Controls don't select text or pop up menus, dim under a finger, and don't stay
+   highlighted after it lifts. */
+.cast, .castacts, .castwins, .castpage__bar, .castcurve, .livewind, .mapbox__tools, .mapbox__move, .inset, .linkrow, .castdetails summary,
+.formbar, .harvestform__chips, .asksheet, .windmap { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.harvestform input, .harvestform textarea, .livewind input { -webkit-user-select: text; user-select: text; }
+@media (hover: none) {
+  .cast__main:hover, .cast__more:hover, .cast__day:not(.is-active):hover { background: none; }
+  .linkrow:hover { background: var(--surface); }
+  .mapbox__menu button:hover { background: none; }
+  .cast__main:active, .cast__more:active, .cast__day:active, .linkrow:active, .mapbox__menu button:active, .livewind__row:active, .castdetails summary:active { background: var(--surface-2); }
+  .mapbox__pill, .mapbox__move, .livewind__round, .livewind__tile, .livewind__add, .livewind__play, .livewind__icon, .livewind__hour, .castwin, .formdelete { transition: transform .12s ease, opacity .12s ease; }
+  .mapbox__pill:active, .mapbox__move:active, .livewind__round:active, .livewind__tile:active, .livewind__add:active, .livewind__play:active, .livewind__icon:active, .castwin:active { transform: scale(.95); opacity: .85; }
+}
+@media (max-width: 900px) { .livewind input { font-size: 16px; min-height: 48px; border-radius: 12px; } .segmented button { min-height: 34px; } }
+
+.segmented[data-on] { display: inline-grid; grid-auto-flow: column; grid-auto-columns: 1fr; }
+.segmented[data-on] button { white-space: nowrap; }
+.windmap .windpin b { max-width: 96px; }
+[data-theme="dark"] .input { color-scheme: dark; }

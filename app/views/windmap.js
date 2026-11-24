@@ -198,7 +198,7 @@ export function WindMap({ stands, site, wind, time, onOpen }) {
     const group = L.layerGroup().addTo(map);
     stands.forEach((s) => {
       const el = makePin(s);
-      if (s.rating) { const r = document.createElement("span"); r.textContent = s.rating.text; el.append(r); }
+      if (s.rating && !s.camera) { const r = document.createElement("span"); r.textContent = s.rating.text; el.append(r); }
       L.marker([s.latitude, s.longitude], { interactive: false, keyboard: false,
         icon: L.divIcon({ className: "", iconSize: [0, 0], html: el }) }).addTo(group);
     });

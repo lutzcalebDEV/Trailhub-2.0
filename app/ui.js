@@ -3,6 +3,7 @@
 // to the classes defined in styles.css.
 import { html, useEffect, useLayoutEffect, useRef, useState, Fragment } from "./react.js";
 import { Icon } from "./icons.js";
+import { confirmSheet } from "./ask.js";
 import {
   speciesColor, fmtDate, fmtDateTime, timeAgo, labelHour, isoDay, TAG_OPTIONS, toLocalInput, canEditUpload,
 } from "./core.js";
@@ -40,7 +41,8 @@ export function Chip({ active, dotColor, onClear, children, className = "", ...r
 
 // An option with only an icon gets its `title` as the name screen readers read out.
 export function Segmented({ value, onChange, options, label }) {
-  return html`<div className="segmented" role="group" aria-label=${label}>
+  const at = options.findIndex((o) => o.value === value);
+  return html`<div className="segmented" role="group" aria-label=${label} style=${{ "--n": options.length, "--i": Math.max(0, at) }} data-on=${at >= 0 ? "1" : undefined}>
     ${options.map((o) => html`<button
       key=${o.value}
       className=${value === o.value ? "is-active" : ""}
@@ -168,6 +170,78 @@ export function Dialog({ title, label, icon, wide, onClose, children }) {
 }
 
 const coarsePointer = () => typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
+
+/* ------------------------------- Swipe row -------------------------------- */
+// A list row that slides left under a finger to show its actions, as in iPhone lists.
+// `actions`: [{ label, icon, danger, onClick }]. One row is open at a time. With a mouse
+// nothing slides; the row's own menu has the same actions.
+let openRow = null;
+const ACTION_PX = 76;
+export function SwipeRow({ actions, className = "", children }) {
+  const ref = useRef(null);
+  const room = actions.length * ACTION_PX;
+  const state = useRef({ x: 0 });
+  const place = (x, ease) => {
+    const el = ref.current;
+    if (!el) return;
+    state.current.x = x;
+    el.style.transition = ease ? "transform .28s cubic-bezier(.2,.8,.2,1)" : "none";
+    el.style.transform = x ? `translateX(${x}px)` : "";
+  };
+  const close = useRef(() => place(0, true));
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || !room) return undefined;
+    let start = null, sliding = false;
+    const down = (e) => {
+      if (openRow && openRow !== close) { openRow.current(); openRow = null; }
+      if (e.touches.length !== 1 || e.touches[0].clientX < 28) { start = null; return; } // the left edge is for going back
+      start = { x: e.touches[0].clientX, y: e.touches[0].clientY, from: state.current.x };
+      sliding = false;
+    };
+    const move = (e) => {
+      if (!start) return;
+      const dx = e.touches[0].clientX - start.x, dy = e.touches[0].clientY - start.y;
+      if (!sliding) {
+        if (Math.abs(dy) > 8 && Math.abs(dy) > Math.abs(dx)) { start = null; return; }
+        if (Math.abs(dx) < 10) return;
+        sliding = true;
+      }
+      if (e.cancelable) e.preventDefault();
+      const want = start.from + dx;
+      place(want > 0 ? 0 : want < -room ? -room + (want + room) * 0.25 : want, false);
+    };
+    const up = (e) => {
+      if (sliding) {
+        const show = state.current.x < -room * 0.4;
+        place(show ? -room : 0, true);
+        openRow = show ? close : null;
+        if (e.cancelable) e.preventDefault(); // the slide isn't a tap
+      }
+      start = null; sliding = false;
+    };
+    el.addEventListener("touchstart", down, { passive: true });
+    el.addEventListener("touchmove", move, { passive: false });
+    el.addEventListener("touchend", up, { passive: false });
+    el.addEventListener("touchcancel", up, { passive: false });
+    return () => {
+      if (openRow === close) openRow = null;
+      el.removeEventListener("touchstart", down); el.removeEventListener("touchmove", move);
+      el.removeEventListener("touchend", up); el.removeEventListener("touchcancel", up);
+    };
+  }, [room]);
+  // A tap on an open row closes it instead of opening what's in it.
+  const onClickCapture = (e) => {
+    if (state.current.x < 0) { e.stopPropagation(); e.preventDefault(); place(0, true); openRow = null; }
+  };
+  return html`<li className=${cx("swiperow", className)}>
+    ${room > 0 && html`<div className="swiperow__acts" aria-hidden="true">
+      ${actions.map((a) => html`<button type="button" tabIndex=${-1} key=${a.label} className=${a.danger ? "is-danger" : ""}
+        onClick=${() => { place(0, true); openRow = null; a.onClick(); }}><${Icon} name=${a.icon} size=${19} /><span>${a.label}</span></button>`)}
+    </div>`}
+    <div className="swiperow__face" ref=${ref} onClickCapture=${onClickCapture}>${children}</div>
+  </li>`;
+}
 
 /* ------------------------------ Containers ------------------------------ */
 export function SecHead({ icon, title, children }) {
@@ -660,7 +734,7 @@ export function UploadEdit({ capture, cameras, camName, auth, onSignIn, onEdit, 
     setBusy(false);
   };
   const remove = async () => {
-    if (!window.confirm("Delete this upload for everyone? Its comments and notes go with it. This can't be undone.")) return;
+    if (!(await confirmSheet({ title: "Delete this upload for everyone?", message: "Its comments and notes go with it. This can't be undone." }))) return;
     setBusy(true);
     await onDelete();
     setBusy(false);

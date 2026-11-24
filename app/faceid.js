@@ -3,6 +3,7 @@
 import { html, useState, useEffect, useCallback } from "./react.js";
 import { Btn, IconBtn, Dialog } from "./ui.js";
 import { Icon } from "./icons.js";
+import { confirmSheet } from "./ask.js";
 import {
   passkeyAvailable, getPasskeyTicket, passkeyTicketFresh, passkeyCreate, loadPasskeys, removePasskey,
   faceIdName, setFaceIdOn, timeAgo, NotSignedIn,
@@ -74,7 +75,7 @@ export function FaceIdDialog({ auth, onClose, onSignedOut, showToast }) {
   };
 
   const remove = async (id) => {
-    if (!window.confirm(`Remove this ${name} sign-in? That device will need the password again.`)) return;
+    if (!(await confirmSheet({ title: `Remove this ${name} sign-in?`, message: "That device will need the password again.", action: "Remove" }))) return;
     setBusy(id);
     try {
       setList(await removePasskey(auth, id));

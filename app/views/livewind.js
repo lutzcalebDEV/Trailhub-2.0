@@ -4,6 +4,7 @@
 import { html, useState, useEffect, useRef, useMemo, createPortal } from "../react.js";
 import { Btn } from "../ui.js";
 import { Icon } from "../icons.js";
+import { confirmSheet } from "../ask.js";
 import { LS, usePersistent, fmtTime } from "../core.js";
 import { parseHours, windOver, standWind } from "../deercast.js";
 import { calmAir, scentText } from "../terrain.js";
@@ -231,7 +232,7 @@ export function LiveWind({ app, site, start, show, onClose }) {
     if (saved && start) onClose(); else if (saved) { setEdit(null); setSel(saved.id); } else setError("That didn't save. Check your connection and try again.");
   };
   const remove = async () => {
-    if (!window.confirm(`Delete ${chosen.label} for everyone?`)) return;
+    if (!(await confirmSheet({ title: `Delete ${chosen.label}?`, message: "It goes for everyone." }))) return;
     setBusy("deleting");
     const ok = await removeStand(chosen.id);
     setBusy("");
@@ -268,7 +269,7 @@ export function LiveWind({ app, site, start, show, onClose }) {
       ${edit ? html`<form className="livewind__form" onSubmit=${save}>
           <div className="livewind__head"><b>${edit.id ? "Edit stand" : "Add a stand"}</b><small>Move the map until the crosshair is on the stand.</small></div>
           <label className="field-row"><span>Stand name</span>
-            <input className="input" maxLength=${40} value=${edit.name} placeholder="e.g. Creek ladder" onInput=${(e) => { setError(""); setEdit({ ...edit, name: e.target.value }); }} /></label>
+            <input className="input" maxLength=${40} value=${edit.name} autoCapitalize="words" enterKeyHint="done" placeholder="e.g. Creek ladder" onInput=${(e) => { setError(""); setEdit({ ...edit, name: e.target.value }); }} /></label>
           ${error && html`<p className="form-error" role="alert">${error}</p>`}
           <div className="livewind__acts">
             <${Btn} type="button" icon="target" disabled=${!!busy} onClick=${here}>${busy === "locating" ? "Finding you" : "My location"}</${Btn}>

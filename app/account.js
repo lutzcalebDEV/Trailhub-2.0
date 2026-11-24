@@ -1,6 +1,7 @@
 // Vale Trails — the account menu in the top bar and the admin's account approvals.
 import { html, useState, useEffect, useRef, useCallback } from "./react.js";
 import { Icon } from "./icons.js";
+import { confirmSheet } from "./ask.js";
 import { Btn, IconBtn, Dialog } from "./ui.js";
 import { loadAccounts, accountAction, timeAgo, NotSignedIn, faceIdName, loadPasswordInfo, changePassword, passwordProblem } from "./core.js";
 
@@ -199,7 +200,7 @@ export function AccountsDialog({ auth, uploads = [], onClose, onChanged, onUploa
   }, [auth]);
 
   const act = async (name, action, done, extra) => {
-    if (action === "remove" && !extra && !window.confirm(`Remove ${name}? They won't be able to sign in any more.`)) return;
+    if (action === "remove" && !extra && !(await confirmSheet({ title: `Remove ${name}?`, message: "They won't be able to sign in any more.", action: "Remove" }))) return;
     setBusy(name);
     try {
       const r = await accountAction(auth, name, action, extra);

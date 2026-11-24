@@ -287,7 +287,7 @@ export function useEdgeBack(enabled, onBack) {
     if (!enabled || !edgeBackHere()) return undefined;
     const EDGE = 24;
     const frame = () => document.querySelector(".main");
-    const blocked = (t) => t.closest && t.closest(".lb, .modal, .drawer, .scrim, .mobilenav, .leaflet-container");
+    const blocked = (t) => t.closest && t.closest(".lb, .modal, .drawer, .scrim, .mobilenav, .leaflet-container, .livewind, .harvestform, .asksheet");
     let g = null;
     const onStart = (e) => {
       g = null;
@@ -353,7 +353,7 @@ export function PullToRefresh({ onRefresh }) {
   const busyRef = useRef(false);
   useEffect(() => {
     const phone = window.matchMedia("(max-width: 900px)");
-    const blocked = (t) => t.closest && t.closest(".lb, .modal, .drawer, .livewind, .leaflet-container, .scrim, input, textarea, select");
+    const blocked = (t) => t.closest && t.closest(".lb, .modal, .drawer, .livewind, .harvestform, .asksheet, .leaflet-container, .scrim, input, textarea, select");
     const onStart = (e) => {
       start.current = null;
       if (!phone.matches || busyRef.current || e.touches.length !== 1 || getScrollY() > 0) return;

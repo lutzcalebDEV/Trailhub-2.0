@@ -19,6 +19,7 @@ const P = {
   parcels: html`<g><path d="M3.5 5.5 20 3.5l.5 16-17 1Z"/><path d="m11.5 4.5.6 15.6M3.5 13l8.3-.8M12 9.5l8.3-.8"/></g>`,
   // A ladder stand.
   stand: html`<g><path d="M8 3v18M14 3v18"/><path d="M8 8h6M8 12.5h6M8 17h6"/><path d="M14 8h6v-3.5"/></g>`,
+  more: html`<g fill="currentColor" stroke="none"><circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></g>`,
   thermo: html`<path d="M14 14.8V5a2 2 0 0 0-4 0v9.8a4 4 0 1 0 4 0Z"/>`,
   download: html`<g><path d="M12 3v12"/><path d="m7 10.5 5 5 5-5"/><path d="M5 21h14"/></g>`,
   play: html`<path d="M8 5.5v13l10.5-6.5Z"/>`,
