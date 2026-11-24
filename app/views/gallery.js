@@ -2,6 +2,7 @@
 import { html, useState, useMemo, useEffect, useRef, Fragment } from "../react.js";
 import { FilterBar, defaultFilters } from "../shell.js";
 import { Segmented, Select, Shot, Empty, Btn } from "../ui.js";
+import { Icon } from "../icons.js";
 import { effectiveSpecies, TAG_OPTIONS, fmtDateLong, fmtTime, isoDay } from "../core.js";
 import { collapseBursts } from "../analytics.js";
 
@@ -31,7 +32,7 @@ export function groupByDay(items) {
 export function Gallery(app) {
   const {
     filtered, filters, setFilter, spList, data, ov,
-    gridSize, setGridSize, openLightbox, camName, bulkAssign,
+    gridSize, setGridSize, openLightbox, camName, bulkAssign, setView,
   } = app;
   const [newestFirst, setNewestFirst] = useState(true);
   // Kept when leaving the tab, so Back returns to the same spot in a long list.
@@ -131,6 +132,10 @@ export function Gallery(app) {
         ${selecting ? "Cancel" : "Select"}
       </${Btn}>
     </${FilterBar}>
+
+    ${filters.species === "Buck" && html`<button type="button" className="linkrow" onClick=${() => setView("bucks")}>
+      <span>Named bucks and their history</span><${Icon} name="chevronRight" size=${18} />
+    </button>`}
 
     ${sorted.length === 0
       ? html`<${Empty} icon="search" title="No matching photos"

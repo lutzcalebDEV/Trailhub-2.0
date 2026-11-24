@@ -283,6 +283,9 @@ export async function cachedHarvests() {
     return (hit && apiAuth && harvestList(await hit.json())) || [];
   } catch (e) { return []; }
 }
+// An uploaded photo's private address, before the photo list includes it.
+export const uploadImageUrl = (id) =>
+  `${TAGS_API}/media/${encodeURIComponent(id)}.jpg?m=${encodeURIComponent(mediaPass ? mediaPass.token : "")}`;
 export async function postHarvest(body, auth) {
   const r = await postJSON(TAGS_API + "/harvests", body, auth);
   if (body.remove ? r.removed !== body.remove : !(r.harvest && r.harvest.id)) throw new Error("Not saved");
@@ -885,6 +888,7 @@ export const LS = {
   homeLatest: "trailhub-home-latest",
   castHours: "trailhub-deercast-hours",
   mapParcels: "trailhub-map-parcels",
+  mapHarvests: "trailhub-map-harvests",
   alertsNudge: "trailhub-alerts-nudge",
 };
 

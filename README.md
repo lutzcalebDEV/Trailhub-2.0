@@ -18,8 +18,8 @@ just static files — no server, no AI, no credentials in the cloud.
 - `tags.json` — your photo tags/reclassifications (shared source of truth, baked into `data.js`)
 - `tag-worker.js` — optional Cloudflare Worker that saves tags for everyone (see "Shared tags")
 
-The site has nine pages: **Home** (the deer forecast, the busiest camera, camera status
-and the latest photos), **DeerCast** (a 7-day deer movement forecast), **Photos** (everything from the cameras, grouped by day), **Uploads**
+The site has nine pages: **Home** (the deer forecast, camera status and the
+latest photos), **DeerCast** (a 7-day deer movement forecast), **Photos** (everything from the cameras, grouped by day), **Uploads**
 (photos and videos people added), **Bucks** (a history for each
 deer you name), **Patterns** (when animals move, including by weather), **Map**, and
 **Identify** (put a name to untagged photos). Filters carry across Photos, Patterns

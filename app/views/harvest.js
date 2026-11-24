@@ -3,8 +3,9 @@
 import { html, useState, useEffect, useRef } from "../react.js";
 import { Btn, Empty, Panel, Stat, Segmented } from "../ui.js";
 import { Icon } from "../icons.js";
-import { isoDay, parseIsoDay, fmtDateLong, fmtTime } from "../core.js";
-import { siteOf } from "../deercast.js";
+import { isoDay, parseIsoDay, fmtDateLong, fmtTime, newUploadId, uploadPhoto, uploadThumb, uploadImageUrl, StorageFull } from "../core.js";
+import { siteOf, conditionsAt } from "../deercast.js";
+import { prepare } from "../upload.js";
 import { loadLeaflet, SAT_TILES, SAT_CREDIT } from "./mapview.js";
 
 const hhmm = (d) => `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
@@ -66,8 +67,19 @@ function SpotMap({ spots, center, onPick }) {
 }
 
 /* ---------------------------------- Form ---------------------------------- */
-function HarvestForm({ app, entry, onDone }) {
-  const { data, camName, auth, saveHarvest, removeHarvest } = app;
+// A photo goes up like any other upload (shrunk, its GPS removed), listed under "Other
+// camera" so it never counts as a camera sighting.
+async function sendPhoto(file, when, kind, buck, auth) {
+  const id = newUploadId();
+  const { full, thumb } = await prepare(file);
+  let hasThumb = false;
+  try { await uploadThumb(thumb, id, auth); hasThumb = true; } catch (e) { if (e instanceof StorageFull) throw e; }
+  await uploadPhoto(full, { id, date: when.toISOString(), camera: "Other camera", species: kind, comment: "", author: "", buck, thumb: hasThumb }, auth, () => {});
+  return id;
+}
+
+function HarvestForm({ app, entry, startBuck, onDone }) {
+  const { data, camName, auth, saveHarvest, removeHarvest, buckNames } = app;
   const now = new Date();
   const [date, setDate] = useState(entry ? entry.date : isoDay(now));
   const [time, setTime] = useState(entry ? entry.time : hhmm(now));
@@ -75,6 +87,17 @@ function HarvestForm({ app, entry, onDone }) {
   const [hunter, setHunter] = useState(entry ? entry.hunter : auth.user);
   const [place, setPlace] = useState(entry ? entry.place : "");
   const [spot, setSpot] = useState(entry && entry.lat != null ? [entry.lat, entry.lng] : null);
+  const [buck, setBuck] = useState(entry ? entry.buck || "" : startBuck || "");
+  const [photo, setPhoto] = useState(entry ? entry.photo || "" : "");
+  const [file, setFile] = useState(null); // a new photo, sent when saved
+  const [preview, setPreview] = useState("");
+  const fileRef = useRef(null);
+  useEffect(() => {
+    if (!file) { setPreview(""); return undefined; }
+    const url = URL.createObjectURL(file);
+    setPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
   const [notes, setNotes] = useState(entry ? entry.notes : "");
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
@@ -97,9 +120,25 @@ function HarvestForm({ app, entry, onDone }) {
     if (new Date(`${date}T${time}`) > new Date()) { setError("That date and time hasn't happened yet."); return; }
     if (!spot && !place.trim()) { setError("Add a location: choose a stand, tap the map, or type a place."); return; }
     setError(""); setBusy("saving");
+    const when = new Date(`${date}T${time}`);
+    let photoId = photo;
+    if (file) {
+      try {
+        photoId = await sendPhoto(file, when, kind, kind === "Buck" ? buck.trim() : "", auth);
+        // Kept, so trying the save again doesn't send it twice.
+        setPhoto(photoId); setFile(null);
+      } catch (err) {
+        setBusy("");
+        setError(err instanceof StorageFull ? "Photo storage is full. Remove the photo to save without it." : "The photo didn't upload. Try again, or remove it to save without it.");
+        return;
+      }
+    }
+    const same = entry && entry.date === date && entry.time === time;
+    const conditions = (same && entry.conditions) || conditionsAt(data, app.captures, app.ov, when);
     const ok = await saveHarvest({
       ...(entry ? { id: entry.id } : {}), date, time, kind, hunter: hunter.trim() || auth.user,
       place: place.trim(), lat: spot ? spot[0] : null, lng: spot ? spot[1] : null, notes: notes.trim(),
+      buck: kind === "Buck" ? buck.trim() : "", photo: photoId, conditions,
     });
     setBusy("");
     if (ok) onDone();
@@ -125,6 +164,10 @@ function HarvestForm({ app, entry, onDone }) {
           <input className="input" maxLength=${40} value=${hunter} onInput=${(e) => setHunter(e.target.value)} /></label>
       </div>
 
+      ${kind === "Buck" && html`<label className="field-row"><span>Buck name (optional)</span>
+        <input className="input" list="harvest-bucks" maxLength=${40} value=${buck} placeholder="e.g. Big 8" onInput=${(e) => setBuck(e.target.value)} />
+        <datalist id="harvest-bucks">${(buckNames || []).map((n) => html`<option key=${n} value=${n} />`)}</datalist></label>`}
+
       <div className="harvestform__loc">
         <div className="field-row"><span>Location</span></div>
         <div className="harvestform__chips">
@@ -141,6 +184,14 @@ function HarvestForm({ app, entry, onDone }) {
           <input className="input" maxLength=${60} value=${place} placeholder="e.g. Creek bottom" onInput=${(e) => setPlace(e.target.value)} /></label>
       </div>
 
+      <div className="harvestform__photo">
+        <input ref=${fileRef} type="file" accept="image/*" hidden
+          onChange=${(e) => { const f = e.target.files[0]; if (f) setFile(f); e.target.value = ""; }} />
+        ${(preview || photo) && html`<img src=${preview || uploadImageUrl(photo)} alt="Harvest" onError=${(e) => { e.target.style.visibility = "hidden"; }} />`}
+        <${Btn} type="button" icon="camera" disabled=${!!busy} onClick=${() => fileRef.current.click()}>${file || photo ? "Change photo" : "Add a photo"}</${Btn}>
+        ${(file || photo) && html`<${Btn} type="button" variant="ghost" disabled=${!!busy} onClick=${() => { setFile(null); setPhoto(""); }}>Remove</${Btn}>`}
+      </div>
+
       <label className="field-row"><span>Notes (optional)</span>
         <textarea className="input" rows=${3} maxLength=${300} value=${notes} placeholder="Points, weight, weapon…" onInput=${(e) => setNotes(e.target.value)} /></label>
       ${error && html`<p className="form-error" role="alert">${error}</p>`}
@@ -154,13 +205,29 @@ function HarvestForm({ app, entry, onDone }) {
   </form>`;
 }
 
+function HarvestPhoto({ h, allCaptures, openLightbox }) {
+  const [gone, setGone] = useState(false);
+  const c = allCaptures.find((x) => String(x.id) === h.photo);
+  if (gone) return null;
+  const img = html`<img src=${c ? c.thumb || c.image : uploadImageUrl(h.photo)} alt=${`${h.kind} taken by ${h.hunter}`} loading="lazy" onError=${() => setGone(true)} />`;
+  return c ? html`<button type="button" className="harvest__photo" aria-label="Open photo" onClick=${() => openLightbox([c], 0)}>${img}</button>`
+    : html`<div className="harvest__photo">${img}</div>`;
+}
+const conditionsText = (c) => [c.score != null && `DeerCast ${c.score}/10`, c.temp != null && `${c.temp}°`,
+  c.wind != null && `${c.dir} ${c.wind} mph`, c.pressure != null && `${c.pressure.toFixed(2)} inHg`].filter(Boolean).join(" · ");
+
 /* ---------------------------------- Page ---------------------------------- */
+// "Log this buck" on a buck's page opens the form with its name filled in.
+let openWith = null;
+export const startHarvest = (buck) => { openWith = buck || ""; };
+
 export function Harvests(app) {
-  const { harvests, harvestsReady, loadHarvests, auth } = app;
-  const [form, setForm] = useState(null); // null, "new", or an entry
+  const { harvests, harvestsReady, loadHarvests, auth, allCaptures, openLightbox } = app;
+  const [startBuck] = useState(() => { const b = openWith; openWith = null; return b; });
+  const [form, setForm] = useState(startBuck != null ? "new" : null); // null, "new", or an entry
   useEffect(() => { loadHarvests(); }, [loadHarvests]);
   const close = () => { setForm(null); window.scrollTo(0, 0); };
-  if (form) return html`<${HarvestForm} app=${app} entry=${form === "new" ? null : form} onDone=${close} />`;
+  if (form) return html`<${HarvestForm} app=${app} entry=${form === "new" ? null : form} startBuck=${startBuck} onDone=${close} />`;
 
   if (harvestsReady === "error" && !harvests.length) {
     return html`<${Empty} icon="tag" title="Couldn't load harvests" message="Check your connection and try again."
@@ -190,10 +257,12 @@ export function Harvests(app) {
     ${seasons.map((y) => html`<${Panel} key=${y} title=${seasonName(y)}>
       <ul className="harvests">
         ${list.filter((h) => season(h.date) === y).map((h) => html`<li key=${h.id} className="harvest">
+          ${h.photo && html`<${HarvestPhoto} h=${h} allCaptures=${allCaptures} openLightbox=${openLightbox} />`}
           <div className="harvest__body">
-            <b>${h.kind} · ${h.hunter}</b>
+            <b>${h.buck || h.kind} · ${h.hunter}</b>
             <span>${fmtDateLong(parseIsoDay(h.date))}, ${timeLabel(h.time)}</span>
             <span><${Icon} name="pin" size=${13} />${h.place || "Pinned on the map"}</span>
+            ${h.conditions && html`<span>${conditionsText(h.conditions)}</span>`}
             ${h.notes && html`<p>${h.notes}</p>`}
           </div>
           ${canEdit(h) && html`<${Btn} sm icon="pencil" onClick=${() => { setForm(h); window.scrollTo(0, 0); }}>Edit</${Btn}>`}

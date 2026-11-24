@@ -1332,6 +1332,14 @@ async function handlePins(request, env, who) {
 // People change their own entries; an admin can change any.
 const HARVEST_PREFIX = "harvest:";
 const HARVEST_ID = /^[0-9a-f-]{36}$/;
+const WINDS = new Set(["N", "NE", "E", "SE", "S", "SW", "W", "NW"]);
+function cleanConditions(c) {
+  if (!c || typeof c !== "object") return null;
+  const num = (v, lo, hi) => (typeof v === "number" && v >= lo && v <= hi ? v : null);
+  const out = { temp: num(c.temp, -60, 140), wind: num(c.wind, 0, 200), dir: WINDS.has(c.dir) ? c.dir : "",
+    pressure: num(c.pressure, 25, 33), score: num(c.score, 1, 10) };
+  return out.temp == null ? null : out;
+}
 function cleanHarvest(h) {
   const date = String(h.date || ""), time = String(h.time || "");
   const day = /^\d{4}-\d{2}-\d{2}$/.test(date) ? new Date(date + "T00:00:00Z") : null;
@@ -1349,6 +1357,9 @@ function cleanHarvest(h) {
   return { value: {
     date, time, kind: h.kind, place, lat: round(h.lat), lng: round(h.lng),
     hunter: cleanComment(h.hunter, 40), notes: cleanComment(h.notes, 300),
+    buck: h.kind === "Buck" ? cleanName(h.buck).slice(0, 40) : "",
+    photo: UPLOAD_ID.test(String(h.photo || "")) ? String(h.photo) : "",
+    conditions: cleanConditions(h.conditions),
   } };
 }
 async function handleHarvests(request, env, who) {

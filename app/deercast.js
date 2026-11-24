@@ -304,6 +304,26 @@ export function buildCast(data, captures, ov, { allHours = false, now = Date.now
   };
 }
 
+// What it was like at one moment, for a harvest: the weather, and DeerCast's score for
+// then when there's enough of the days before to compare with. Null when the forecast
+// doesn't reach back that far (about a week).
+export function conditionsAt(data, captures, ov, when) {
+  const site = siteOf(data);
+  if (!data || !data.forecast || !site) return null;
+  const hours = parseHours(data.forecast);
+  const w = hours.get(Math.floor(when.getTime() / HOUR) * HOUR);
+  if (!w) return null;
+  const out = { temp: Math.round(w.temp), wind: Math.round(w.wind), dir: windOver([w]).dir,
+    pressure: Number((w.pressure * 0.02953).toFixed(2)), score: null };
+  const had = [1, 2, 3].every((n) => hours.has(startOf(addDays(when, -n)).getTime()));
+  const day = had && buildDay(startOf(when), hours, site, dayPattern(deerVisits(captures, ov), site, when.getTime()), false);
+  if (day) {
+    const p = day.points.reduce((b, x) => (Math.abs(x.t - when) < Math.abs(b.t - when) ? x : b));
+    out.score = Math.round(p.score);
+  }
+  return out;
+}
+
 /* ------------------------------ Stand wind -------------------------------- */
 export function standWind(stand, wind) {
   if (!stand || !wind) return null;

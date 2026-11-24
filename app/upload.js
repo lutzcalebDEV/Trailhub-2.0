@@ -30,7 +30,7 @@ function drawJpeg(source, width, height, maxEdge, quality) {
 
 // Re-encoding shrinks the file and also drops EXIF data, including any GPS position.
 // Returns the photo for the site plus a small copy for the grids.
-async function prepare(file) {
+export async function prepare(file) {
   const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" }).catch(() => {
     throw new Error("This file couldn't be read");
   });

@@ -281,6 +281,31 @@ export function Histogram({ hours, onSelect }) {
   </div>`;
 }
 
+// On a touch screen a chart's marks are narrower than a fingertip: touching or dragging
+// picks one, shows it, and a button opens its photos. `spot` turns a pointer position
+// into a mark's number. Returns the handlers, the pick, and the line to show under it.
+function useScrub(active, spot, count, describe, onOpen, hint) {
+  const ref = useRef(null);
+  const [picked, setPicked] = useState(null);
+  const pickAt = (e) => {
+    const r = ref.current.getBoundingClientRect();
+    const i = spot((e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height);
+    if (i != null && i >= 0 && i < count) setPicked(i);
+  };
+  const at = picked != null && picked < count ? picked : null;
+  const d = at == null ? null : describe(at);
+  return {
+    ref, picked: at, setPicked,
+    props: active ? { onPointerDown: pickAt, onPointerMove: pickAt } : {},
+    readout: active && html`<div className="hist__readout" role="status">
+      ${d ? html`<span><b>${d.label}</b> · ${d.n} photo${d.n === 1 ? "" : "s"}</span>
+          <${Btn} sm variant="primary" iconRight="arrowRight" disabled=${!d.n} onClick=${() => onOpen(at)}>See photos</${Btn}>`
+        : html`<span className="faint">${hint}</span>`}
+    </div>`,
+  };
+}
+const across = (n) => (x) => Math.min(n - 1, Math.max(0, Math.floor(x * n)));
+
 // Compact 24-hour activity strip (one bar per hour), highlighting a peak window.
 // Each strip is normalized to its own max so a species' shape is always readable.
 export function HourStrip({ hours, color = "var(--accent)", peak, onSelect }) {
@@ -290,31 +315,48 @@ export function HourStrip({ hours, color = "var(--accent)", peak, onSelect }) {
     const { start, end } = peak;
     return start <= end ? h >= start && h < end : h >= start || h < end;
   };
-  const Cell = onSelect ? "button" : "span";
-  return html`<div className="hourstrip" role=${onSelect ? undefined : "img"} aria-label="Activity by hour">
-    ${hours.map((v, h) => html`<${Cell} key=${h} className=${cx("hourstrip__c", inPeak(h) && "is-peak", onSelect && "is-btn")}
-      onClick=${onSelect ? () => onSelect(h) : undefined}
-      title=${`${labelHour(h)} · ${v} capture${v === 1 ? "" : "s"}`}>
-      <i style=${{ height: Math.max((v / max) * 100, v > 0 ? 14 : 0) + "%", background: color }} />
-    </${Cell}>`)}
-  </div>`;
+  const [touch] = useState(coarsePointer);
+  const scrub = !!onSelect && touch;
+  const pick = useScrub(scrub, across(24), 24, (h) => ({ label: labelHour(h), n: hours[h] }), onSelect, "");
+  const Cell = onSelect && !scrub ? "button" : "span";
+  return html`<${Fragment}>
+    <div className=${cx("hourstrip", scrub && "is-scrub")} ref=${pick.ref} ...${pick.props}
+      role=${onSelect && !scrub ? undefined : "img"} aria-label="Activity by hour">
+      ${hours.map((v, h) => html`<${Cell} key=${h} className=${cx("hourstrip__c", inPeak(h) && "is-peak", onSelect && !scrub && "is-btn", pick.picked === h && "is-picked")}
+        onClick=${onSelect && !scrub ? () => onSelect(h) : undefined}
+        title=${`${labelHour(h)} · ${v} capture${v === 1 ? "" : "s"}`}>
+        <i style=${{ height: Math.max((v / max) * 100, v > 0 ? 14 : 0) + "%", background: color }} />
+      </${Cell}>`)}
+    </div>
+    ${pick.picked != null && pick.readout}
+  </${Fragment}>`;
 }
 
 export function Sparkbars({ data, onSelect }) {
   const max = Math.max(1, ...data.map((d) => d.value));
-  const Bar = onSelect ? "button" : "div";
-  return html`<div className="spark">
-    ${data.map((d, i) => html`<${Bar} className=${cx("spark__b", onSelect && "is-btn")} key=${i}
-      onClick=${onSelect ? () => onSelect(d, i) : undefined}
-      style=${{ height: Math.max((d.value / max) * 100, d.value > 0 ? 8 : 3) + "%" }}
-      title=${(d.label ? d.label + " · " : "") + d.value}><i /></${Bar}>`)}
-  </div>`;
+  const [touch] = useState(coarsePointer);
+  const scrub = !!onSelect && touch;
+  const pick = useScrub(scrub, across(data.length), data.length,
+    (i) => ({ label: data[i].label, n: data[i].value }), (i) => onSelect(data[i], i), "Touch a bar to pick a day");
+  const Bar = onSelect && !scrub ? "button" : "div";
+  return html`<${Fragment}>
+    <div className=${cx("spark", scrub && "is-scrub")} ref=${pick.ref} ...${pick.props}>
+      ${data.map((d, i) => html`<${Bar} className=${cx("spark__b", onSelect && !scrub && "is-btn", pick.picked === i && "is-picked")} key=${i}
+        onClick=${onSelect && !scrub ? () => onSelect(d, i) : undefined}
+        style=${{ height: Math.max((d.value / max) * 100, d.value > 0 ? 8 : 3) + "%" }}
+        title=${(d.label ? d.label + " · " : "") + d.value}><i /></${Bar}>`)}
+    </div>
+    ${pick.readout}
+  </${Fragment}>`;
 }
 
 export function CalHeat({ counts, weeks = 26, onSelect }) {
   const today = new Date(); today.setHours(0, 0, 0, 0);
+  const [touch] = useState(coarsePointer);
+  const scrub = !!onSelect && touch;
+  const span = scrub ? Math.min(weeks, 18) : weeks; // fewer weeks on a phone, so days are bigger
   const start = new Date(today);
-  start.setDate(start.getDate() - (weeks * 7 - 1));
+  start.setDate(start.getDate() - (span * 7 - 1));
   start.setDate(start.getDate() - start.getDay()); // back to Sunday
   const cells = [];
   let max = 1;
@@ -323,17 +365,21 @@ export function CalHeat({ counts, weeks = 26, onSelect }) {
     if (n > max) max = n;
     cells.push({ key: isoDay(d), n, date: new Date(d) });
   }
+  const columns = Math.ceil(cells.length / 7);
+  const pick = useScrub(scrub, (x, y) => across(columns)(x) * 7 + across(7)(y), cells.length,
+    (i) => ({ label: fmtDate(cells[i].date), n: cells[i].n }), (i) => onSelect(cells[i].key, cells[i].date), "Touch a square to pick a day");
   const shade = (n) => n === 0
     ? "var(--surface-3)"
     : `color-mix(in srgb, var(--accent) ${20 + Math.ceil((n / max) * 4) * 18}%, var(--surface-3))`;
-  const Cell = onSelect ? "button" : "div";
+  const Cell = onSelect && !scrub ? "button" : "div";
   return html`<div>
-    <div className="cal">
-      ${cells.map((c) => html`<${Cell} key=${c.key} className=${cx("cal__cell", onSelect && "is-btn")}
-        onClick=${onSelect ? () => onSelect(c.key, c.date) : undefined}
+    <div className=${cx("cal", scrub && "is-scrub")} ref=${pick.ref} ...${pick.props}>
+      ${cells.map((c, i) => html`<${Cell} key=${c.key} className=${cx("cal__cell", onSelect && !scrub && "is-btn", pick.picked === i && "is-picked")}
+        onClick=${onSelect && !scrub ? () => onSelect(c.key, c.date) : undefined}
         style=${{ background: shade(c.n) }}
         title=${`${fmtDate(c.date)} · ${c.n} capture${c.n === 1 ? "" : "s"}`} />`)}
     </div>
+    ${pick.readout}
     <div className="row" style=${{ justifyContent: "flex-end", marginTop: 10 }}>
       <div className="heatlegend">Less
         ${[0, 1, 2, 3, 4].map((l) => html`<i key=${l}

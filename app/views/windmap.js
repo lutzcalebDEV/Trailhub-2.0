@@ -93,6 +93,7 @@ function runWind(canvas, getWind) {
 // `stands`: [{ name, label, latitude, longitude, rating }]; `wind`: { speed, gust, deg, dir }.
 export function WindMap({ stands, site, wind, time }) {
   const [ready, setReady] = useState(() => !!window.L);
+  const [trouble, setTrouble] = useState("");
   const elRef = useRef(null);
   const canvasRef = useRef(null);
   const mapRef = useRef(null);
@@ -103,7 +104,7 @@ export function WindMap({ stands, site, wind, time }) {
   useEffect(() => {
     if (ready) return undefined;
     let live = true;
-    loadLeaflet().then(() => { if (live) setReady(true); }).catch(() => {});
+    loadLeaflet().then(() => { if (live) setReady(true); }).catch(() => { if (live) setTrouble("The map couldn’t load"); });
     return () => { live = false; };
   }, [ready]);
 
@@ -125,7 +126,9 @@ export function WindMap({ stands, site, wind, time }) {
       else map.setView(pts[0] || [site.lat, site.lng], 15);
     };
     frame();
-    L.tileLayer(SAT_TILES, { maxZoom: 18, maxNativeZoom: 16, attribution: SAT_CREDIT }).addTo(map);
+    const tiles = L.tileLayer(SAT_TILES, { maxZoom: 18, maxNativeZoom: 16, attribution: SAT_CREDIT }).addTo(map);
+    tiles.on("tileerror", () => setTrouble("Satellite photos couldn’t load"));
+    tiles.on("tileload", () => setTrouble(""));
     const ro = new ResizeObserver(frame);
     ro.observe(elRef.current);
     return () => { ro.disconnect(); map.remove(); mapRef.current = null; };
@@ -162,6 +165,7 @@ export function WindMap({ stands, site, wind, time }) {
   return html`<div className="windmap" role="img"
     aria-label=${wind ? `Wind at ${time}: from the ${wind.dir}, ${Math.round(wind.speed)} miles an hour` : "Wind map"}>
     <div className="windmap__map map is-sat" ref=${elRef} />
+    ${trouble && html`<div className="mapbox__note is-low" role="status">${trouble}</div>`}
     <canvas className="windmap__wind" ref=${canvasRef} />
     ${wind && html`<div className="windmap__badge">
       <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true" style=${{ transform: `rotate(${wind.deg + 180}deg)` }}>

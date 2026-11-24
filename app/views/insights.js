@@ -3,13 +3,13 @@
 // matching filter applied.
 import { html, Fragment } from "../react.js";
 import { FilterBar } from "../shell.js";
-import { Stat, Panel, Histogram, HourStrip, Bars, SplitBar, CalHeat, Empty } from "../ui.js";
+import { Stat, Panel, Sparkbars, Histogram, HourStrip, Bars, SplitBar, CalHeat, Empty } from "../ui.js";
 import { Icon } from "../icons.js";
-import { labelHour } from "../core.js";
+import { labelHour, fmtDate } from "../core.js";
 import {
   filterCaptures, weatherRates, animalActivity, NOT_GAME, hourHistogram, dayNightSplit, daylightPct, peakHour,
   weekdayCounts, speciesByDayNight, speciesActivity, allDeerActivity, peakWindow, ALL_DEER, ALL_DEER_HINT, DEER_KINDS,
-  tempBuckets, moonCounts, cameraCounts, isoDayCounts,
+  dailyCounts, periodDelta, tempBuckets, moonCounts, cameraCounts, isoDayCounts,
 } from "../analytics.js";
 
 export const windowLabel = (p) => (p ? labelHour(p.start) + "–" + labelHour(p.end) : "—");
@@ -82,6 +82,9 @@ export function Insights(app) {
     </${Panel}>`;
   }
 
+  const week = periodDelta(filtered, 7);
+  const daily = dailyCounts(filtered, 14);
+  const topDay = daily.reduce((a, b) => (b.value > a.value ? b : a), daily[0]);
   const weather = weatherRates(filtered, data.weatherHours);
   const tapHint = html`<span className="faint" style=${{ fontSize: 12 }}>Tap a bar to see those photos</span>`;
 
@@ -105,6 +108,16 @@ export function Insights(app) {
         <div className="besttime__sub">${selPeak.pct}% of ${selName} sightings${sel === ALL_DEER ? ` (${ALL_DEER_HINT})` : ""} fall in this window · ${dielLabel(daylightPct(filtered))}</div>
       </div>
     </div>`}
+
+    <${Panel} title="Last 14 days" actions=${html`<span className="faint" style=${{ fontSize: 12 }}>Past 7 days: ${week.cur}, week before: ${week.prev}</span>`}>
+      <${Sparkbars} data=${daily.map((d) => ({ value: d.value, label: d.label, key: d.key }))}
+        onSelect=${(d) => go({ range: "custom", from: d.key, to: d.key })} />
+      <div className="row" style=${{ justifyContent: "space-between", marginTop: 10 }}>
+        <span className="faint" style=${{ fontSize: 12 }}>${daily[0].label}</span>
+        <span className="muted" style=${{ fontSize: 12 }}>${topDay.value ? `Busiest ${fmtDate(topDay.date)} · ${topDay.value}` : ""}</span>
+        <span className="faint" style=${{ fontSize: 12 }}>Today</span>
+      </div>
+    </${Panel}>
 
     <${Panel} title="Time of day" actions=${tapHint}>
       <${Histogram} hours=${hourHistogram(filtered)} onSelect=${(h) => go({ hour: h })} />
@@ -171,7 +184,7 @@ export function Insights(app) {
     ${secondary}
 
     <${Panel} title="Calendar"
-      actions=${html`<span className="faint" style=${{ fontSize: 12 }}>Last 6 months · tap a day</span>`}>
+      actions=${html`<span className="faint" style=${{ fontSize: 12 }}>Tap a day</span>`}>
       <div className="scroll-x"><${CalHeat} counts=${isoDayCounts(filtered)} weeks=${26}
         onSelect=${(key) => go({ range: "custom", from: key, to: key })} /></div>
     </${Panel}>

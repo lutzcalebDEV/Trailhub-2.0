@@ -11,7 +11,7 @@ import {
 import { filterCaptures, speciesList, reviewQueue } from "./analytics.js";
 import {
   Sidebar, Topbar, MobileTopbar, LargeTitle, MobileNav, MoreScreen, PullToRefresh, useEdgeBack,
-  VIEWS, MOBILE_MAIN, MOBILE_MORE, loadFilters, defaultFilters,
+  VIEWS, MOBILE_MAIN, loadFilters, defaultFilters,
 } from "./shell.js";
 import { Lightbox, Toast } from "./ui.js";
 import { UploadDialog, SignInDialog } from "./upload.js";
@@ -861,8 +861,8 @@ function App() {
     if (v !== view) clearFilters();
     setView(v);
   };
-  // Swipe from the left edge goes back from the pages on More (DeerCast, Map, Harvests, Identify).
-  useEdgeBack(MOBILE_MORE.includes(view) && !overlayOpen, swipeBack);
+  // Swipe from the left edge goes back from the pages on More (Uploads, Map, Harvests, Identify) and Bucks.
+  useEdgeBack(!MOBILE_MAIN.includes(view) && !overlayOpen, swipeBack);
   const app = {
     more: {
       onPush: pushScreen, onAlerts: () => setAlertsOpen(true),
@@ -878,7 +878,7 @@ function App() {
     openLightbox, reviewQ, counts, setView,
     uploads, allCaptures, comments, openUpload: () => setUploadOpen(true), openAlerts: () => setAlertsOpen(true),
     camName, camNames, bulkAssign, renameCamera, savePins,
-    harvests: harvestRows, harvestsReady, loadHarvests, saveHarvest, removeHarvest,
+    buckNames, harvests: harvestRows, harvestsReady, loadHarvests, saveHarvest, removeHarvest,
     metaMap, updateMeta, toggleFavorite,
     auth: uploadAuth, openSignIn,
   };
@@ -904,7 +904,7 @@ function App() {
       <${Sidebar} view=${view} setView=${viewFromSidebar} counts=${counts} status=${status}
         onCollapse=${() => setSidebarCollapsed("true")} />
       <main className="main">
-        <${MobileTopbar} ...${chrome} title=${pageTitle} onBack=${MOBILE_MORE.includes(view) ? goBack : null} />
+        <${MobileTopbar} ...${chrome} title=${pageTitle} onBack=${!MOBILE_MAIN.includes(view) ? goBack : null} />
         <${LargeTitle} title=${pageTitle} sub=${titleSub} warn=${status.stale || !online} />
         ${!online && html`<div className=${titleSub ? "offline is-dup" : "offline"} role="status">Offline · showing saved photos</div>`}
         <${Topbar} title=${meta.label} ...${chrome}

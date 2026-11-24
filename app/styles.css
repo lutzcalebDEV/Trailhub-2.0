@@ -2004,7 +2004,7 @@ html.apple-type body { font-feature-settings: normal; }
 .castcurve__read small { font-size: 12px; color: var(--text-faint); margin-left: 4px; }
 .castcurve__t { font-size: 14px; font-weight: 600; }
 .castcurve__w { display: flex; gap: 12px; margin-left: auto; font-size: 13px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
-.castcurve__plot { position: relative; height: 170px; cursor: crosshair; touch-action: pan-y; border-bottom: 1px solid var(--border-strong); }
+.castcurve__plot { position: relative; height: 130px; cursor: crosshair; touch-action: pan-y; border-bottom: 1px solid var(--border-strong); }
 .castcurve__plot svg { width: 100%; height: 100%; display: block; }
 .castcurve__night { fill: var(--night-soft); }
 .castcurve__win { fill: var(--accent-soft); }
@@ -2054,7 +2054,7 @@ html.apple-type body { font-feature-settings: normal; }
   .castwhy__row { grid-template-columns: minmax(0, 1fr) 64px 38px; gap: 10px; }
 }
 
-/* DeerCast: the chosen hour, wind map and time slider */
+/* DeerCast: the chosen hour, wind map and chart */
 .castnow { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
 .castnow__score { display: flex; align-items: baseline; }
 .castnow__score b { font-size: 76px; font-weight: 800; line-height: 1; letter-spacing: -0.045em; color: var(--cast); }
@@ -2082,21 +2082,10 @@ html.apple-type body { font-feature-settings: normal; }
 .windpin.is-good { --pin: #34d399; }
 .windpin.is-risky { --pin: #f5b53f; }
 .windpin.is-avoid { --pin: #f0716f; }
-.castslide { position: relative; padding-top: 38px; }
-.castslide output { position: absolute; top: 0; transform: translateX(-50%); padding: 5px 12px; border-radius: 9px; background: var(--accent); color: var(--accent-contrast); font-size: 14px; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; pointer-events: none; }
-.castslide input { -webkit-appearance: none; appearance: none; display: block; width: 100%; height: 34px; margin: 0; background: none; cursor: pointer; touch-action: pan-y; }
-.castslide input::-webkit-slider-runnable-track { height: 6px; border-radius: 6px; background: var(--surface-3); }
-.castslide input::-moz-range-track { height: 6px; border-radius: 6px; background: var(--surface-3); }
-.castslide input::-webkit-slider-thumb { -webkit-appearance: none; width: 28px; height: 28px; margin-top: -11px; border-radius: 50%; background: var(--accent); border: 3px solid var(--surface); box-shadow: 0 0 0 1px var(--border-strong); }
-.castslide input::-moz-range-thumb { width: 22px; height: 22px; border-radius: 50%; background: var(--accent); border: 3px solid var(--surface); }
-.castslide input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 9px; }
-.castslide__ends { display: flex; justify-content: space-between; align-items: center; min-height: 30px; font-size: 12px; color: var(--text-faint); }
-.castslide__ends button { padding: 6px 10px; border: 0; background: none; color: var(--accent); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
 .casthero .castnote { margin-top: 0; font-size: 12.5px; }
 button.castwin { border: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; }
 @media (max-width: 560px) {
-  .castslide output { max-width: none; }
-  .caststrip dd { font-size: 14.5px; }
+    .caststrip dd { font-size: 14.5px; }
   .casthero { padding: 16px 14px; }
 }
 
@@ -2133,3 +2122,69 @@ button.castwin { border: 0; color: inherit; font: inherit; text-align: left; cur
 .harvest__body b { font-size: 15px; }
 .harvest__body span { display: inline-flex; align-items: center; gap: 5px; font-size: 13.5px; color: var(--text-muted); }
 .harvest__body p { margin-top: 4px; font-size: 13.5px; }
+
+/* ---- Simpler DeerCast, map controls, easier taps ---- */
+.castnow__day { font-size: 13.5px; color: var(--text-muted); line-height: 1.4; }
+.castnow__day b { color: var(--text); }
+.castnow__far { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: var(--text-muted); }
+.castcurve__time { position: relative; height: 34px; }
+.castcurve__time output { position: absolute; top: 0; transform: translateX(-50%); padding: 4px 11px; border-radius: 8px; background: var(--accent); color: var(--accent-contrast); font-size: 13.5px; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.castcurve__foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 40px; font-size: 12.5px; color: var(--text-faint); }
+.castcurve__foot button { min-height: 40px; padding: 0 4px; border: 0; background: none; color: var(--accent); font: inherit; font-size: 13px; font-weight: 650; cursor: pointer; }
+.castcurve__dot { width: 16px; height: 16px; margin: -8px 0 0 -8px; }
+.castwin { min-height: 58px; }
+.linkrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 50px; padding: 10px 16px; border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--surface); color: var(--text); font: inherit; font-size: 14px; text-align: left; cursor: pointer; }
+.linkrow:hover { background: var(--surface-hover); }
+.linkrow b { display: block; font-weight: 650; }
+.linkrow small { display: block; margin-top: 2px; font-size: 12.5px; color: var(--text-muted); }
+.linkrow > svg { flex: none; color: var(--text-faint); }
+.castdetails summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 54px; padding: 11px 17px; cursor: pointer; list-style: none; }
+.castdetails summary::-webkit-details-marker { display: none; }
+.castdetails summary b { display: block; font-weight: 650; }
+.castdetails summary small { font-size: 12.5px; color: var(--text-muted); }
+.castdetails summary > svg { flex: none; color: var(--text-faint); transition: transform .2s; }
+.castdetails[open] summary > svg { transform: rotate(180deg); }
+.castdetails .panel__body { padding-top: 4px; }
+.cast__stands { display: flex; flex-wrap: wrap; gap: 8px 18px; padding: 11px 16px; border-top: 1px solid var(--border); font-size: 13.5px; }
+.cast__stands > span { display: inline-flex; align-items: center; gap: 8px; }
+.cast__stands b { font-weight: 600; }
+.cast__stands small { flex-basis: 100%; font-size: 12.5px; color: var(--text-muted); }
+.mapbox__pill { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 44px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); font: inherit; font-size: 13.5px; font-weight: 650; cursor: pointer; }
+.mapbox__tools { align-items: flex-end; }
+.mapbox__menu { width: 218px; padding: 4px; border-radius: var(--r-lg); border: 1px solid var(--border-strong); background: var(--surface); }
+.mapbox__menu button { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 46px; padding: 0 11px; border: 0; border-radius: var(--r-sm); background: none; color: var(--text); font: inherit; font-size: 14px; cursor: pointer; }
+.mapbox__menu button:hover { background: var(--surface-hover); }
+.mapbox__menu i { position: relative; width: 40px; height: 24px; border-radius: 999px; background: var(--border-strong); transition: background .15s; }
+.mapbox__menu i::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; transition: transform .15s; }
+.mapbox__menu i.is-on { background: var(--accent); }
+.mapbox__menu i.is-on::after { transform: translateX(16px); }
+.mapbox__move { min-height: 44px; }
+.mapbox__note, .mapbox.is-full .mapbox__note { top: auto; bottom: 78px; }
+.mapbox.is-full .mapbox__note { bottom: calc(86px + var(--tab-bar-h, env(safe-area-inset-bottom, 0px))); }
+.mapbox__note.is-low, .mapbox.is-full .mapbox__note.is-low { bottom: 50%; }
+.windmap .mapbox__note { z-index: 600; }
+.leaflet-touch .leaflet-bar a { width: 44px; height: 44px; line-height: 44px; }
+.is-scrub { touch-action: pan-y; }
+.hourstrip.is-scrub { height: 52px; }
+.hourstrip__c.is-picked, .spark__b.is-picked { outline: 2px solid var(--text); outline-offset: 1px; }
+.cal__cell.is-picked { outline: 2px solid var(--text); outline-offset: 1px; position: relative; z-index: 2; }
+.harvestform__photo { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.harvestform__photo img { width: 84px; height: 84px; object-fit: cover; border-radius: var(--r-md); }
+.harvest { justify-content: flex-start; }
+.harvest__body { flex: 1; }
+.harvest__photo { flex: none; width: 84px; height: 84px; padding: 0; border: 0; border-radius: var(--r-md); overflow: hidden; background: var(--surface-2); }
+button.harvest__photo { cursor: pointer; }
+.harvest__photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* Nothing on a phone smaller than 12px. */
+@media (max-width: 900px) {
+  .shot__time, .actrow__hint, .camrow__meta, .camcard__health, .pill, .shot__burst, .sbadge, .shots.size-S .sbadge, .shots.size-S .shot__burst,
+  .axis, .actclock__axis, .cal__months, .heatlegend, .grid--stats .stat__label, .grid--stats .stat__sub, .lb__comment-meta, .lb__comment-remove,
+  .uprow__date, .usermenu__label, .usermenu__role, .acctrow__body small, .datastat small { font-size: 12px; }
+}
+@media (max-width: 560px) { .harvest { flex-wrap: wrap; } }
+@media (max-width: 560px) {
+  .actrow__head { flex-wrap: wrap; row-gap: 2px; }
+  .actrow__name, .actrow__hint { white-space: nowrap; }
+  .actrow__peak { order: 3; flex-basis: 100%; margin-left: 0; text-align: left; }
+  .actrow__total { margin-left: auto; }
+}

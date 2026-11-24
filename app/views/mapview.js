@@ -4,7 +4,7 @@ import { FilterBar } from "../shell.js";
 import { Icon } from "../icons.js";
 import { Empty, Btn, Chip, healthItems } from "../ui.js";
 import { filterCaptures, cameraStatus, NOT_GAME } from "../analytics.js";
-import { LS, usePersistent, timeAgo } from "../core.js";
+import { LS, usePersistent, timeAgo, fmtDateLong, parseIsoDay } from "../core.js";
 import { showParcels, PARCEL_ZOOM } from "../parcels.js";
 
 const cx = (...xs) => xs.filter(Boolean).join(" ");
@@ -55,14 +55,15 @@ export function loadLeaflet() {
 const coarse = () => window.matchMedia("(pointer: coarse)").matches;
 
 export function MapView(app) {
-  const { data, captures, ov, filters, setFilter, setView, spList, theme, camName, renameCamera, savePins, auth, openSignIn } = app;
+  const { data, captures, ov, filters, setFilter, setView, spList, theme, camName, renameCamera, savePins, harvests, loadHarvests, auth, openSignIn } = app;
   const [leafletReady, setLeafletReady] = useState(() => !!window.L);
   useEffect(() => {
     if (leafletReady) return;
     let live = true;
-    loadLeaflet().then(() => { if (live) setLeafletReady(true); }).catch(() => {});
+    loadLeaflet().then(() => { if (live) setLeafletReady(true); }).catch(() => { if (live) setTrouble("The map couldn’t load"); });
     return () => { live = false; };
   }, [leafletReady]);
+  const [trouble, setTrouble] = useState("");
   const elRef = useRef(null);
   const mapRef = useRef(null);
   const layerRef = useRef(null);
@@ -72,17 +73,13 @@ export function MapView(app) {
   const sat = layer === "satellite";
   const tilesRef = useRef(null);
   const markersRef = useRef(new Map());
-  const cameraRef = useRef(filters.camera);
-  cameraRef.current = filters.camera;
-  const [editing, setEditing] = useState(null);
-  const [draft, setDraft] = useState("");
-
   // Moving pins: drag each camera to its real spot on the full-screen map, then save.
+  const [menu, setMenu] = useState(false);
   const [moving, setMoving] = useState(false);
   const [saving, setSaving] = useState(false);
   const [moved, setMoved] = useState(0);
   const draftsRef = useRef({});
-  const beginMove = () => { draftsRef.current = {}; setMoved(0); setMoving(true); setFull(true); };
+  const beginMove = () => { draftsRef.current = {}; setMoved(0); setMenu(false); setMoving(true); setFull(true); };
   const endMove = () => { draftsRef.current = {}; setMoving(false); setFull(false); };
   const saveMove = async () => {
     setSaving(true);
@@ -92,6 +89,11 @@ export function MapView(app) {
   };
   const endRef = useRef(endMove);
   endRef.current = endMove;
+
+  const cameraRef = useRef(filters.camera);
+  cameraRef.current = filters.camera;
+  const [editing, setEditing] = useState(null);
+  const [draft, setDraft] = useState("");
 
   const beginEdit = (cam) => { setEditing(cam.name); setDraft(camName(cam.name)); };
   const cancelEdit = () => setEditing(null);
@@ -135,6 +137,8 @@ export function MapView(app) {
     tilesRef.current = sat
       ? L.tileLayer(SAT_TILES, { maxZoom: 18, maxNativeZoom: 16, attribution: SAT_CREDIT })
       : L.tileLayer(OSM_TILES, { maxZoom: 19, attribution: OSM_CREDIT, referrerPolicy: "strict-origin-when-cross-origin" });
+    tilesRef.current.on("tileerror", () => setTrouble("Map pictures couldn’t load"));
+    tilesRef.current.on("tileload", () => setTrouble(""));
     tilesRef.current.addTo(map);
   }, [sat, auth, cams, theme, leafletReady]);
 
@@ -155,6 +159,30 @@ export function MapView(app) {
   const parcelNote = { zoom: "Zoom in to see property lines", loading: "Loading property lines",
     some: "Too many to show. Zoom in for the rest", error: "Property lines are unavailable right now",
     ok: "Approximate tax parcels, not a survey" }[parcelState];
+
+  // Where deer were taken, when turned on.
+  const [harvestLayer, setHarvestLayer] = usePersistent(LS.mapHarvests, "off");
+  const showHarvests = harvestLayer === "on";
+  useEffect(() => { if (showHarvests) loadHarvests(); }, [showHarvests, loadHarvests]);
+  useEffect(() => {
+    const L = window.L, map = mapRef.current;
+    if (!showHarvests || moving || !auth || !L || !map) return undefined;
+    const group = L.layerGroup().addTo(map);
+    harvests.filter((h) => h.lat != null).forEach((h) => {
+      const pin = document.createElement("div");
+      pin.className = "harvestpin";
+      const pop = document.createElement("div");
+      pop.className = "vt-popup";
+      const title = document.createElement("b");
+      title.textContent = `${h.buck || h.kind} · ${h.hunter}`; // typed by people, so never as HTML
+      const sub = document.createElement("span");
+      sub.textContent = fmtDateLong(parseIsoDay(h.date));
+      pop.append(title, sub);
+      L.marker([h.lat, h.lng], { title: title.textContent,
+        icon: L.divIcon({ className: "", iconSize: [44, 44], iconAnchor: [22, 22], html: pin }) }).bindPopup(pop).addTo(group);
+    });
+    return () => { group.remove(); };
+  }, [showHarvests, harvests, moving, auth, cams, theme, leafletReady]);
 
   // Markers are rebuilt when counts or names change. Choosing a camera only re-rings
   // them (below): rebuilding would close the popup the tap just opened.
@@ -315,6 +343,7 @@ export function MapView(app) {
       </div>
       <div className=${cx("mapbox", full && "is-full")}>
         <div className=${cx("map", sat && "is-sat")} ref=${elRef} />
+        ${trouble && html`<div className="mapbox__note is-low" role="status">${trouble}</div>`}
         ${lines && html`<div className="mapbox__note" role="status">${parcelNote}</div>`}
         ${data.canPin && !moving && html`<button type="button" className="mapbox__move" onClick=${beginMove}>
           <${Icon} name="pin" size=${16} />Move pins
@@ -327,20 +356,19 @@ export function MapView(app) {
           </div>
         </div>`}
         <div className="mapbox__tools">
-          <button className="mapbox__toggle" onClick=${() => (moving ? endMove() : setFull(!full))}
-            title=${full ? "Close the full-screen map" : "Full-screen map"}
-            aria-label=${full ? "Close the full-screen map" : "Full-screen map"}>
-            <${Icon} name=${full ? "x" : "expand"} size=${17} />
+          <button type="button" className="mapbox__pill" onClick=${() => (moving ? endMove() : setFull(!full))}>
+            <${Icon} name=${full ? "x" : "expand"} size=${17} />${full ? "Close" : "Full screen"}
           </button>
-          <button className=${cx("mapbox__toggle", sat && "is-on")} onClick=${() => setLayer(sat ? "map" : "satellite")}
-            title=${sat ? "Street map" : "Satellite view"} aria-label="Satellite view" aria-pressed=${sat}>
-            <${Icon} name="layers" size=${17} />
+          <button type="button" className="mapbox__pill" aria-expanded=${menu} onClick=${() => setMenu(!menu)}>
+            <${Icon} name="layers" size=${17} />Layers
           </button>
-          <button className=${cx("mapbox__toggle", lines && "is-on")} aria-pressed=${lines}
-            onClick=${() => { zoomForLines.current = !lines; setParcels(lines ? "off" : "on"); }}
-            title="Property lines" aria-label="Property lines">
-            <${Icon} name="parcels" size=${17} />
-          </button>
+          ${menu && html`<div className="mapbox__menu" role="group" aria-label="Map layers">
+            ${[["Satellite photos", sat, () => setLayer(sat ? "map" : "satellite")],
+              ["Property lines", lines, () => { zoomForLines.current = !lines; setParcels(lines ? "off" : "on"); }],
+              ["Harvests", showHarvests, () => setHarvestLayer(showHarvests ? "off" : "on")]].map(([label, on, flip]) => html`
+              <button type="button" key=${label} role="switch" aria-checked=${on} onClick=${flip}>
+                <span>${label}</span><i className=${on ? "is-on" : ""} /></button>`)}
+          </div>`}
         </div>
       </div>
     </div>

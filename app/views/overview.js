@@ -1,15 +1,11 @@
-// Vale Trails — Home: the deer forecast, the busiest camera, how the cameras are doing, the newest deer,
-// then a short summary of activity.
+// Vale Trails — Home: the next hunt, how the cameras are doing, the newest deer. The
+// charts live on Patterns.
 import { html } from "../react.js";
-import { Stat, Panel, Sparkbars, Histogram, Shot, Empty, Btn, CameraCard, Segmented } from "../ui.js";
-import { effectiveSpecies, fmtDate, labelHour, LS, usePersistent } from "../core.js";
-import {
-  dailyCounts, hourHistogram, daylightPct, periodDelta, peakHour, cameraStatus, collapseBursts, bestSit, withoutEmpty, animalActivity,
-} from "../analytics.js";
+import { Panel, Shot, Empty, Btn, CameraCard, Segmented } from "../ui.js";
+import { effectiveSpecies, LS, usePersistent } from "../core.js";
+import { cameraStatus, collapseBursts, withoutEmpty } from "../analytics.js";
 import { AlertsNudge } from "../alerts.js";
-import { windowLabel } from "./insights.js";
 import { CastCard } from "./deercast.js";
-import { siteOf, daylight as sunWindow, inDaylight } from "../deercast.js";
 
 // "Deer" on Home means any deer: bucks, does, and deer nobody has told apart yet.
 const DEER = new Set(["Buck", "Doe", "Deer"]);
@@ -27,12 +23,6 @@ export function Overview(app) {
       message="Once your cameras start uploading, they'll show up here automatically." />`;
   }
 
-  const seen = animalActivity(captures, ov);
-  const week = periodDelta(seen, 7);
-  const daylight = daylightPct(seen);
-  const peak = peakHour(seen);
-  const daily = dailyCounts(seen, 14);
-  const busiestDay = daily.reduce((a, b) => (b.value > a.value ? b : a), daily[0]);
   const animals = withoutEmpty(captures, ov);
   const deer = animals.filter((c) => DEER.has(effectiveSpecies(c, ov)));
   // With no deer on the cameras yet there's nothing to choose between.
@@ -41,20 +31,10 @@ export function Overview(app) {
   const recent = collapseBursts(latestList, LATEST);
   const favorites = captures.filter((c) => c.favorite).slice(0, 6);
   const cams = cameraStatus(captures, data.cameras);
-  const site = siteOf(data);
-  const sit = bestSit(captures, ov, site && { ...sunWindow(new Date(), site), has: (d) => inDaylight(d, site) });
   const showCamera = (camera) => { setFilter({ camera }); setView("gallery"); };
-  // The charts here count animals only, so the photos a bar opens are animals only.
-  const go = (patch) => { setFilter({ ...patch, gameOnly: true }); setView("gallery"); };
 
   return html`<div className="col" style=${{ gap: 24 }}>
     <${CastCard} ...${app} />
-
-    ${sit && html`<div className="bestsit">
-      <span className="bestsit__k">Busiest camera lately</span>
-      <b>${camName(sit.camera)}, ${windowLabel(sit)}</b>
-      <span className="muted">${sit.count} of ${sit.total} daylight deer sightings in 21 days</span>
-    </div>`}
 
     <div className="camcards">
       ${cams.map((row) => html`<${CameraCard} key=${row.camera} row=${row}
@@ -88,30 +68,5 @@ export function Overview(app) {
           onClick=${() => openLightbox(favorites, i)} />`)}
       </div>
     </${Panel}>` : null}
-
-    <div className="grid grid--stats">
-      <${Stat} label="Past 7 days" value=${week.cur.toLocaleString()} delta=${week.delta}
-        sub=${`vs ${week.prev} the week before`} />
-      <${Stat} label="In daylight" value=${daylight + "%"} sub=${`${100 - daylight}% after dark`} />
-      <${Stat} label="Busiest hour" value=${peak ? labelHour(peak.hour) : "—"}
-        sub=${peak ? `${peak.count} photos` : "No data"} />
-    </div>
-
-    <div className="grid grid--2">
-      <${Panel} title="Last 14 days">
-        <${Sparkbars} data=${daily.map((d) => ({ value: d.value, label: d.label, key: d.key }))}
-          onSelect=${(d) => go({ range: "custom", from: d.key, to: d.key })} />
-        <div className="row" style=${{ justifyContent: "space-between", marginTop: 10 }}>
-          <span className="faint" style=${{ fontSize: 12 }}>${daily[0].label}</span>
-          <span className="muted" style=${{ fontSize: 12 }}>
-            ${busiestDay.value ? `Busiest ${fmtDate(busiestDay.date)} · ${busiestDay.value}` : ""}
-          </span>
-          <span className="faint" style=${{ fontSize: 12 }}>Today</span>
-        </div>
-      </${Panel}>
-      <${Panel} title="Time of day">
-        <${Histogram} hours=${hourHistogram(seen)} onSelect=${(h) => go({ hour: h })} />
-      </${Panel}>
-    </div>
   </div>`;
 }

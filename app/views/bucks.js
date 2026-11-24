@@ -1,8 +1,9 @@
 // Vale Trails — Bucks: one profile per named deer, built from the photos you name.
 import { html, useState, useMemo, useEffect } from "../react.js";
 import { Stat, Panel, Bars, Histogram, Shot, Empty, Btn, Media, Segmented } from "../ui.js";
-import { effectiveSpecies, effectiveTags, fmtDate, fmtTime, timeAgo } from "../core.js";
+import { effectiveSpecies, effectiveTags, parseIsoDay, fmtDateLong, fmtDate, fmtTime, timeAgo } from "../core.js";
 import { buckProfiles, collapseBursts } from "../analytics.js";
+import { startHarvest } from "./harvest.js";
 import { windowLabel } from "./insights.js";
 import { groupByDay } from "./gallery.js";
 
@@ -18,12 +19,18 @@ function BuckCard({ buck, onOpen }) {
 }
 
 function BuckDetail({ buck, app, onBack }) {
-  const { ov, openLightbox, camName } = app;
+  const { ov, openLightbox, camName, harvests, loadHarvests, setView } = app;
+  useEffect(() => { loadHarvests(); }, [loadHarvests]);
+  const taken = harvests.find((h) => h.buck && h.buck.toLowerCase() === buck.name.toLowerCase());
   return html`<div className="col" style=${{ gap: 20 }}>
     <div className="row">
       <${Btn} sm variant="ghost" icon="chevronLeft" onClick=${onBack}>All bucks</${Btn}>
     </div>
     <h2 className="h-page">${buck.name}</h2>
+    ${taken
+      ? html`<button type="button" className="linkrow" onClick=${() => setView("harvest")}>
+          <span><b>Harvested ${fmtDateLong(parseIsoDay(taken.date))}</b><small>${taken.hunter}${taken.place ? `, ${taken.place}` : ""}</small></span></button>`
+      : html`<div className="row"><${Btn} icon="tag" onClick=${() => { startHarvest(buck.name); setView("harvest"); }}>Log this buck</${Btn}></div>`}
 
     <div className="grid grid--stats">
       <${Stat} label="Sightings" value=${buck.events} sub=${`${fmtDate(buck.first)} to ${fmtDate(buck.last)}`} />

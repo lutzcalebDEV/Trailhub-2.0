@@ -1,10 +1,12 @@
 // Vale Trails — DeerCast: the Home card and the forecast page. The math is in
 // ../deercast.js.
 import { html, useState, useEffect, useMemo, useRef } from "../react.js";
-import { Panel, Segmented, Empty } from "../ui.js";
+import { Segmented, Empty } from "../ui.js";
 import { Icon } from "../icons.js";
 import { LS, usePersistent, fmtTime, fmtDateLong, timeAgo } from "../core.js";
-import { buildCast, standWind, windOver, siteOf, bandOf } from "../deercast.js";
+import { buildCast, standWind, windOver, siteOf, bandOf, daylight, inDaylight } from "../deercast.js";
+import { bestSit } from "../analytics.js";
+import { windowLabel } from "./insights.js";
 import { WindMap } from "./windmap.js";
 
 const cx = (...xs) => xs.filter(Boolean).join(" ");
@@ -48,8 +50,8 @@ function Week({ days, picked, onPick }) {
   </div>`;
 }
 
-function Score({ day, large }) {
-  return html`<div className=${cx("cast__score", tone(day.band), large && "is-large")}
+function Score({ day }) {
+  return html`<div className=${cx("cast__score", tone(day.band))}
     role="img" aria-label=${`${day.shown} out of 10`}>
     <b className="tnum">${day.shown}</b><span>/10</span>
   </div>`;
@@ -62,6 +64,8 @@ export function CastCard(app) {
   const day = cast.days[0];
   const left = day.windows.filter((w) => w.end > now);
   const open = (key) => { openOn = key; app.setView("deercast"); };
+  const next = left[0] || day.windows[0];
+  const stands = next ? (app.data.cameras || []).map((c) => ({ name: app.camName(c.name), r: standWind((app.data.stands || {})[c.name], next.wind) })).filter((x) => x.r) : [];
   return html`<section className="cast" aria-label="DeerCast">
     <button type="button" className="cast__main" onClick=${() => open(day.key)}>
       <span className="cast__text">
@@ -74,6 +78,11 @@ export function CastCard(app) {
       </span>
       <${Score} day=${day} />
     </button>
+    ${stands.length > 0 && html`<div className="cast__stands">
+      ${stands.map((x) => html`<span key=${x.name}><b>${x.name}</b>
+        <span className=${"windpill is-" + x.r.level}><${Icon} name=${x.r.level === "good" ? "check" : x.r.level === "avoid" ? "x" : "info"} size=${13} />${x.r.text}</span></span>`)}
+      <small>${next.label} wind, ${next.wind.dir} ${Math.round(next.wind.speed)} mph · best guess</small>
+    </div>`}
     <${Week} days=${cast.days} onPick=${open} />
     <button type="button" className="cast__more" onClick=${() => open(day.key)}>
       <span>See hourly forecast and wind map</span><${Icon} name="chevronRight" size=${18} />
@@ -82,9 +91,9 @@ export function CastCard(app) {
 }
 
 /* ------------------------------ Hourly curve ------------------------------ */
-// `at` is the chosen quarter hour; dragging here and the slider above move together.
+// `at` is the chosen quarter hour; the chart is the slider that chooses it.
 const W = 720, H = 190, TOP = 14;
-function Curve({ day, at, onPick }) {
+function Curve({ day, at, onPick, time }) {
   const ref = useRef(null);
   const pts = day.points;
   const t0 = pts[0].t, t1 = pts[pts.length - 1].t;
@@ -103,6 +112,7 @@ function Curve({ day, at, onPick }) {
   const p = pts[at];
   const left = ((p.t - t0) / (t1 - t0)) * 100 + "%";
   return html`<div className="castcurve">
+    <div className="castcurve__time"><output style=${{ left: `clamp(42px, ${left}, calc(100% - 42px))` }}>${time}</output></div>
     <div className="castcurve__plot" ref=${ref} tabIndex=${0} role="slider" aria-label="Movement by hour"
       aria-valuemin="0" aria-valuemax=${pts.length - 1} aria-valuenow=${at}
       aria-valuetext=${`${fmtTime(new Date(p.t))}: ${Math.round(p.score)} out of 10`}
@@ -160,6 +170,7 @@ export function DeerCast(app) {
   const spots = (data.cameras || []).filter((c) => c.latitude != null && c.longitude != null)
     .map((c) => ({ name: c.name, label: camName(c.name), latitude: c.latitude, longitude: c.longitude, pinned: c.pinned,
       rating: standWind((data.stands || {})[c.name], wind) }));
+  const sit = bestSit(app.captures, app.ov, site && { ...daylight(new Date(now), site), has: (d) => inDaylight(d, site) });
   const pickDay = (k) => { setPicked(k); setChosen(null); };
 
   return html`<div className="col castpage" style=${{ gap: 18 }}>
@@ -178,6 +189,8 @@ export function DeerCast(app) {
         <div className="castnow__bar"><i style=${{ width: p.score * 10 + "%" }} /></div>
         <div className="castnow__label">${band} deer movement</div>
         <div className="castnow__time">${dayName(day)} at ${time}${chosen == null ? (isNow ? " (now)" : " (best time)") : ""}</div>
+        <div className="castnow__day">${day.ahead === 0 ? "Today" : "Day"} overall: <b>${day.shown}/10, ${day.band.toLowerCase()}</b> · ${Math.round(day.lo)}–${Math.round(day.hi)}° · ${day.moon} moon</div>
+        ${day.ahead >= FAR && html`<div className="castnow__far"><${Icon} name="info" size=${14} />Less certain this far out</div>`}
       </div>
       <dl className="caststrip">
         <div><dt><${Icon} name="thermo" size=${15} />Temp</dt><dd>${w ? Math.round(w.temp) + "°" : "—"}</dd></div>
@@ -186,27 +199,11 @@ export function DeerCast(app) {
         <div><dt><${Icon} name="sunset" size=${15} />Sunset</dt><dd>${fmtTime(new Date(day.light.set))}</dd></div>
       </dl>
       ${site && html`<${WindMap} stands=${spots} site=${site} wind=${wind} time=${time} />`}
-      <div className="castslide">
-        <output style=${{ left: `calc(${(hour / 23) * 100}% + ${(0.5 - hour / 23) * 28}px)` }}>${time}</output>
-        <input type="range" min="0" max="23" step="1" value=${hour} aria-label="Time of day" aria-valuetext=${time}
-          onInput=${(e) => setChosen(Number(e.target.value) * 4)} onChange=${() => {}} />
-        <div className="castslide__ends"><span>12 AM</span>
-          ${chosen != null && html`<button type="button" onClick=${() => setChosen(null)}>${isNow ? "Back to now" : "Back to best time"}</button>`}
-          <span>11 PM</span></div>
+      <div>
+        <${Curve} day=${day} at=${at} onPick=${setChosen} time=${time} />
+        <div className="castcurve__foot"><span>Drag the chart to change the time</span>
+          ${chosen != null && html`<button type="button" onClick=${() => setChosen(null)}>${isNow ? "Back to now" : "Back to best time"}</button>`}</div>
       </div>
-      <p className="castnote">Streaks show where the wind, and your scent, is headed.${spots.some((s) => !s.pinned) ? " Pins are approximate until moved on the Map page." : ""}${wind && wind.speed < 3 ? " Wind this light can drift any direction." : ""}</p>
-    </section>
-
-    <section className="casthero">
-      <div className="casthero__top">
-        <${Score} day=${day} large />
-        <div>
-          <div className="cast__k">${dayName(day)} overall</div>
-          <h2>${day.band} deer movement</h2>
-          <p>${day.why}</p>
-        </div>
-      </div>
-      ${day.ahead >= FAR && html`<p className="casthero__far"><${Icon} name="info" size=${15} />Less certain: weather this far out often changes.</p>`}
       <div className="castwins">
         ${day.windows.map((v) => html`<button type="button" key=${v.label} className=${cx("castwin", v.end <= now && "is-past")}
           onClick=${() => setChosen(P.reduce((b, q, i) => (q.t >= v.start && q.t <= v.end && (b < 0 || q.score > P[b].score) ? i : b), -1))}>
@@ -214,41 +211,17 @@ export function DeerCast(app) {
           <b>${when(v)}</b>
         </button>`)}
       </div>
-      <dl className="castfacts">
-        <div><dt>${allHours ? "Temperature" : "Daylight temps"}</dt><dd>${Math.round(day.lo)}–${Math.round(day.hi)}°F</dd></div>
-        <div><dt>Moon</dt><dd>${day.moon}</dd></div>
-      </dl>
+      <p className="castnote">Streaks show where the wind, and your scent, is headed.${spots.some((s) => !s.pinned) ? " Pins are approximate until moved on the Map page." : ""}${stands.length ? " Stand ratings are best guesses and don't change the score." : ""}${wind && wind.speed < 3 ? " Wind this light can drift any direction." : ""}</p>
     </section>
 
-    <${Panel} title="Hour by hour" actions=${html`<span className="faint tnum" style=${{ fontSize: 13 }}>${time} · ${Math.round(p.score)}/10</span>`}>
-      <${Curve} day=${day} at=${at} onPick=${setChosen} />
-    </${Panel}>
+    ${sit && html`<button type="button" className="linkrow" onClick=${() => { app.setFilter({ camera: sit.camera }); app.setView("gallery"); }}>
+      <span><b>Busiest camera lately: ${camName(sit.camera)}, ${windowLabel(sit)}</b>
+        <small>${sit.count} of ${sit.total} daylight deer sightings in 21 days</small></span><${Icon} name="chevronRight" size=${18} />
+    </button>`}
 
-    ${stands.length > 0 && html`<${Panel} title="Stand wind"
-      actions=${html`<span className="castguess">Best guess</span>`}>
-      <div className="caststands">
-        ${stands.map((c) => html`<div key=${c.name} className="caststand">
-          <b>${camName(c.name)}</b>
-          ${day.windows.map((w) => {
-            const r = standWind(data.stands[c.name], w.wind);
-            return r && html`<div key=${w.label} className="caststand__row">
-              <span className="muted">${w.label}</span>
-              <span className="caststand__wind">
-                <svg className="castarrow" width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"
-                  style=${{ transform: `rotate(${w.wind.deg + 180}deg)` }}><path d="M12 3v18M6 9l6-6 6 6" /></svg>
-                ${w.wind.dir} ${Math.round(w.wind.speed)} mph
-              </span>
-              <span className=${"windpill is-" + r.level}>
-                <${Icon} name=${r.level === "good" ? "check" : r.level === "avoid" ? "x" : "info"} size=${13} />${r.text}
-              </span>
-            </div>`;
-          })}
-        </div>`)}
-      </div>
-      <p className="castnote">Arrows show where your scent blows. Based on your walk-in, not on where deer have been seen, and hills and evening air can differ. It doesn't change the score.</p>
-    </${Panel}>`}
-
-    <${Panel} title=${`Why ${day.shown}`}>
+    <details className="panel castdetails">
+      <summary><span><b>Why ${day.ahead <= 1 ? dayName(day).toLowerCase() : dayName(day)} is ${day.shown}/10</b><small>${day.why}</small></span><${Icon} name="chevronDown" size=${18} /></summary>
+      <div className="panel__body">
       <div className="castwhy">
         <div className="castwhy__row is-base"><span>Ordinary day</span><span /><b className="tnum">5.0</b></div>
         ${day.factors.map((f) => html`<div key=${f.id} className="castwhy__row">
@@ -262,6 +235,7 @@ export function DeerCast(app) {
         <div className="castwhy__row is-total"><span>Score</span><span /><b className="tnum">${day.score.toFixed(1)}</b></div>
       </div>
       <p className="castnote">A starting estimate from deer research and ${cast.visits} deer visit${cast.visits === 1 ? "" : "s"} on your cameras in the last 60 days. It hasn't been checked against results yet, and it isn't a percent chance. The moon isn't scored because studies disagree about it. Daylight runs from 30 minutes before sunrise to 30 minutes after sunset.</p>
-    </${Panel}>
+    </div>
+    </details>
   </div>`;
 }
