@@ -55,7 +55,7 @@ export function loadLeaflet() {
 const coarse = () => window.matchMedia("(pointer: coarse)").matches;
 
 export function MapView(app) {
-  const { data, captures, ov, filters, setFilter, setView, spList, theme, camName, renameCamera, savePins, harvests, loadHarvests, auth, openSignIn } = app;
+  const { data, captures, ov, filters, setFilter, setView, spList, theme, camName, renameCamera, savePins, stands, loadStands, harvests, loadHarvests, auth, openSignIn } = app;
   const [leafletReady, setLeafletReady] = useState(() => !!window.L);
   useEffect(() => {
     if (leafletReady) return;
@@ -159,6 +159,23 @@ export function MapView(app) {
   const parcelNote = { zoom: "Zoom in to see property lines", loading: "Loading property lines",
     some: "Too many to show. Zoom in for the rest", error: "Property lines are unavailable right now",
     ok: "Approximate tax parcels, not a survey" }[parcelState];
+
+  // Stands added on the Live wind map.
+  useEffect(() => { loadStands(); }, [loadStands]);
+  useEffect(() => {
+    const L = window.L, map = mapRef.current;
+    if (moving || !auth || !L || !map) return undefined;
+    const group = L.layerGroup().addTo(map);
+    stands.forEach((s) => {
+      const el = document.createElement("div");
+      el.className = "windpin is-none";
+      const b = document.createElement("b");
+      b.textContent = s.name; // typed by people, so never as HTML
+      el.append(b);
+      L.marker([s.lat, s.lng], { interactive: false, keyboard: false, icon: L.divIcon({ className: "", iconSize: [0, 0], html: el }) }).addTo(group);
+    });
+    return () => { group.remove(); };
+  }, [stands, moving, auth, cams, theme, leafletReady]);
 
   // Where deer were taken, when turned on.
   const [harvestLayer, setHarvestLayer] = usePersistent(LS.mapHarvests, "off");

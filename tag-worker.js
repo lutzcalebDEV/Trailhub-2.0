@@ -1323,6 +1323,48 @@ async function handlePins(request, env, who) {
   return json({ ok: true, pins: out });
 }
 
+/* -------------------------------- Stands --------------------------------- */
+// Stands added on the Live wind map, with exact spots: in the accounts namespace, one
+// entry each ("stand:<id>"), never in R2 or the repo.
+//   GET  /stands                     -> { stands: [...] }
+//   POST /stands { stand: {...} }    adds one, or changes it when it has an id
+//   POST /stands { remove: id }
+// People change their own; an admin can change any.
+const STAND_PREFIX = "stand:";
+const STAND_MAX = 100;
+async function handleStands(request, env, who) {
+  if (!env.ACCOUNTS) return json({ error: "Stands need the ACCOUNTS namespace." }, 503);
+  const readAll = async () => {
+    const page = await env.ACCOUNTS.list({ prefix: STAND_PREFIX });
+    return (await Promise.all(page.keys.map((k) => env.ACCOUNTS.get(k.name, "json")))).filter(Boolean);
+  };
+  if (request.method === "GET") return json({ stands: await readAll() });
+  if (request.method !== "POST") return json({ error: "Method not allowed." }, 405);
+  const payload = (await request.json().catch(() => null)) || {};
+  const s = payload.stand && typeof payload.stand === "object" ? payload.stand : null;
+  const wanted = payload.remove || (s && s.id) || null;
+  if (wanted && !HARVEST_ID.test(String(wanted))) return json({ error: "Not found." }, 404);
+  const old = wanted ? await env.ACCOUNTS.get(STAND_PREFIX + wanted, "json") : null;
+  if (wanted && !old) return json({ error: "Not found." }, 404);
+  if (old && !who.admin && String(old.by).toLowerCase() !== who.user.toLowerCase()) return json({ error: "Not yours." }, 403);
+  if (payload.remove) {
+    await env.ACCOUNTS.delete(STAND_PREFIX + wanted);
+    return json({ ok: true, removed: wanted });
+  }
+  if (!s) return json({ error: "Nothing to save." }, 400);
+  const name = cleanName(s.name).slice(0, 40);
+  if (!name) return json({ error: "Give the stand a name." }, 400);
+  const spot = [s.lat, s.lng].every((v) => typeof v === "number" && Number.isFinite(v))
+    && Math.abs(s.lat) <= 85 && Math.abs(s.lng) <= 180;
+  if (!spot) return json({ error: "That spot isn't valid." }, 400);
+  if (!old && (await readAll()).length >= STAND_MAX) return json({ error: "Too many stands." }, 400);
+  const now = new Date().toISOString();
+  const stand = { id: wanted || crypto.randomUUID(), name, lat: Math.round(s.lat * 1e5) / 1e5, lng: Math.round(s.lng * 1e5) / 1e5,
+    by: old ? old.by : who.user, at: old ? old.at : now, ...(old ? { editedBy: who.user, editedAt: now } : {}) };
+  await env.ACCOUNTS.put(STAND_PREFIX + stand.id, JSON.stringify(stand));
+  return json({ ok: true, stand });
+}
+
 /* ------------------------------- Harvests -------------------------------- */
 // Deer taken, with the exact spot, so they're kept with the pins: in the accounts
 // namespace, one entry each ("harvest:<id>"), never in R2 or the repo.
@@ -1513,6 +1555,7 @@ export default {
         });
       }
       if (path === "/harvests") return await handleHarvests(request, env, who);
+      if (path === "/stands") return await handleStands(request, env, who);
       if (path === "/pins") return await handlePins(request, env, who);
       if (request.method === "GET" && path === "/media-token") return json(await makeMediaToken(env, who.user));
       if (request.method === "GET" && path !== "/accounts" && path !== "/passkeys" && path !== "/password") {

@@ -413,6 +413,8 @@ that line lists the field names SPYPOINT sent, so the extractor can be matched t
 - **Map pins**: `data.js` holds camera positions rounded to about 1 km. Exact spots are
   set with **Move pins** on the Map page and kept only in the Worker's private ACCOUNTS
   store (`/pins`), for signed-in people.
+- **Stands** added on DeerCast's Live wind map (`/stands` on the Worker) are kept in the
+  private ACCOUNTS store. People edit their own; admins edit any.
 - **Property lines** on the Map page are North Carolina's public tax parcels from
   [NC OneMap](https://www.nconemap.gov/) (free, no key). They're approximate, not a survey.
 - **Harvests** (`/harvests` on the Worker) are kept in the private ACCOUNTS store. People
@@ -426,6 +428,9 @@ that line lists the field names SPYPOINT sent, so the extractor can be matched t
 - Once a day `deercast_log.mjs` saves that day's forecast for the days ahead to
   `deercast-log.json` (private storage) and never changes it, so forecasts can be
   checked later against what the cameras saw. Nothing on the site reads it yet.
+- DeerCast's wind is Open-Meteo's own pick for 12 hours and NOAA's National Blend after
+  that; when those and the European model differ by over 45° it says "uncertain". "Right
+  now" is the Lincolnton or Hickory airport's reading from the National Weather Service.
 - Weather comes from [Open-Meteo](https://open-meteo.com/) (free, no key) for the
   whole property, not each camera. A `~` before a temperature means it's from that
   data because the photo's info bar couldn't be read.

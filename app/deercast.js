@@ -15,7 +15,9 @@ const COMPASS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
 export const DAYS_AHEAD = 7;
 // Raise this whenever the scoring changes, so saved forecasts (deercast_log.mjs) are
 // only compared with others scored the same way.
-export const MODEL = 2; // 2: temperature against 30-year normals; rain by the hour
+// 2: temperature against 30-year normals; rain by the hour. 3: wind past 12 hours from
+// the National Blend.
+export const MODEL = 3;
 
 /* --------------------------------- Sun ----------------------------------- */
 // Daylight counts from 30 minutes before sunrise to 30 minutes after sunset.
@@ -55,17 +57,34 @@ export function siteOf(data) {
 }
 
 /* -------------------------------- Weather --------------------------------- */
-// One "temp|rain|pressure|wind|direction|gust|rain chance" string per hour.
+// Which wind to believe, from 90 days against the Lincolnton and Hickory airports
+// (Aug–Nov 2026): Open-Meteo's own pick was best the same day, NOAA's National Blend a
+// day or more ahead. Those two and the European model are compared: when one is over
+// 45° from the chosen one, the direction proved wrong about 4 times in 10, against
+// fewer than 1 in 10 when all agree.
+const BLEND_AFTER = 12 * HOUR;
+const APART = 45;
+function windAt(v, t, fetched) {
+  const at = (i) => (Number.isFinite(v[i]) && Number.isFinite(v[i + 1])
+    ? { wind: v[i], dir: v[i + 1], gust: Number.isFinite(v[i + 2]) ? v[i + 2] : v[i] } : null);
+  const own = at(3), blend = at(7), euro = at(10);
+  const use = blend && Number.isFinite(fetched) && t > fetched + BLEND_AFTER ? blend : own;
+  return { ...use, others: [own, blend, euro].filter((x) => x && x !== use) };
+}
+
+// One string per hour: "temp|rain|pressure|wind|direction|gust|rain chance", then wind,
+// direction and gust from the National Blend and from the European model.
 export function parseHours(forecast) {
   const start = forecast ? Date.parse(forecast.start) : NaN;
+  const fetched = forecast ? Date.parse(forecast.fetchedAt) : NaN;
   const map = new Map();
   if (!Number.isFinite(start)) return map;
   forecast.hours.forEach((row, i) => {
     const v = row.split("|").map((x) => (x === "" ? NaN : Number(x)));
     if (!v.slice(0, 5).every(Number.isFinite)) return;
     map.set(start + i * HOUR, {
-      t: start + i * HOUR, temp: v[0], rain: v[1], pressure: v[2], wind: v[3], dir: v[4],
-      gust: Number.isFinite(v[5]) ? v[5] : v[3], chance: Number.isFinite(v[6]) ? v[6] : null,
+      t: start + i * HOUR, temp: v[0], rain: v[1], pressure: v[2],
+      ...windAt(v, start + i * HOUR, fetched), chance: Number.isFinite(v[6]) ? v[6] : null,
     });
   });
   return map;
@@ -75,19 +94,26 @@ const between = (hours, a, b) => {
   for (let t = Math.floor(a / HOUR) * HOUR; t < b; t += HOUR) if (hours.has(t)) out.push(hours.get(t));
   return out;
 };
+export const compass = (deg) => COMPASS[Math.floor(((((deg % 360) + 360) % 360 + 22.5) % 360) / 45)];
+const around360 = (a, b) => { const d = Math.abs(a - b) % 360; return Math.min(d, 360 - d); };
+function arrow(rows) {
+  const rad = Math.PI / 180;
+  const x = mean(rows.map((r) => r.wind * Math.sin(r.dir * rad)));
+  const y = mean(rows.map((r) => r.wind * Math.cos(r.dir * rad)));
+  return { speed: mean(rows.map((r) => r.wind)), deg: (Math.atan2(x, y) / rad + 360) % 360, length: Math.hypot(x, y) };
+}
 // Directions are averaged as arrows: 350° and 10° make north, not south. Each hour
 // counts by its speed, and the arrow's length shows whether the direction held.
 export function windOver(rows) {
   if (!rows.length) return null;
-  const rad = Math.PI / 180;
-  const speed = mean(rows.map((r) => r.wind));
-  const x = mean(rows.map((r) => r.wind * Math.sin(r.dir * rad)));
-  const y = mean(rows.map((r) => r.wind * Math.cos(r.dir * rad)));
-  const deg = (Math.atan2(x, y) / rad + 360) % 360;
+  const { speed, deg, length } = arrow(rows);
+  // Another forecast pointing somewhere else. Light winds wander too much to compare.
+  const count = Math.min(...rows.map((r) => (r.others || []).length));
+  const unsure = speed >= 3 && Array.from({ length: count }, (_, k) => arrow(rows.map((r) => r.others[k])))
+    .some((o) => o.speed >= 3 && around360(o.deg, deg) > APART);
   return {
-    speed, gust: Math.max(...rows.map((r) => r.gust)), deg,
-    dir: COMPASS[Math.floor(((deg + 22.5) % 360) / 45)],
-    steady: speed >= 3 && Math.hypot(x, y) / speed >= 0.7,
+    speed, gust: Math.max(...rows.map((r) => r.gust)), deg, dir: compass(deg),
+    steady: speed >= 3 && length / speed >= 0.7, unsure,
   };
 }
 
@@ -344,6 +370,7 @@ export function conditionsAt(data, captures, ov, when) {
 /* ------------------------------ Stand wind -------------------------------- */
 export function standWind(stand, wind) {
   if (!stand || !wind) return null;
+  if (wind.unsure) return { level: "risky", text: "Uncertain" };
   if (!wind.steady) return { level: "risky", text: wind.speed < 3 ? "Light, scent may drift" : "Shifting" };
   if ((stand.good || []).includes(wind.dir)) return { level: "good", text: "Good" };
   if ((stand.avoid || []).includes(wind.dir)) return { level: "avoid", text: "Avoid" };

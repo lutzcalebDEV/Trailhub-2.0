@@ -3,11 +3,12 @@
 import { html, useState, useEffect, useMemo, useRef } from "../react.js";
 import { Segmented, Empty } from "../ui.js";
 import { Icon } from "../icons.js";
-import { LS, usePersistent, fmtTime, fmtDateLong, timeAgo } from "../core.js";
-import { buildCast, standWind, windOver, siteOf, bandOf, daylight, inDaylight } from "../deercast.js";
+import { LS, usePersistent, fmtTime, fmtDateLong, timeAgo, fetchWindNow } from "../core.js";
+import { buildCast, standWind, windOver, siteOf, bandOf, daylight, inDaylight, compass } from "../deercast.js";
 import { bestSit } from "../analytics.js";
 import { windowLabel } from "./insights.js";
 import { WindMap } from "./windmap.js";
+import { LiveWind, allStands } from "./livewind.js";
 
 const cx = (...xs) => xs.filter(Boolean).join(" ");
 const tone = (band) => "cast-" + band.toLowerCase();
@@ -81,7 +82,7 @@ export function CastCard(app) {
     ${stands.length > 0 && html`<div className="cast__stands">
       ${stands.map((x) => html`<span key=${x.name}><b>${x.name}</b>
         <span className=${"windpill is-" + x.r.level}><${Icon} name=${x.r.level === "good" ? "check" : x.r.level === "avoid" ? "x" : "info"} size=${13} />${x.r.text}</span></span>`)}
-      <small>${next.label} wind, ${next.wind.dir} ${Math.round(next.wind.speed)} mph · best guess</small>
+      <small>${next.label} wind, ${next.wind.unsure ? "direction uncertain," : next.wind.dir} ${Math.round(next.wind.speed)} mph · best guess</small>
     </div>`}
     <${Week} days=${cast.days} onPick=${open} />
     <button type="button" className="cast__more" onClick=${() => open(day.key)}>
@@ -136,6 +137,31 @@ function Curve({ day, at, onPick, time }) {
   </div>`;
 }
 
+/* -------------------------------- Right now ------------------------------- */
+// The nearest airport's reading, beside what the forecast says for this hour. Checked
+// when the page opens and when the forecast is refreshed.
+function WindNow({ site, forecast, now }) {
+  const [obs, setObs] = useState(null);
+  const fetched = forecast ? forecast.fetchedAt : "";
+  useEffect(() => {
+    let live = true;
+    const load = () => fetchWindNow().then((o) => { if (live) setObs(o); });
+    load();
+    const id = setInterval(() => { if (!document.hidden) load(); }, 10 * 60000);
+    return () => { live = false; clearInterval(id); };
+  }, [fetched]);
+  if (!obs || now - obs.at > 2 * 3600000) return null;
+  const a = obs.airport;
+  const miles = Math.round(Math.hypot((a.lat - site.lat) * 69, (a.lng - site.lng) * 69 * Math.cos((site.lat * Math.PI) / 180)));
+  const calm = obs.speed < 1;
+  return html`<div className="windnow">
+    ${!calm && obs.deg != null && html`<svg className="castarrow" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"
+      style=${{ transform: `rotate(${obs.deg + 180}deg)` }}><path d="M12 3v18M6 9l6-6 6 6" /></svg>`}
+    <span><b>Right now: ${calm ? "calm" : `${obs.deg != null ? compass(obs.deg) + " " : ""}${Math.round(obs.speed)} mph${obs.gust ? `, gusts ${Math.round(obs.gust)}` : ""}`}</b>
+      <small>${a.name}, ${miles} miles away · ${timeAgo(new Date(obs.at), now)}</small></span>
+  </div>`;
+}
+
 /* ---------------------------------- Page ---------------------------------- */
 const pts = (n) => (n > 0 ? "+" : n < 0 ? "−" : "") + Math.abs(n).toFixed(1);
 const MAX_PTS = 2;
@@ -146,6 +172,8 @@ export function DeerCast(app) {
   const allHours = mode === "all";
   const [cast, now] = useCast(app, allHours);
   const [picked, setPicked] = useState(() => { const k = openOn; openOn = null; return k; });
+  const [live, setLive] = useState(false);
+  useEffect(() => { app.loadStands(); }, [app.loadStands]);
   const [chosen, setChosen] = useState(null); // quarter hour of the day, or null for now/best
 
   if (!cast) {
@@ -167,9 +195,7 @@ export function DeerCast(app) {
   const hour = Math.min(23, Math.floor(at / 4));
   const band = bandOf(p.score);
   const site = siteOf(data);
-  const spots = (data.cameras || []).filter((c) => c.latitude != null && c.longitude != null)
-    .map((c) => ({ name: c.name, label: camName(c.name), latitude: c.latitude, longitude: c.longitude, pinned: c.pinned,
-      rating: standWind((data.stands || {})[c.name], wind) }));
+  const spots = allStands(app).map((s) => ({ ...s, name: s.id, rating: s.camera ? standWind((data.stands || {})[s.camera], wind) : null }));
   const sit = bestSit(app.captures, app.ov, site && { ...daylight(new Date(now), site), has: (d) => inDaylight(d, site) });
   const pickDay = (k) => { setPicked(k); setChosen(null); };
 
@@ -198,7 +224,10 @@ export function DeerCast(app) {
         <div><dt><${Icon} name="sunrise" size=${15} />Sunrise</dt><dd>${fmtTime(new Date(day.light.rise))}</dd></div>
         <div><dt><${Icon} name="sunset" size=${15} />Sunset</dt><dd>${fmtTime(new Date(day.light.set))}</dd></div>
       </dl>
-      ${site && html`<${WindMap} stands=${spots} site=${site} wind=${wind} time=${time} />`}
+      ${site && html`<${WindMap} stands=${spots} site=${site} wind=${wind} time=${time} onOpen=${() => setLive(true)} />`}
+      ${live && site && html`<${LiveWind} app=${app} site=${site} onClose=${() => setLive(false)}
+        right=${html`<${WindNow} site=${site} forecast=${data.forecast} now=${now} />`} />`}
+      ${site && html`<${WindNow} site=${site} forecast=${data.forecast} now=${now} />`}
       <div>
         <${Curve} day=${day} at=${at} onPick=${setChosen} time=${time} />
         <div className="castcurve__foot"><span>Drag the chart to change the time</span>
@@ -211,7 +240,7 @@ export function DeerCast(app) {
           <b>${when(v)}</b>
         </button>`)}
       </div>
-      <p className="castnote">Streaks show where the wind, and your scent, is headed.${spots.some((s) => !s.pinned) ? " Pins are approximate until moved on the Map page." : ""}${stands.length ? " Stand ratings are best guesses and don't change the score." : ""}${wind && wind.speed < 3 ? " Wind this light can drift any direction." : ""}</p>
+      <p className="castnote">Streaks show the wind, and the plumes where scent blows from each stand.${spots.some((s) => !s.pinned) ? " Pins are approximate until moved on the Map page." : ""}${stands.length ? " Stand ratings are best guesses and don't change the score." : ""}${wind && wind.unsure ? " Forecasts disagree by more than 45° here, so check the wind when you arrive." : ""}${wind && wind.speed < 3 ? " Wind this light can drift any direction." : ""}</p>
     </section>
 
     ${sit && html`<button type="button" className="linkrow" onClick=${() => { app.setFilter({ camera: sit.camera }); app.setView("gallery"); }}>

@@ -2188,3 +2188,57 @@ button.harvest__photo { cursor: pointer; }
   .actrow__peak { order: 3; flex-basis: 100%; margin-left: 0; text-align: left; }
   .actrow__total { margin-left: auto; }
 }
+
+.windnow { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--r-md); }
+.windnow b { display: block; font-size: 14px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.windnow small { font-size: 12.5px; color: var(--text-muted); }
+
+/* Live wind */
+.windmap__open { position: absolute; z-index: 600; left: 10px; bottom: 24px; }
+.livewind { position: fixed; inset: 0; z-index: 56; display: flex; flex-direction: column; background: var(--bg); }
+@media (max-width: 900px) { .livewind { bottom: var(--tab-bar-h, 0px); } }
+.livewind__stage { position: relative; flex: 1; min-height: 0; isolation: isolate; overflow: hidden; }
+.livewind .livewind__map { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; border-radius: 0; }
+.livewind__top { position: absolute; z-index: 600; top: calc(10px + env(safe-area-inset-top, 0px)); left: 10px; right: 10px; display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; pointer-events: none; }
+.livewind__top > * { pointer-events: auto; }
+.livewind__badge { display: flex; align-items: center; gap: 10px; padding: 8px 13px; border-radius: var(--r-md); background: rgba(10,14,12,.86); color: #fff; min-width: 0; }
+.livewind__badge .castarrow { stroke: #6ee7b7; }
+.livewind__badge b { display: block; font-size: 16px; line-height: 1.2; }
+.livewind__badge small { font-size: 12.5px; color: rgba(255,255,255,.82); }
+.livewind__side { position: absolute; z-index: 600; right: 10px; top: calc(76px + env(safe-area-inset-top, 0px)); display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.mapbox__pill.is-main { background: var(--accent); border-color: var(--accent); color: var(--accent-contrast); }
+.livewind .mapbox__note { z-index: 600; bottom: 16px; }
+.livewind__cross { position: absolute; z-index: 600; left: 50%; top: 50%; width: 54px; height: 54px; margin: -27px 0 0 -27px; pointer-events: none; }
+.livewind__cross::before, .livewind__cross::after { content: ""; position: absolute; background: #fff; box-shadow: 0 0 0 1.5px rgba(0,0,0,.65); }
+.livewind__cross::before { left: 26px; top: 0; width: 2px; height: 54px; }
+.livewind__cross::after { top: 26px; left: 0; height: 2px; width: 54px; }
+.windpin__hit { background: none; border: 0; }
+.windpin__hit .windpin { left: 22px; top: 22px; cursor: pointer; }
+.windpin.is-none { --pin: #ff7a2f; }
+.windpin.is-sel { outline: 2px solid #fff; }
+.livewind__panel { flex: none; padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--border); background: var(--surface); max-height: 52%; overflow-y: auto; }
+@media (max-width: 900px) { .livewind__panel { padding-bottom: 12px; } }
+.livewind__panel .windnow { padding: 0 0 10px; border: 0; border-radius: 0; }
+.livewind__head b { display: block; font-size: 16px; font-weight: 700; overflow-wrap: anywhere; }
+.livewind__head small, .livewind__next small, .livewind__hint { font-size: 12.5px; color: var(--text-muted); }
+.livewind__stand { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding-bottom: 10px; }
+.livewind__stand .livewind__head { flex: 1; min-width: 96px; }
+.livewind__stand .btn { min-height: 40px; }
+.livewind__hint { flex-basis: 100%; }
+.livewind__next { display: flex; align-items: center; gap: 12px; padding-bottom: 10px; }
+.livewind__next b { display: block; font-size: 14px; font-weight: 650; }
+.livewind__play { flex: none; display: grid; place-items: center; width: 46px; height: 46px; border: 0; border-radius: 50%; background: var(--accent); color: var(--accent-contrast); cursor: pointer; }
+.livewind__pause { width: 14px; height: 16px; border-inline: 5px solid currentColor; }
+.livewind__strip { position: relative; display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.livewind__strip::-webkit-scrollbar { display: none; }
+.livewind__hour { flex: none; display: flex; flex-direction: column; align-items: center; gap: 4px; width: 58px; padding: 8px 2px; border: 1px solid transparent; border-radius: var(--r-md); background: none; color: var(--text); font: inherit; cursor: pointer; }
+.livewind__hour span { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+.livewind__hour b { font-size: 16px; line-height: 1; }
+.livewind__hour small { font-size: 12px; color: var(--text-muted); }
+.livewind__hour.is-active { background: var(--surface-2); border-color: var(--border-strong); }
+.livewind__hour.is-active .castarrow { stroke: var(--accent); }
+.livewind__form { display: flex; flex-direction: column; gap: 12px; }
+.livewind__acts { display: flex; align-items: center; gap: 8px; }
+.livewind__acts .btn { min-height: 44px; }
+/* The keyboard hides the tab bar, so the sheet reaches the bottom then. */
+:root[data-keyboard] .livewind { bottom: 0; }

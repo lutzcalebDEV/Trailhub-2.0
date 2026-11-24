@@ -6,6 +6,7 @@ import { Icon } from "../icons.js";
 import { isoDay, parseIsoDay, fmtDateLong, fmtTime, newUploadId, uploadPhoto, uploadThumb, uploadImageUrl, StorageFull } from "../core.js";
 import { siteOf, conditionsAt } from "../deercast.js";
 import { prepare } from "../upload.js";
+import { allStands } from "./livewind.js";
 import { loadLeaflet, SAT_TILES, SAT_CREDIT } from "./mapview.js";
 
 const hhmm = (d) => `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
@@ -79,7 +80,7 @@ async function sendPhoto(file, when, kind, buck, auth) {
 }
 
 function HarvestForm({ app, entry, startBuck, onDone }) {
-  const { data, camName, auth, saveHarvest, removeHarvest, buckNames } = app;
+  const { data, auth, saveHarvest, removeHarvest, buckNames } = app;
   const now = new Date();
   const [date, setDate] = useState(entry ? entry.date : isoDay(now));
   const [time, setTime] = useState(entry ? entry.time : hhmm(now));
@@ -102,7 +103,8 @@ function HarvestForm({ app, entry, startBuck, onDone }) {
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const site = siteOf(data);
-  const stands = (data.cameras || []).filter((c) => c.latitude != null);
+  useEffect(() => { app.loadStands(); }, [app.loadStands]);
+  const stands = allStands(app);
   useEffect(() => { if (spot || place.trim()) setError(""); }, [spot, place]);
 
   const locate = () => {
@@ -171,8 +173,8 @@ function HarvestForm({ app, entry, startBuck, onDone }) {
       <div className="harvestform__loc">
         <div className="field-row"><span>Location</span></div>
         <div className="harvestform__chips">
-          ${stands.map((c) => html`<button type="button" key=${c.name} className=${"chip" + (place === camName(c.name) ? " is-active" : "")}
-            onClick=${() => { setPlace(camName(c.name)); setSpot([c.latitude, c.longitude]); }}>${camName(c.name)}</button>`)}
+          ${stands.map((s) => html`<button type="button" key=${s.id} className=${"chip" + (place === s.label ? " is-active" : "")}
+            onClick=${() => { setPlace(s.label); setSpot([s.latitude, s.longitude]); }}>${s.label}</button>`)}
           <button type="button" className="chip" onClick=${locate} disabled=${busy === "locating"}>
             <${Icon} name="target" size=${14} />${busy === "locating" ? "Finding you" : "My location"}</button>
         </div>

@@ -1054,6 +1054,10 @@ def update_weather(captures):
 # ---- DeerCast (the site's deer forecast, app/deercast.js) -------------------
 # The week behind is fetched too: "cooler than usual" needs something to compare with.
 _FORECAST_VARS = _WEATHER_VARS + ",wind_gusts_10m,precipitation_probability"
+# Wind from two more forecasts: NOAA's National Blend, better past the first 12 hours,
+# and the European model, to see whether they agree.
+_WIND_MODELS = ("ncep_nbm_conus", "ecmwf_ifs025")
+_WIND_VARS = ("wind_speed_10m", "wind_direction_10m", "wind_gusts_10m")
 FORECAST_MAX_AGE = 3 * 3600  # seconds between fetches
 
 
@@ -1063,6 +1067,26 @@ def load_forecast():
         return data if isinstance(data, dict) and data.get("hours") else None
     except (OSError, ValueError):
         return None
+
+
+def _second_winds(hourly_time):
+    """The other forecasts' wind for each hour, or blanks if they can't be had."""
+    import urllib.request
+    width = len(_WIND_MODELS) * len(_WIND_VARS)
+    blank = [[None] * width for _ in hourly_time]
+    try:
+        url = ("https://api.open-meteo.com/v1/forecast?"
+               + _WEATHER_QUERY.replace(_WEATHER_VARS, ",".join(_WIND_VARS))
+               + "&past_days=7&forecast_days=9&models=" + ",".join(_WIND_MODELS))
+        request = urllib.request.Request(url, headers={"User-Agent": "TrailHub/1.0"})
+        with urllib.request.urlopen(request, timeout=30) as response:
+            hourly = json.loads(response.read().decode("utf-8"))["hourly"]
+        columns = [hourly[f"{v}_{m}"] for m in _WIND_MODELS for v in _WIND_VARS]
+        at = {t: [col[i] for col in columns] for i, t in enumerate(hourly["time"])}
+        return [at.get(t, [None] * width) for t in hourly_time]
+    except Exception as e:
+        print(f"  [forecast] second wind sources skipped: {e}")
+        return blank
 
 
 def update_forecast():
@@ -1083,6 +1107,9 @@ def update_forecast():
             hourly = json.loads(response.read().decode("utf-8"))["hourly"]
         columns = [hourly[v] for v in _FORECAST_VARS.split(",")]
         rows = [[col[i] for col in columns] for i in range(len(hourly["time"]))]
+        if not rows:
+            raise ValueError("no hours returned")
+        rows = [row + more for row, more in zip(rows, _second_winds(hourly["time"]))]
         # One short string per hour keeps data.js small; a missing value is blank.
         data = {
             "fetchedAt": now.isoformat(timespec="seconds"),
@@ -1090,8 +1117,6 @@ def update_forecast():
             "start": hourly["time"][0] + "Z",
             "hours": ["|".join("" if v is None else f"{v:g}" for v in row) for row in rows],
         }
-        if not rows:
-            raise ValueError("no hours returned")
         atomic_write_text(FORECAST_FILE, json.dumps(data, separators=(",", ":")))
     except Exception as e:
         print(f"  [forecast] kept the last one: {e}")

@@ -1,22 +1,31 @@
-// Vale Trails — DeerCast's wind map: aerial photo, the two stands, and streaks that
+// Vale Trails — DeerCast's wind map: aerial photo, the stands, and streaks that
 // drift the way the wind blows. One forecast covers the property, so every streak
 // moves the same way.
 import { html, useState, useEffect, useRef } from "../react.js";
+import { Icon } from "../icons.js";
 import { loadLeaflet, SAT_TILES, SAT_CREDIT } from "./mapview.js";
 
 const COUNT = 46;
 const rad = (d) => (d * Math.PI) / 180;
 const still = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+// Where scent blows from a stand, in the color of its rating.
+const PLUME = { good: "52,211,153", risky: "245,181,63", avoid: "240,113,111" };
+export const plumeColor = (rating) => PLUME[rating && rating.level] || "255,122,47";
+const PUFFS = 90;
+const puff = () => ({ at: Math.random(), side: (Math.random() + Math.random() + Math.random()) / 1.5 - 1, size: 1 + Math.random() * 1.7 });
+
 // Draws the wind on a canvas over the map. `getWind` gives { speed, deg }, the mph and
-// the direction it blows FROM. Returns a function that stops it.
-function runWind(canvas, getWind) {
+// the direction it blows FROM; `getPlumes`, if given, each stand's { id, x, y, color } on
+// the canvas. Returns { wake, stop }.
+export function runWind(canvas, getWind, getPlumes) {
   const ctx = canvas.getContext("2d");
   let w = 0, h = 0, frame = 0, last = 0, onScreen = true;
   // Eased toward the chosen hour, so moving the slider swings the streaks around.
   let cur = null;
   const seed = () => ({ x: Math.random(), y: Math.random(), age: Math.random(), life: 2.6 + Math.random() * 2, phase: Math.random() * 6.3 });
   const bits = Array.from({ length: COUNT }, seed);
+  const plumes = new Map(); // stand id -> its puffs
 
   const size = () => {
     const r = canvas.getBoundingClientRect();
@@ -61,11 +70,28 @@ function runWind(canvas, getWind) {
       ctx.strokeStyle = `rgba(0,0,0,${0.35 * fade})`; ctx.lineWidth = 3.6; path();
       ctx.strokeStyle = `rgba(255,255,255,${0.9 * fade})`; ctx.lineWidth = 1.8; path();
     }
+    // Scent: a cone of puffs from each stand. It opens wide when the wind is light or the
+    // forecasts disagree, because then nobody knows where it goes.
+    const reach = 70 + Math.min(90, cur.s * 9);
+    const open = want.unsure || cur.s < 3 ? 0.62 : 0.2;
+    for (const p of getPlumes ? getPlumes() : []) {
+      if (p.x < -200 || p.y < -200 || p.x > w + 200 || p.y > h + 200) continue;
+      if (!plumes.has(p.id)) plumes.set(p.id, Array.from({ length: PUFFS }, puff));
+      for (const f of plumes.get(p.id)) {
+        f.at += dt * (0.16 + cur.s * 0.025);
+        if (f.at >= 1) Object.assign(f, puff(), { at: 0 });
+        const along = f.at * reach, off = f.side * along * open;
+        ctx.fillStyle = `rgba(${p.color},${(0.95 * (1 - f.at * 0.75)).toFixed(2)})`;
+        ctx.beginPath();
+        ctx.arc(p.x + ux * along - uy * off, p.y + uy * along + ux * off, f.size + f.at * 1.6, 0, 6.3);
+        ctx.fill();
+      }
+    }
     // Keep the stand names clear.
     const at = canvas.getBoundingClientRect();
     for (const el of canvas.parentNode.querySelectorAll(".windpin")) {
       const r = el.getBoundingClientRect();
-      ctx.clearRect(r.left - at.left - 2, r.top - at.top - 2, r.width + 4, r.height + 18);
+      ctx.clearRect(r.left - at.left - 2, r.top - at.top - 2, r.width + 4, r.height + 4);
     }
   };
   const loop = (t) => {
@@ -91,7 +117,7 @@ function runWind(canvas, getWind) {
 }
 
 // `stands`: [{ name, label, latitude, longitude, rating }]; `wind`: { speed, gust, deg, dir }.
-export function WindMap({ stands, site, wind, time }) {
+export function WindMap({ stands, site, wind, time, onOpen }) {
   const [ready, setReady] = useState(() => !!window.L);
   const [trouble, setTrouble] = useState("");
   const elRef = useRef(null);
@@ -100,6 +126,8 @@ export function WindMap({ stands, site, wind, time }) {
   const animRef = useRef(null);
   const windRef = useRef(wind);
   windRef.current = wind;
+  const standsRef = useRef(stands);
+  standsRef.current = stands;
 
   useEffect(() => {
     if (ready) return undefined;
@@ -155,14 +183,20 @@ export function WindMap({ stands, site, wind, time }) {
 
   useEffect(() => {
     if (!canvasRef.current) return undefined;
-    const a = runWind(canvasRef.current, () => windRef.current);
+    const a = runWind(canvasRef.current, () => windRef.current, () => {
+      const map = mapRef.current;
+      return map ? standsRef.current.map((s) => {
+        const at = map.latLngToContainerPoint([s.latitude, s.longitude]);
+        return { id: s.id || s.name, x: at.x, y: at.y, color: plumeColor(s.rating) };
+      }) : [];
+    });
     animRef.current = a;
     return () => a.stop();
   }, []);
   // With motion turned off it's one still picture, redrawn when the hour changes.
   useEffect(() => { if (animRef.current) animRef.current.wake(); }, [wind && wind.deg, wind && wind.speed]);
 
-  return html`<div className="windmap" role="img"
+  return html`<div className="windmap" role="group"
     aria-label=${wind ? `Wind at ${time}: from the ${wind.dir}, ${Math.round(wind.speed)} miles an hour` : "Wind map"}>
     <div className="windmap__map map is-sat" ref=${elRef} />
     ${trouble && html`<div className="mapbox__note is-low" role="status">${trouble}</div>`}
@@ -170,7 +204,8 @@ export function WindMap({ stands, site, wind, time }) {
     ${wind && html`<div className="windmap__badge">
       <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true" style=${{ transform: `rotate(${wind.deg + 180}deg)` }}>
         <path d="M12 3v18M6 9l6-6 6 6" /></svg>
-      <span><b className="tnum">${Math.round(wind.speed)} mph</b><small>from ${wind.dir} · gusts ${Math.round(wind.gust)}</small></span>
+      <span><b className="tnum">${Math.round(wind.speed)} mph</b><small>${wind.unsure ? "direction uncertain" : `from ${wind.dir}`} · gusts ${Math.round(wind.gust)}</small></span>
     </div>`}
+    ${onOpen && html`<button type="button" className="mapbox__pill windmap__open" onClick=${onOpen}><${Icon} name="expand" size=${17} />Live wind</button>`}
   </div>`;
 }

@@ -233,7 +233,7 @@ export async function forgetPrivateData() {
   try { localStorage.removeItem(MEDIA_KEY); } catch (e) {}
   try {
     const kept = await caches.open(DATA_CACHE);
-    await Promise.all([kept.delete(DATA_KEY), kept.delete(PINS_KEY), kept.delete(HARVESTS_KEY)]);
+    await Promise.all([kept.delete(DATA_KEY), kept.delete(PINS_KEY), kept.delete(HARVESTS_KEY), kept.delete(STANDS_KEY)]);
     await caches.delete("vale-photos");
   } catch (e) {}
 }
@@ -266,6 +266,28 @@ export async function remoteSavePins(changes, auth) {
   if (!pins) throw new Error("Pins weren't saved");
   keepPins(pins);
   return pins;
+}
+
+// Stands added on the Live wind map (views/livewind.js), kept like harvests.
+const STANDS_KEY = "/state/stands";
+const standList = (raw) => (raw && Array.isArray(raw.stands)
+  ? raw.stands.filter((s) => s && s.id && s.name && Number.isFinite(s.lat) && Number.isFinite(s.lng)) : null);
+export async function fetchStands() {
+  const list = standList(await getJSON("/stands"));
+  if (!list) throw new Error("Stands aren't available");
+  try { await (await caches.open(DATA_CACHE)).put(STANDS_KEY, new Response(JSON.stringify({ stands: list }))); } catch (e) {}
+  return list;
+}
+export async function cachedStands() {
+  try {
+    const hit = await (await caches.open(DATA_CACHE)).match(STANDS_KEY);
+    return (hit && apiAuth && standList(await hit.json())) || [];
+  } catch (e) { return []; }
+}
+export async function postStand(body, auth) {
+  const r = await postJSON(TAGS_API + "/stands", body, auth);
+  if (body.remove ? r.removed !== body.remove : !(r.stand && r.stand.id)) throw new Error("Not saved");
+  return r;
 }
 
 // Harvests (views/harvest.js). The copy kept on this device shows with no signal.
@@ -305,21 +327,57 @@ export async function fetchLatestData() {
 // it can't be had; the copy in the photo list is used then.
 const FORECAST_VARS = ["temperature_2m", "precipitation", "pressure_msl", "wind_speed_10m",
   "wind_direction_10m", "wind_gusts_10m", "precipitation_probability"];
+// Wind from NOAA's National Blend and the European model (see windAt in deercast.js).
+const WIND_VARS = ["wind_speed_10m", "wind_direction_10m", "wind_gusts_10m"];
+const WIND_COLUMNS = ["ncep_nbm_conus", "ecmwf_ifs025"].flatMap((m) => WIND_VARS.map((v) => `${v}_${m}`));
 async function fetchForecast(data) {
   const cam = (data.cameras || []).find((c) => c.latitude != null && c.longitude != null);
   const at = data.forecast || (cam && { lat: cam.latitude, lng: cam.longitude });
   if (!at || !Number.isFinite(at.lat) || !Number.isFinite(at.lng)) return null;
   try {
-    const r = await fetch("https://api.open-meteo.com/v1/forecast"
-      + `?latitude=${at.lat.toFixed(2)}&longitude=${at.lng.toFixed(2)}&hourly=${FORECAST_VARS.join(",")}`
-      + "&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=GMT&past_days=7&forecast_days=9",
-      { cache: "no-store", referrerPolicy: "no-referrer", credentials: "omit", signal: AbortSignal.timeout(10000) });
-    if (!r.ok) return null;
-    const { hourly } = await r.json();
-    const hours = hourly.time.map((_, i) => FORECAST_VARS.map((v) => (hourly[v][i] == null ? "" : hourly[v][i])).join("|"));
+    const ask = async (vars, models) => {
+      const r = await fetch("https://api.open-meteo.com/v1/forecast"
+        + `?latitude=${at.lat.toFixed(2)}&longitude=${at.lng.toFixed(2)}&hourly=${vars.join(",")}${models || ""}`
+        + "&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=GMT&past_days=7&forecast_days=9",
+        { cache: "no-store", referrerPolicy: "no-referrer", credentials: "omit", signal: AbortSignal.timeout(10000) });
+      if (!r.ok) throw new Error("forecast " + r.status);
+      return (await r.json()).hourly;
+    };
+    // The second set only sharpens the wind, so doing without it is fine.
+    const [hourly, more] = await Promise.all([ask(FORECAST_VARS),
+      ask(WIND_VARS, "&models=ncep_nbm_conus,ecmwf_ifs025").catch(() => null)]);
+    const row = new Map(more ? more.time.map((t, i) => [t, i]) : []);
+    const cell = (v) => (v == null ? "" : v);
+    const hours = hourly.time.map((t, i) => [...FORECAST_VARS.map((v) => cell(hourly[v][i])),
+      ...WIND_COLUMNS.map((v) => cell(more && row.has(t) && more[v] ? more[v][row.get(t)] : null))].join("|"));
     if (!hours.length) return null;
     return { fetchedAt: new Date().toISOString(), lat: at.lat, lng: at.lng, start: hourly.time[0] + "Z", hours };
   } catch (e) { return null; }
+}
+
+// What a nearby airport is reading now (National Weather Service: free, no key). The
+// nearest with a wind reading from the last 90 minutes, or null. Only the airport's
+// code is sent.
+const AIRPORTS = [
+  { id: "KIPJ", name: "Lincolnton airport", lat: 35.483, lng: -81.161 },
+  { id: "KHKY", name: "Hickory airport", lat: 35.741, lng: -81.39 },
+];
+export async function fetchWindNow() {
+  for (const a of AIRPORTS) {
+    try {
+      const r = await fetch(`https://api.weather.gov/stations/${a.id}/observations?limit=8`,
+        { referrerPolicy: "no-referrer", credentials: "omit", cache: "no-store", signal: AbortSignal.timeout(8000) });
+      if (!r.ok) continue;
+      const list = (await r.json()).features || [];
+      const good = list.map((f) => f.properties).find((p) => p && p.windSpeed && typeof p.windSpeed.value === "number"
+        && Date.now() - Date.parse(p.timestamp) < 90 * 60000);
+      if (!good) continue;
+      const mph = (v) => (v && typeof v.value === "number" ? v.value * 0.621371 : null);
+      return { airport: a, at: Date.parse(good.timestamp), speed: mph(good.windSpeed), gust: mph(good.windGust),
+        deg: good.windDirection && typeof good.windDirection.value === "number" ? good.windDirection.value : null };
+    } catch (e) { /* the next one */ }
+  }
+  return null;
 }
 
 export function loadInitialData() {
@@ -1005,7 +1063,7 @@ export function reloadForDeploy(deployed) {
 export function safeToReload() {
   const a = document.activeElement;
   if (a && a.matches && a.matches("input, textarea, select, [contenteditable]")) return false;
-  return !document.querySelector(".lb, .modal, .drawer, .mapbox.is-full, .harvestform");
+  return !document.querySelector(".lb, .modal, .drawer, .mapbox.is-full, .harvestform, .livewind");
 }
 
 export function useData(auth, onSignedOut, pollMs = 5 * 60 * 1000) {

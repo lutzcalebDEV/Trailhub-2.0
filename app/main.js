@@ -3,7 +3,7 @@ import { html, useState, useEffect, useLayoutEffect, useMemo, useRef, useCallbac
 import {
   LS, usePersistent, usePersistentSet, useData, loadOverrides, newerDeploy, reloadForDeploy, safeToReload,
   remoteLoadTags, remoteSaveTags, remoteSaveTagsBatch, hasSharedTags, effectiveSpecies, timeAgo,
-  loadCameraNames, remoteLoadCameraNames, remoteSaveCameraName, remoteSavePins, fetchHarvests, cachedHarvests, postHarvest, displayCamera,
+  loadCameraNames, remoteLoadCameraNames, remoteSaveCameraName, remoteSavePins, fetchStands, cachedStands, postStand, fetchHarvests, cachedHarvests, postHarvest, displayCamera,
   loadMetadata, remoteLoadMetadata, remoteSaveMetadata, applyMeta, metaOf, cameraLabels,
   remoteLoadComments, saveComment, updateUpload, NotSignedIn, TooManyAttempts,
   loadSession, saveSession, faceIdOn, faceIdName, setApiAuth, forgetPrivateData, getScrollY, scrollToY,
@@ -740,6 +740,43 @@ function App() {
   const saveHarvest = useCallback((harvest) => changeHarvest({ harvest }, "Harvest saved"), [changeHarvest]);
   const removeHarvest = useCallback((id) => changeHarvest({ remove: id }, "Harvest deleted"), [changeHarvest]);
 
+  /* ------------------------------- Stands -------------------------------- */
+  // Laid over what's read for a few minutes, like harvests above.
+  const [standRows, setStandRows] = useState([]);
+  const standEdits = useRef(new Map());
+  useEffect(() => { standEdits.current = new Map(); setStandRows([]); }, [harvestUser]);
+  const withStandEdits = useCallback((rows) => {
+    const byId = new Map(rows.map((s) => [s.id, s]));
+    for (const [id, e] of standEdits.current) {
+      if (Date.now() - e.at > 5 * 60000) standEdits.current.delete(id);
+      else if (e.entry) byId.set(id, e.entry);
+      else byId.delete(id);
+    }
+    return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name));
+  }, []);
+  const loadStands = useCallback(async () => {
+    if (!harvestUser) return;
+    const kept = await cachedStands();
+    if (kept.length) setStandRows((now) => (now.length ? now : withStandEdits(kept)));
+    try { setStandRows(withStandEdits(await fetchStands())); } catch (e) { /* the kept copy stays */ }
+  }, [harvestUser, withStandEdits]);
+  const changeStand = useCallback(async (body, done) => {
+    try {
+      const r = await postStand(body, uploadAuth);
+      standEdits.current.set(body.remove || r.stand.id, { entry: r.stand || null, at: Date.now() });
+      setStandRows((rows) => withStandEdits(rows));
+      showToast("ok", done);
+      return r.stand || true;
+    } catch (e) {
+      if (e instanceof NotSignedIn) openSignIn("Sign in again to change stands.");
+      else showToast("err", "Couldn’t save that — try again");
+      return null;
+    }
+  }, [uploadAuth, withStandEdits, showToast, openSignIn]);
+  const saveStand = useCallback((stand) => changeStand({ stand }, "Stand saved for everyone"), [changeStand]);
+  const removeStand = useCallback((id) => changeStand({ remove: id }, "Stand deleted"), [changeStand]);
+  const refreshWeather = useCallback(() => { refresh({ byHand: true }); }, [refresh]);
+
   // Exact camera spots from the Map page, shared with everyone signed in.
   const savePins = useCallback(async (changes) => {
     if (!uploadAuth) { openSignIn("Sign in to move pins for everyone."); return false; }
@@ -878,6 +915,7 @@ function App() {
     openLightbox, reviewQ, counts, setView,
     uploads, allCaptures, comments, openUpload: () => setUploadOpen(true), openAlerts: () => setAlertsOpen(true),
     camName, camNames, bulkAssign, renameCamera, savePins,
+    stands: standRows, loadStands, saveStand, removeStand, refreshWeather,
     buckNames, harvests: harvestRows, harvestsReady, loadHarvests, saveHarvest, removeHarvest,
     metaMap, updateMeta, toggleFavorite,
     auth: uploadAuth, openSignIn,
