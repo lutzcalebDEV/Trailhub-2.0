@@ -15,7 +15,7 @@ const COMPASS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
 export const DAYS_AHEAD = 7;
 // Raise this whenever the scoring changes, so saved forecasts (deercast_log.mjs) are
 // only compared with others scored the same way.
-export const MODEL = 1;
+export const MODEL = 2; // 2: temperature against 30-year normals; rain by the hour
 
 /* --------------------------------- Sun ----------------------------------- */
 // Daylight counts from 30 minutes before sunrise to 30 minutes after sunset.
@@ -164,13 +164,35 @@ export function dayPattern(visits, site, now) {
   };
 }
 
+/* -------------------------------- Normals --------------------------------- */
+// The usual average temperature for a date here: 1991–2020 daily averages (Open-Meteo's
+// archive), smoothed to a yearly curve. Within half a degree of the plain averages on
+// the dates checked.
+const NORMAL = [59.39, -18.45, -5.69, -0.85, 0.47, 0.07, -0.08];
+export function normalTemp(date) {
+  const day = Math.round((atNoon(date) - new Date(date.getFullYear(), 0, 1, 12)) / DAY) + 1;
+  return [1, 2, 3].reduce((t, h) => {
+    const a = (2 * Math.PI * h * day) / 365.25;
+    return t + NORMAL[2 * h - 1] * Math.cos(a) + NORMAL[2 * h] * Math.sin(a);
+  }, NORMAL[0]);
+}
+
+/* ---------------------------------- Rain ---------------------------------- */
+// How much an hour's rain holds deer back, 0 to 1. Steady rain slows bucks but does
+// little to does, so it stays modest. Wind cancels it: fully by 18 mph.
+export function rainDrag(w) {
+  if (!w || w.rain < 0.1) return 0;
+  const amount = w.rain >= 2.5 ? 1 : w.rain >= 0.5 ? 0.7 : 0.35;
+  return amount * clamp((18 - w.wind) / 6, 0, 1);
+}
+
 /* --------------------------------- Score ---------------------------------- */
 export const BANDS = [[7.5, "Great"], [6.5, "Good"], [4.5, "Fair"], [0, "Slow"]];
 export const bandOf = (s) => BANDS.find(([min]) => s >= min)[1];
 const START = 5;
 
 // `x` is the plain measurement behind each factor, kept for the forecast log.
-function factors(day, rows, prior) {
+function factors(day, rows, yday, full, weigh) {
   const list = [];
   const add = (id, x, label, detail, pts, reason) => list.push({ id, x, label, detail, pts: Math.round(pts * 10) / 10, reason });
 
@@ -180,16 +202,12 @@ function factors(day, rows, prior) {
     ? `${rut.phase}${away > 0 ? `, ${away} day${away === 1 ? "" : "s"} to peak` : away === 0 ? ", peak day" : `, ${-away} day${away === -1 ? "" : "s"} past peak`}`
     : "Outside the rut", 2 * rut.level, rut.phase && rut.phase.toLowerCase());
 
-  const temp = mean(rows.map((r) => r.temp));
-  // "Usual" is the same stretch of the clock over the seven days before.
-  const usual = mean(prior.flat().map((r) => r.temp));
-  if (usual != null) {
-    const diff = temp - usual;
-    const n = Math.round(Math.abs(diff));
-    add("temp", diff, "Temperature", n < 2 ? "Near this week's average" : `${n}° ${diff < 0 ? "cooler" : "warmer"} than the week before`,
-      1.2 * clamp(-diff / 12, -1, 1), diff < 0 ? "cooler than usual" : "warmer than usual");
-  }
-  const yday = prior[0] || [];
+  // The whole day's average, which is what the normals are.
+  const temp = mean(full.map((r) => r.temp));
+  const diff = temp - normalTemp(day);
+  const off = Math.round(Math.abs(diff));
+  add("temp", diff, "Temperature", off < 2 ? "Normal for the date" : `${off}° ${diff < 0 ? "below" : "above"} normal for the date`,
+    1.2 * clamp(-diff / 12, -1, 1), diff < 0 ? "colder than normal" : "warmer than normal");
   if (yday.length) {
     const hi = Math.max(...rows.map((r) => r.temp)), was = Math.max(...yday.map((r) => r.temp));
     const n = Math.round(Math.abs(hi - was));
@@ -201,8 +219,11 @@ function factors(day, rows, prior) {
     wind.speed >= 18 ? -0.9 : wind.speed >= 13 ? -0.5 : 0, "strong wind");
   const rain = sum(rows.map((r) => r.rain));
   const wet = rows.filter((r) => r.rain >= 0.1).length;
-  add("rain", rain, "Rain", rain < 0.2 ? "Dry" : `${(rain / 25.4).toFixed(2)} in over ${wet} hour${wet === 1 ? "" : "s"}`,
-    rain >= 10 ? -0.6 : rain >= 4 ? -0.3 : 0, "steady rain");
+  // Rain at the hours deer usually move counts most.
+  const weights = rows.map((r) => weigh(r.t + HOUR / 2));
+  const drag = sum(rows.map((r, i) => weights[i] * rainDrag(r))) / (sum(weights) || 1);
+  add("rain", drag, "Rain", rain < 0.2 ? "Dry" : `${(rain / 25.4).toFixed(2)} in over ${wet} hour${wet === 1 ? "" : "s"}${drag < 0.1 ? ", little of it when deer move" : ""}`,
+    -0.8 * drag, "rain when deer move");
   // Against the same stretch the day before.
   if (yday.length) {
     const p = mean(rows.map((r) => r.pressure)), d = p - mean(yday.map((r) => r.pressure));
@@ -245,25 +266,21 @@ function buildDay(date, hours, site, pattern, allHours) {
   const span = allHours ? [from, to] : [light.start, light.end];
   const rows = between(hours, span[0], span[1]);
   if (!rows.length) return null;
-  const prior = [];
-  for (let i = 1; i <= 7; i++) {
-    const d = addDays(date, -i);
-    const l = daylight(d, site);
-    const r = allHours ? between(hours, startOf(d).getTime(), startOf(addDays(d, 1)).getTime()) : between(hours, l.start, l.end);
-    if (r.length >= rows.length * 0.8) prior.push(r); else if (i === 1) prior.push([]);
-  }
-  const f = factors(date, rows, prior);
+  const before = addDays(date, -1);
+  const was = daylight(before, site);
+  const then = allHours ? between(hours, startOf(before).getTime(), from) : between(hours, was.start, was.end);
+  const f = factors(date, rows, then.length >= rows.length * 0.8 ? then : [], full, (t) => pattern.at(phaseOf(t, site).p));
   const score = clamp(START + sum(f.list.map((x) => x.pts)), 1, 10);
 
-  // Hour by hour: the usual day, with the rut filling in the middle of it and heavy
-  // rain or wind thinning the hours they fall in. The best hour reads the day's score.
+  // Hour by hour: the usual day, with the rut filling in the middle of it and rain or
+  // strong wind thinning the hours they fall in. The best hour reads the day's score.
   const points = [];
   for (let t = from; t <= to; t += STEP) {
     const w = hours.get(Math.floor(Math.min(t, to - 1) / HOUR) * HOUR);
     const p = pattern.at(phaseOf(t, site).p);
     const lit = t >= light.start && t <= light.end;
     const raw = (p + (lit ? 0.15 * f.rut.level * (1 - p) : 0))
-      * (w && w.rain >= 2 ? 0.8 : 1) * (w && w.wind >= 18 ? 0.88 : 1);
+      * (1 - 0.25 * rainDrag(w)) * (w && w.wind >= 18 ? 0.88 : 1);
     points.push({ t, raw, weather: w || null, light: lit });
   }
   const inSpan = points.filter((x) => x.t >= span[0] && x.t <= span[1]);
@@ -305,7 +322,7 @@ export function buildCast(data, captures, ov, { allHours = false, now = Date.now
 }
 
 // What it was like at one moment, for a harvest: the weather, and DeerCast's score for
-// then when there's enough of the days before to compare with. Null when the forecast
+// then when there's a day before to compare with. Null when the forecast
 // doesn't reach back that far (about a week).
 export function conditionsAt(data, captures, ov, when) {
   const site = siteOf(data);
@@ -315,7 +332,7 @@ export function conditionsAt(data, captures, ov, when) {
   if (!w) return null;
   const out = { temp: Math.round(w.temp), wind: Math.round(w.wind), dir: windOver([w]).dir,
     pressure: Number((w.pressure * 0.02953).toFixed(2)), score: null };
-  const had = [1, 2, 3].every((n) => hours.has(startOf(addDays(when, -n)).getTime()));
+  const had = hours.has(startOf(addDays(when, -1)).getTime());
   const day = had && buildDay(startOf(when), hours, site, dayPattern(deerVisits(captures, ov), site, when.getTime()), false);
   if (day) {
     const p = day.points.reduce((b, x) => (Math.abs(x.t - when) < Math.abs(b.t - when) ? x : b));
