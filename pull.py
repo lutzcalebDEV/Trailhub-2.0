@@ -46,6 +46,7 @@ TAGS_FILE = HERE / "tags.json"     # user-applied tags/classifications (shared, 
 META_FILE = HERE / "metadata.json"  # per-photo metadata (notes, favorites, corrections; shared, baked into data.js)
 AI_TAGS_FILE = HERE / "ai-tags.json"  # labels from ai_tag.py, used only where nothing better exists
 FORECAST_FILE = HERE / "forecast.json"  # DeerCast: the last week and the next 8 days
+TERRAIN_FILE = HERE / "terrain.json"  # DeerCast: heights around the property, fetched once
 STANDS_FILE = HERE / "stands.json"  # DeerCast wind notes by camera; private, edited by hand
 WEATHER_FILE = HERE / "weather.json"  # hourly history from Open-Meteo, keyed by UTC hour
 UPLOADS_FILE = HERE / "uploads.json"  # photos added through the site, written by the Worker
@@ -1122,6 +1123,54 @@ def update_forecast():
         print(f"  [forecast] kept the last one: {e}")
 
 
+# Heights on a grid about 1.4 miles each way from the (rounded) property point, so no
+# stand's own spot is ever asked about. Land doesn't move: it's fetched once.
+_TERRAIN_HALF, _TERRAIN_STEP = 40, (0.0005, 0.0006)  # points each way; degrees lat, lng (about 55 m)
+_TERRAIN_URL = "https://elevation.nationalmap.gov/arcgis/rest/services/3DEPElevation/ImageServer/getSamples"
+
+
+def load_terrain():
+    try:
+        data = json.loads(TERRAIN_FILE.read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) and data.get("m") else None
+    except (OSError, ValueError):
+        return None
+
+
+def update_terrain():
+    """Fetch the height grid if it isn't here yet. Never stops a pull."""
+    if load_terrain():
+        return
+    import urllib.parse
+    import urllib.request
+    side = 2 * _TERRAIN_HALF + 1
+    south = SITE_LATLNG[0] - _TERRAIN_HALF * _TERRAIN_STEP[0]
+    west = SITE_LATLNG[1] - _TERRAIN_HALF * _TERRAIN_STEP[1]
+    points = [(south + r * _TERRAIN_STEP[0], west + c * _TERRAIN_STEP[1]) for r in range(side) for c in range(side)]
+    heights = [None] * len(points)
+    try:
+        for i in range(0, len(points), 900):
+            part = points[i:i + 900]
+            body = urllib.parse.urlencode({
+                "geometry": json.dumps({"points": [[round(p[1], 5), round(p[0], 5)] for p in part],
+                                        "spatialReference": {"wkid": 4326}}),
+                "geometryType": "esriGeometryMultipoint", "returnFirstValueOnly": "true",
+                "interpolation": "RSP_BilinearInterpolation", "outFields": "", "f": "json",
+            }).encode("ascii")
+            request = urllib.request.Request(_TERRAIN_URL, data=body, headers={"User-Agent": "TrailHub/1.0"})
+            with urllib.request.urlopen(request, timeout=60) as response:
+                samples = json.loads(response.read().decode("utf-8"))["samples"]
+            for sample in samples:
+                heights[i + int(sample["locationId"])] = round(float(sample["value"]), 1)
+        if any(v is None for v in heights):
+            raise ValueError("some heights are missing")
+        atomic_write_text(TERRAIN_FILE, json.dumps({
+            "lat": round(south, 5), "lng": round(west, 5), "step": list(_TERRAIN_STEP),
+            "rows": side, "cols": side, "m": heights}, separators=(",", ":")))
+    except Exception as e:
+        print(f"  [terrain] skipped: {e}")
+
+
 def load_stands():
     """Wind notes by camera name: {"good": [...], "risky": [...], "avoid": [...]}."""
     try:
@@ -1293,7 +1342,7 @@ def _recently_published(payload):
     if stamp.tzinfo is None:  # written before timestamps carried a timezone
         return False
     age = (dt.datetime.now(dt.timezone.utc) - stamp).total_seconds()
-    same = all(prev.get(k) == payload.get(k) for k in ("demo", "cameras", "captures", "weatherHours", "forecast", "stands"))
+    same = all(prev.get(k) == payload.get(k) for k in ("demo", "cameras", "captures", "weatherHours", "forecast", "stands", "terrain"))
     return same and age < HEARTBEAT_SECONDS
 
 
@@ -1361,6 +1410,10 @@ def write_data_js(captures, cameras=None, demo=False, tags_map=None, meta_map=No
             payload["forecast"] = forecast
         if stands:
             payload["stands"] = stands
+        terrain = load_terrain()
+        if terrain:
+            # One string, so data.js doesn't spend a line on every height.
+            payload["terrain"] = {**terrain, "m": " ".join(f"{v:g}" for v in terrain["m"])}
     if _recently_published(payload):
         print(f"{DATA_FILE.name} already up to date ({len(out_caps)} captures).")
         return
@@ -1702,6 +1755,7 @@ def run_pull(limit, inspect):
     save_cameras(camera_meta)
     update_weather(list(store.values()) + load_uploads())
     update_forecast()
+    update_terrain()
     write_data_js(list(store.values()), cameras=camera_meta, demo=False, tags_map=load_tags(), meta_map=load_metadata())
     print(f"\nStore: {before} -> {len(store)} captures (+{new_count} new, {skipped} skipped this run).")
     print("Done. Open index.html, or upload index.html + data.js + photos/ to Cloudflare.")

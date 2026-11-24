@@ -5,7 +5,8 @@ import { html, useState, useEffect, useRef, useMemo, createPortal } from "../rea
 import { Btn } from "../ui.js";
 import { Icon } from "../icons.js";
 import { LS, usePersistent, fmtTime } from "../core.js";
-import { parseHours, windOver, standWind, compass } from "../deercast.js";
+import { parseHours, windOver, standWind } from "../deercast.js";
+import { calmAir, scentText } from "../terrain.js";
 import { showParcels } from "../parcels.js";
 import { loadLeaflet, SAT_TILES, SAT_CREDIT } from "./mapview.js";
 import { runWind, plumeColor, makePin } from "./windmap.js";
@@ -59,6 +60,7 @@ export function LiveWind({ app, site, start, show, onClose }) {
     return s ? { id: s.id, name: s.label } : null;
   });
   const endEdit = () => { setError(""); if (start) onClose(); else setEdit(null); };
+  const [listing, setListing] = useState(false); // the list of stands is open
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const [ready, setReady] = useState(() => !!window.L);
@@ -78,12 +80,13 @@ export function LiveWind({ app, site, start, show, onClose }) {
     const all = parseHours(data.forecast);
     const start = Math.floor(now / HOUR) * HOUR;
     const out = [];
-    for (let i = 0; i <= AHEAD; i++) { const r = all.get(start + i * HOUR); if (r) out.push({ t: r.t, i, wind: windOver([r]) }); }
+    for (let i = 0; i <= AHEAD; i++) { const r = all.get(start + i * HOUR); if (r) out.push({ t: r.t, i, rain: r.rain, wind: windOver([r]) }); }
     return out;
   }, [data.forecast, now]);
   const cur = hours[Math.min(pick, hours.length - 1)] || null;
   const wind = cur ? cur.wind : null;
-  const list = allStands(app).map((s) => ({ ...s, rating: s.camera ? standWind((data.stands || {})[s.camera], wind) : null }));
+  const list = allStands(app).map((s) => ({ ...s, rating: s.camera ? standWind((data.stands || {})[s.camera], wind) : null,
+    air: cur ? calmAir(data.terrain, s, wind, cur.t, site, cur.rain >= 0.1) : null }));
   const chosen = list.find((s) => s.id === sel) || null;
   const mine = (s) => !s.camera && auth && (auth.admin || String(s.by).toLowerCase() === String(auth.user).toLowerCase());
 
@@ -99,7 +102,7 @@ export function LiveWind({ app, site, start, show, onClose }) {
 
   // Escape backs out one step; the page behind holds still.
   const closeRef = useRef(onClose);
-  closeRef.current = () => { if (edit) endEdit(); else if (sel) setSel(null); else onClose(); };
+  closeRef.current = () => { if (edit) endEdit(); else if (listing) setListing(false); else if (sel) setSel(null); else onClose(); };
   useEffect(() => {
     const root = document.documentElement, before = root.style.overflow;
     root.style.overflow = "hidden";
@@ -140,7 +143,7 @@ export function LiveWind({ app, site, start, show, onClose }) {
     const tiles = L.tileLayer(SAT_TILES, { maxZoom: 19, maxNativeZoom: 16, attribution: SAT_CREDIT }).addTo(map);
     tiles.on("tileerror", () => setTrouble("Satellite photos couldn’t load"));
     tiles.on("tileload", () => setTrouble(""));
-    map.on("click", () => setSel(null));
+    map.on("click", () => { setSel(null); setListing(false); });
     const ro = new ResizeObserver(() => map.invalidateSize());
     ro.observe(elRef.current);
     return () => { ro.disconnect(); map.remove(); mapRef.current = null; };
@@ -164,6 +167,7 @@ export function LiveWind({ app, site, start, show, onClose }) {
         icon: L.divIcon({ className: "windpin__hit", iconSize: [44, 44], iconAnchor: [22, 22], html: el }) }).addTo(group);
       if (!edit) mk.on("click keypress", (e) => {
         if (e.type === "keypress" && e.originalEvent && e.originalEvent.key !== "Enter") return;
+        setListing(false);
         setSel(s.id);
       });
     });
@@ -180,7 +184,7 @@ export function LiveWind({ app, site, start, show, onClose }) {
       if (!map) return [];
       const at = (lat, lng) => map.latLngToContainerPoint([lat, lng]);
       const e = live.current.edit, c = e && map.getSize().divideBy(2);
-      return [...live.current.list.filter((s) => !e || e.id !== s.id).map((s) => ({ ...xy(at(s.latitude, s.longitude)), id: s.id, color: plumeColor(s.rating, s.camera) })),
+      return [...live.current.list.filter((s) => !e || e.id !== s.id).map((s) => ({ ...xy(at(s.latitude, s.longitude)), id: s.id, color: plumeColor(s.rating, s.camera), air: s.air })),
         ...(c ? [{ x: c.x, y: c.y, id: "edit", color: plumeColor(null) }] : [])];
     });
     animRef.current = a;
@@ -196,9 +200,14 @@ export function LiveWind({ app, site, start, show, onClose }) {
   }, [ready]);
 
   const startEdit = (s) => {
-    setSel(null); setError("");
+    setSel(null); setListing(false); setError("");
     if (s && mapRef.current) mapRef.current.setView([s.latitude, s.longitude], Math.max(16, mapRef.current.getZoom()));
     setEdit(s ? { id: s.id, name: s.label } : { name: "" });
+  };
+  const goTo = (s) => {
+    setListing(false); setSel(s.id);
+    const map = mapRef.current;
+    if (map) map.setView([s.latitude, s.longitude], Math.max(17, map.getZoom()));
   };
   const here = () => {
     setError("");
@@ -249,8 +258,8 @@ export function LiveWind({ app, site, start, show, onClose }) {
       <div className="livewind__side">
         <button type="button" className="livewind__tile" aria-pressed=${lines === "on"} onClick=${() => setLines(lines === "on" ? "off" : "on")}>
           <${Icon} name="parcels" size=${20} /><span>Lines</span></button>
-        ${!edit && html`<button type="button" className="livewind__tile" onClick=${() => { setSel(null); fitAll(true); }}>
-          <${Icon} name="target" size=${20} /><span>Stands</span></button>`}
+        ${!edit && html`<button type="button" className="livewind__tile" aria-expanded=${listing} aria-pressed=${listing} onClick=${() => setListing(!listing)}>
+          <${Icon} name="stand" size=${20} /><span>Stands</span></button>`}
       </div>
       ${(trouble || (lines === "on" && notes[lineState])) && html`<div className="mapbox__note" role="status">${trouble || notes[lineState]}</div>`}
     </div>
@@ -268,10 +277,21 @@ export function LiveWind({ app, site, start, show, onClose }) {
             <${Btn} type="submit" variant="primary" icon="check" disabled=${!!busy}>${busy === "saving" ? "Saving" : "Save"}</${Btn}>
           </div>
         </form>`
+      : listing ? html`<div className="livewind__list">
+          <div className="livewind__listhead"><b>${list.length} stand${list.length === 1 ? "" : "s"}</b>
+            <button type="button" onClick=${() => { setSel(null); setListing(false); fitAll(true); }}>Show all on map</button>
+            <button type="button" onClick=${() => { onClose(); app.setView("stands"); }}>Manage</button></div>
+          ${list.length === 0 && html`<p className="faint">No stands yet. Tap Add stand.</p>`}
+          ${list.map((s) => html`<button type="button" key=${s.id} className=${"livewind__row" + (s.id === sel ? " is-active" : "")} onClick=${() => goTo(s)}>
+            <span className=${"standrow__icon" + (s.camera ? " is-cam" : "")}><${Icon} name=${s.camera ? "camera" : "stand"} size=${18} /></span>
+            <span className="livewind__head"><b>${s.camera ? "(Cam) " : ""}${s.label}</b><small>${scentText(wind, s.air)}${s.rating && !s.air ? ` · ${s.rating.text} (guess)` : ""}</small></span>
+            <${Icon} name="chevronRight" size=${17} className="standrow__chev" />
+          </button>`)}
+        </div>`
       : html`<div>
           ${chosen ? html`<div className="livewind__stand">
               <div className="livewind__head"><b>${chosen.camera ? "(Cam) " : ""}${chosen.label}</b>
-                <small>${wind ? (wind.speed < 3 ? "Light: scent may drift anywhere" : wind.unsure ? "Direction uncertain" : `Scent blows ${compass(wind.deg + 180)}`) : ""}${chosen.rating ? ` · ${chosen.rating.text} (guess)` : ""}</small></div>
+                <small>${scentText(wind, chosen.air)}${chosen.air ? " (estimate)" : ""}${chosen.rating && !chosen.air ? ` · ${chosen.rating.text} (guess)` : ""}</small></div>
               ${mine(chosen) && html`<button type="button" className="livewind__icon" aria-label=${`Edit ${chosen.label}`} onClick=${() => startEdit(chosen)}><${Icon} name="pencil" size=${18} /><span>Edit</span></button>
                 <button type="button" className="livewind__icon" aria-label=${`Delete ${chosen.label}`} disabled=${!!busy} onClick=${remove}><${Icon} name="trash" size=${18} /><span>Delete</span></button>`}
               <button type="button" className="livewind__icon" aria-label="Back to all stands" onClick=${() => setSel(null)}><${Icon} name="x" size=${18} /><span>Done</span></button>

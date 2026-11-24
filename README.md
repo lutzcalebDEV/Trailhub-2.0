@@ -415,6 +415,9 @@ that line lists the field names SPYPOINT sent, so the extractor can be matched t
   store (`/pins`), for signed-in people.
 - **Stands** added on DeerCast's Live wind map (`/stands` on the Worker) are kept in the
   private ACCOUNTS store. People edit their own; admins edit any.
+- **Calm air**: under 4 mph, DeerCast estimates where scent drains or rises from the slope
+  of the land (`app/terrain.js`), using a height grid `pull.py` fetches once from
+  the USGS. It doesn't change the score.
 - **Property lines** on the Map page are North Carolina's public tax parcels from
   [NC OneMap](https://www.nconemap.gov/) (free, no key). They're approximate, not a survey.
 - **Harvests** (`/harvests` on the Worker) are kept in the private ACCOUNTS store. People

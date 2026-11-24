@@ -9,6 +9,7 @@ import { bestSit } from "../analytics.js";
 import { windowLabel } from "./insights.js";
 import { WindMap } from "./windmap.js";
 import { allStands } from "./livewind.js";
+import { calmAir } from "../terrain.js";
 import { WindNow } from "./windnow.js";
 
 const cx = (...xs) => xs.filter(Boolean).join(" ");
@@ -170,7 +171,8 @@ export function DeerCast(app) {
   const hour = Math.min(23, Math.floor(at / 4));
   const band = bandOf(p.score);
   const site = siteOf(data);
-  const spots = allStands(app).map((s) => ({ ...s, name: s.id, rating: s.camera ? standWind((data.stands || {})[s.camera], wind) : null }));
+  const spots = allStands(app).map((s) => ({ ...s, name: s.id, rating: s.camera ? standWind((data.stands || {})[s.camera], wind) : null,
+    air: calmAir(data.terrain, s, wind, p.t, site, w && w.rain >= 0.1) }));
   const sit = bestSit(app.captures, app.ov, site && { ...daylight(new Date(now), site), has: (d) => inDaylight(d, site) });
   const pickDay = (k) => { setPicked(k); setChosen(null); };
 
@@ -218,7 +220,7 @@ export function DeerCast(app) {
           <b>${when(v)}</b>
         </button>`)}
       </div>
-      <p className="castnote">Streaks show the wind, and the plumes where scent blows from each stand.${spots.some((s) => !s.pinned) ? " Pins are approximate until moved on the Map page." : ""}${stands.length ? " Stand ratings are best guesses and don't change the score." : ""}${wind && wind.unsure ? " Forecasts disagree by more than 45° here, so check the wind when you arrive." : ""}${wind && wind.speed < 3 ? " Wind this light can drift any direction." : ""}</p>
+      <p className="castnote">Streaks show the wind, and the plumes where scent blows from each stand.${spots.some((s) => !s.pinned) ? " Pins are approximate until moved on the Map page." : ""}${stands.length ? " Stand ratings are best guesses and don't change the score." : ""}${wind && wind.unsure ? " Forecasts disagree by more than 45° here, so check the wind when you arrive." : ""}${wind && wind.speed < 3 ? " Wind this light can drift any direction." : ""}${spots.some((s) => s.air && s.air.toward != null) ? " In calm air, plumes follow the slope of the land: an estimate." : ""}</p>
     </section>
 
     ${sit && html`<button type="button" className="linkrow" onClick=${() => { app.setFilter({ camera: sit.camera }); app.setView("gallery"); }}>

@@ -30,8 +30,8 @@ const PUFFS = 90;
 const puff = () => ({ at: Math.random(), side: (Math.random() + Math.random() + Math.random()) / 1.5 - 1, size: 1 + Math.random() * 1.7 });
 
 // Draws the wind on a canvas over the map. `getWind` gives { speed, deg }, the mph and
-// the direction it blows FROM; `getPlumes`, if given, each stand's { id, x, y, color } on
-// the canvas. Returns { wake, stop }.
+// the direction it blows FROM; `getPlumes`, if given, each stand's { id, x, y, color, air } on
+// the canvas (`air`, the calm-air estimate from terrain.js, steers its plume). Returns { wake, stop }.
 export function runWind(canvas, getWind, getPlumes) {
   const ctx = canvas.getContext("2d");
   let w = 0, h = 0, frame = 0, last = 0, onScreen = true;
@@ -94,13 +94,24 @@ export function runWind(canvas, getWind, getPlumes) {
     for (const p of getPlumes ? getPlumes() : []) {
       if (p.x < -200 || p.y < -200 || p.x > w + 200 || p.y > h + 200) continue;
       if (!plumes.has(p.id)) plumes.set(p.id, Array.from({ length: PUFFS }, puff));
+      // Calm air follows the ground: slower and wider than wind. With no likely way, it
+      // pools around the stand.
+      const own = p.air && p.air.toward != null;
+      const pool = p.air && !own;
+      const px = own ? Math.sin(rad(p.air.toward)) : ux, py = own ? -Math.cos(rad(p.air.toward)) : uy;
       for (const f of plumes.get(p.id)) {
-        f.at += dt * (0.16 + cur.s * 0.025);
+        f.at += dt * (p.air ? 0.09 : 0.16 + cur.s * 0.025);
         if (f.at >= 1) Object.assign(f, puff(), { at: 0 });
-        const along = f.at * reach, off = f.side * along * open;
+        if (pool) {
+          const turn = f.side * 3.14 + f.size * 9, out = f.at * 34;
+          ctx.fillStyle = `rgba(${p.color},${(0.8 * (1 - f.at * 0.75)).toFixed(2)})`;
+          ctx.beginPath(); ctx.arc(p.x + Math.cos(turn) * out, p.y + Math.sin(turn) * out, f.size + f.at * 1.6, 0, 6.3); ctx.fill();
+          continue;
+        }
+        const along = f.at * (own ? 80 : reach), off = f.side * along * (own ? 0.42 : open);
         ctx.fillStyle = `rgba(${p.color},${(0.95 * (1 - f.at * 0.75)).toFixed(2)})`;
         ctx.beginPath();
-        ctx.arc(p.x + ux * along - uy * off, p.y + uy * along + ux * off, f.size + f.at * 1.6, 0, 6.3);
+        ctx.arc(p.x + px * along - py * off, p.y + py * along + px * off, f.size + f.at * 1.6, 0, 6.3);
         ctx.fill();
       }
     }
@@ -200,7 +211,7 @@ export function WindMap({ stands, site, wind, time, onOpen }) {
       const map = mapRef.current;
       return map ? standsRef.current.map((s) => {
         const at = map.latLngToContainerPoint([s.latitude, s.longitude]);
-        return { id: s.id || s.name, x: at.x, y: at.y, color: plumeColor(s.rating, s.camera) };
+        return { id: s.id || s.name, x: at.x, y: at.y, color: plumeColor(s.rating, s.camera), air: s.air };
       }) : [];
     });
     animRef.current = a;

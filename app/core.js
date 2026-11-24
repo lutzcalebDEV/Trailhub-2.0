@@ -155,6 +155,7 @@ function normalizePayload(d) {
     weatherHours: d.weatherHours || null,
     forecast: d.forecast || null, // DeerCast (deercast.js)
     stands: d.stands || {},
+    terrain: d.terrain && typeof d.terrain.m === "string" ? { ...d.terrain, m: d.terrain.m.split(" ").map(Number) } : null,
   };
 }
 

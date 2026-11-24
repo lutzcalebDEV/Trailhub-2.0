@@ -2271,3 +2271,10 @@ button.harvest__photo { cursor: pointer; }
   --cam-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.2'%3E%3Cpath d='M3 8.5A2 2 0 0 1 5 6.5h1.6l1.1-2h8.6l1.1 2H19a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z'/%3E%3Ccircle cx='12' cy='13' r='3.2'/%3E%3C/svg%3E"); }
 .standrow__icon.is-cam { background: rgba(96,165,250,.16); color: #60a5fa; }
 [data-theme="light"] .standrow__icon.is-cam { color: #1d4e89; }
+
+.livewind__listhead { display: flex; align-items: center; gap: 4px; min-height: 44px; }
+.livewind__listhead b { flex: 1; font-size: 15px; }
+.livewind__listhead button { min-height: 44px; padding: 0 8px; border: 0; background: none; color: var(--accent); font: inherit; font-size: 13.5px; font-weight: 650; cursor: pointer; }
+.livewind__row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 58px; padding: 6px 4px; border: 0; border-top: 1px solid var(--border); background: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.livewind__row .livewind__head { flex: 1; min-width: 0; }
+.livewind__row.is-active { background: var(--surface-2); }
