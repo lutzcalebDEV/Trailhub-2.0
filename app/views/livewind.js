@@ -2,13 +2,14 @@
 // blows from every stand, how the wind changes over the coming hours, and the stands
 // themselves (add, name, move, delete). Stands are shared with everyone signed in.
 import { html, useState, useEffect, useRef, useMemo, createPortal } from "../react.js";
-import { Btn, IconBtn } from "../ui.js";
+import { Btn } from "../ui.js";
 import { Icon } from "../icons.js";
 import { LS, usePersistent, fmtTime } from "../core.js";
 import { parseHours, windOver, standWind, compass } from "../deercast.js";
 import { showParcels } from "../parcels.js";
 import { loadLeaflet, SAT_TILES, SAT_CREDIT } from "./mapview.js";
-import { runWind, plumeColor } from "./windmap.js";
+import { runWind, plumeColor, makePin } from "./windmap.js";
+import { useWindNow } from "./windnow.js";
 
 const HOUR = 3600000;
 const AHEAD = 18;
@@ -43,13 +44,21 @@ export function allStands({ data, stands, camName }) {
   ];
 }
 
-export function LiveWind({ app, site, right, onClose }) {
+// `start`: "new" opens ready to place a stand, a stand's id opens it for changes; either
+// way it closes when that's done. `show`: a stand to open on.
+export function LiveWind({ app, site, start, show, onClose }) {
   const { data, stands, saveStand, removeStand, auth, refreshWeather } = app;
   const [now, setNow] = useState(() => Date.now());
   const [pick, setPick] = useState(0); // hours from now
   const [playing, setPlaying] = useState(false);
-  const [sel, setSel] = useState(null); // a stand's id
-  const [edit, setEdit] = useState(null); // { id?, name } while placing a stand
+  const [sel, setSel] = useState(show || null); // a stand's id
+  // { id?, name } while placing a stand
+  const [edit, setEdit] = useState(() => {
+    if (start === "new") return { name: "" };
+    const s = start && allStands(app).find((x) => x.id === start);
+    return s ? { id: s.id, name: s.label } : null;
+  });
+  const endEdit = () => { setError(""); if (start) onClose(); else setEdit(null); };
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const [ready, setReady] = useState(() => !!window.L);
@@ -90,14 +99,18 @@ export function LiveWind({ app, site, right, onClose }) {
 
   // Escape backs out one step; the page behind holds still.
   const closeRef = useRef(onClose);
-  closeRef.current = () => { if (edit) { setEdit(null); setError(""); } else if (sel) setSel(null); else onClose(); };
+  closeRef.current = () => { if (edit) endEdit(); else if (sel) setSel(null); else onClose(); };
   useEffect(() => {
     const root = document.documentElement, before = root.style.overflow;
     root.style.overflow = "hidden";
     const onKey = (e) => { if (e.key === "Escape") closeRef.current(); };
+    // The phone's back gesture changes the page behind, so the map goes with it.
+    const onPop = () => onClose();
     window.addEventListener("keydown", onKey);
-    return () => { root.style.overflow = before; window.removeEventListener("keydown", onKey); };
+    window.addEventListener("popstate", onPop);
+    return () => { root.style.overflow = before; window.removeEventListener("keydown", onKey); window.removeEventListener("popstate", onPop); };
   }, []);
+  const airport = useWindNow(site, data.forecast, now);
 
   useEffect(() => {
     if (ready) return undefined;
@@ -106,20 +119,28 @@ export function LiveWind({ app, site, right, onClose }) {
     return () => { live = false; };
   }, [ready]);
 
+  const fitAll = (animate) => {
+    const map = mapRef.current;
+    if (!map) return;
+    const spots = list.map((s) => [s.latitude, s.longitude]);
+    if (spots.length > 1) map.fitBounds(spots, { paddingTopLeft: [70, 130], paddingBottomRight: [90, 90], maxZoom: 16, animate });
+    else map.setView(spots[0] || [site.lat, site.lng], 16, { animate });
+  };
   useEffect(() => {
     const L = window.L;
     if (!ready || !L) return undefined;
     const map = L.map(elRef.current, { zoomControl: false, zoomSnap: 0.25 });
-    L.control.zoom({ position: "bottomright" }).addTo(map);
+    // Phones pinch to zoom; the buttons would only cover the map.
+    if (!window.matchMedia("(pointer: coarse)").matches) L.control.zoom({ position: "topleft" }).addTo(map);
     map.attributionControl.setPrefix(false);
-    const spots = list.map((s) => [s.latitude, s.longitude]);
-    if (spots.length > 1) map.fitBounds(spots, { padding: [70, 90], maxZoom: 16 });
-    else map.setView(spots[0] || [site.lat, site.lng], 16);
+    mapRef.current = map;
+    const focus = list.find((s) => s.id === (show || start));
+    if (focus) map.setView([focus.latitude, focus.longitude], 17, { animate: false });
+    else fitAll(false);
     const tiles = L.tileLayer(SAT_TILES, { maxZoom: 19, maxNativeZoom: 16, attribution: SAT_CREDIT }).addTo(map);
     tiles.on("tileerror", () => setTrouble("Satellite photos couldn’t load"));
     tiles.on("tileload", () => setTrouble(""));
     map.on("click", () => setSel(null));
-    mapRef.current = map;
     const ro = new ResizeObserver(() => map.invalidateSize());
     ro.observe(elRef.current);
     return () => { ro.disconnect(); map.remove(); mapRef.current = null; };
@@ -138,11 +159,7 @@ export function LiveWind({ app, site, right, onClose }) {
     const group = L.layerGroup().addTo(map);
     list.forEach((s) => {
       if (edit && edit.id === s.id) return; // the crosshair stands in for it
-      const el = document.createElement("div");
-      el.className = `windpin is-${s.rating ? s.rating.level : "none"}${s.id === sel ? " is-sel" : ""}`;
-      const b = document.createElement("b");
-      b.textContent = s.label; // typed by people, so never as HTML
-      el.append(b);
+      const el = makePin(s, s.id === sel ? " is-sel" : "");
       const mk = L.marker([s.latitude, s.longitude], { title: s.label, interactive: !edit, keyboard: !edit,
         icon: L.divIcon({ className: "windpin__hit", iconSize: [44, 44], iconAnchor: [22, 22], html: el }) }).addTo(group);
       if (!edit) mk.on("click keypress", (e) => {
@@ -163,7 +180,7 @@ export function LiveWind({ app, site, right, onClose }) {
       if (!map) return [];
       const at = (lat, lng) => map.latLngToContainerPoint([lat, lng]);
       const e = live.current.edit, c = e && map.getSize().divideBy(2);
-      return [...live.current.list.filter((s) => !e || e.id !== s.id).map((s) => ({ ...xy(at(s.latitude, s.longitude)), id: s.id, color: plumeColor(s.rating) })),
+      return [...live.current.list.filter((s) => !e || e.id !== s.id).map((s) => ({ ...xy(at(s.latitude, s.longitude)), id: s.id, color: plumeColor(s.rating, s.camera) })),
         ...(c ? [{ x: c.x, y: c.y, id: "edit", color: plumeColor(null) }] : [])];
     });
     animRef.current = a;
@@ -202,7 +219,7 @@ export function LiveWind({ app, site, right, onClose }) {
     setBusy("saving"); setError("");
     const saved = await saveStand({ ...(edit.id ? { id: edit.id } : {}), name, lat: c.lat, lng: c.lng });
     setBusy("");
-    if (saved) { setEdit(null); setSel(saved.id); } else setError("That didn't save. Check your connection and try again.");
+    if (saved && start) onClose(); else if (saved) { setEdit(null); setSel(saved.id); } else setError("That didn't save. Check your connection and try again.");
   };
   const remove = async () => {
     if (!window.confirm(`Delete ${chosen.label} for everyone?`)) return;
@@ -220,7 +237,7 @@ export function LiveWind({ app, site, right, onClose }) {
       ${edit && html`<div className="livewind__cross" aria-hidden="true" />`}
 
       <div className="livewind__top">
-        <button type="button" className="mapbox__pill" onClick=${() => onClose()}><${Icon} name="x" size=${17} />Close</button>
+        <button type="button" className="livewind__round" onClick=${() => onClose()} aria-label="Close"><${Icon} name="x" size=${22} /></button>
         <div className="livewind__badge">
           ${wind ? html`<${Arrow} deg=${wind.deg} size=${26} />
             <span><b className="tnum">${Math.round(wind.speed)} mph ${wind.unsure ? "" : `from ${wind.dir}`}</b>
@@ -228,10 +245,12 @@ export function LiveWind({ app, site, right, onClose }) {
             : html`<span><b>No wind forecast yet</b></span>`}
         </div>
       </div>
+      ${!edit && html`<button type="button" className="livewind__add" onClick=${() => startEdit(null)}><${Icon} name="pin" size=${19} />Add stand</button>`}
       <div className="livewind__side">
-        ${!edit && html`<button type="button" className="mapbox__pill is-main" onClick=${() => startEdit(null)}><${Icon} name="pin" size=${17} />Add stand</button>`}
-        <button type="button" className="mapbox__pill" aria-pressed=${lines === "on"} onClick=${() => setLines(lines === "on" ? "off" : "on")}>
-          <${Icon} name="parcels" size=${17} />Lines ${lines === "on" ? "on" : "off"}</button>
+        <button type="button" className="livewind__tile" aria-pressed=${lines === "on"} onClick=${() => setLines(lines === "on" ? "off" : "on")}>
+          <${Icon} name="parcels" size=${20} /><span>Lines</span></button>
+        ${!edit && html`<button type="button" className="livewind__tile" onClick=${() => { setSel(null); fitAll(true); }}>
+          <${Icon} name="target" size=${20} /><span>Stands</span></button>`}
       </div>
       ${(trouble || (lines === "on" && notes[lineState])) && html`<div className="mapbox__note" role="status">${trouble || notes[lineState]}</div>`}
     </div>
@@ -245,25 +264,24 @@ export function LiveWind({ app, site, right, onClose }) {
           <div className="livewind__acts">
             <${Btn} type="button" icon="target" disabled=${!!busy} onClick=${here}>${busy === "locating" ? "Finding you" : "My location"}</${Btn}>
             <div className="spacer" />
-            <${Btn} type="button" disabled=${!!busy} onClick=${() => { setEdit(null); setError(""); }}>Cancel</${Btn}>
+            <${Btn} type="button" disabled=${!!busy} onClick=${endEdit}>Cancel</${Btn}>
             <${Btn} type="submit" variant="primary" icon="check" disabled=${!!busy}>${busy === "saving" ? "Saving" : "Save"}</${Btn}>
           </div>
         </form>`
       : html`<div>
           ${chosen ? html`<div className="livewind__stand">
-              <div className="livewind__head"><b>${chosen.label}</b>
-                <small>${wind ? (wind.speed < 3 ? "Light wind: scent may drift any direction" : wind.unsure ? "Direction uncertain: check it when you arrive" : `Scent blows ${compass(wind.deg + 180)}`) : ""}${chosen.rating ? ` · ${chosen.rating.text} (best guess)` : ""}</small></div>
-              ${mine(chosen) && html`<${Btn} sm icon="pencil" onClick=${() => startEdit(chosen)}>Edit</${Btn}>
-                <${Btn} sm icon="trash" disabled=${!!busy} onClick=${remove}>${busy === "deleting" ? "Deleting" : "Delete"}</${Btn}>`}
-              <${IconBtn} icon="x" bare aria-label="Deselect stand" onClick=${() => setSel(null)} />
-              ${chosen.camera && html`<small className="livewind__hint">Camera pin. Move it on the Map page.</small>`}
+              <div className="livewind__head"><b>${chosen.camera ? "(Cam) " : ""}${chosen.label}</b>
+                <small>${wind ? (wind.speed < 3 ? "Light: scent may drift anywhere" : wind.unsure ? "Direction uncertain" : `Scent blows ${compass(wind.deg + 180)}`) : ""}${chosen.rating ? ` · ${chosen.rating.text} (guess)` : ""}</small></div>
+              ${mine(chosen) && html`<button type="button" className="livewind__icon" aria-label=${`Edit ${chosen.label}`} onClick=${() => startEdit(chosen)}><${Icon} name="pencil" size=${18} /><span>Edit</span></button>
+                <button type="button" className="livewind__icon" aria-label=${`Delete ${chosen.label}`} disabled=${!!busy} onClick=${remove}><${Icon} name="trash" size=${18} /><span>Delete</span></button>`}
+              <button type="button" className="livewind__icon" aria-label="Back to all stands" onClick=${() => setSel(null)}><${Icon} name="x" size=${18} /><span>Done</span></button>
             </div>`
-            : right}
-          <div className="livewind__next">
+          : html`<div className="livewind__next">
             <button type="button" className="livewind__play" onClick=${() => setPlaying(!playing)} aria-label=${playing ? "Pause" : "Play the coming hours"}>
               ${playing ? html`<span className="livewind__pause" />` : html`<${Icon} name="play" size=${20} />`}</button>
-            <div><b>${hours.length > 1 ? shiftNote(hours) : "Waiting for the forecast"}</b><small>Forecast for the next ${Math.max(0, hours.length - 1)} hours</small></div>
-          </div>
+            <div><b>${hours.length > 1 ? shiftNote(hours) : "Waiting for the forecast"}</b>
+              <small>${airport ? `Right now: ${airport.text} · ${airport.where}, ${airport.ago}` : `Forecast for the next ${Math.max(0, hours.length - 1)} hours`}</small></div>
+          </div>`}
           <div className="livewind__strip" ref=${stripRef} role="group" aria-label="Wind by hour">
             ${hours.map((h, i) => html`<button type="button" key=${h.t} className=${"livewind__hour" + (i === pick ? " is-active" : "")} aria-pressed=${i === pick}
               aria-label=${`${hourLabel(h.t, i)}: ${h.wind.unsure ? "direction uncertain" : "from " + h.wind.dir}, ${Math.round(h.wind.speed)} miles an hour`}

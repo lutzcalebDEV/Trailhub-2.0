@@ -17,6 +17,8 @@ const P = {
   moon: html`<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/>`,
   rain: html`<g><path d="M7 15.5a4.2 4.2 0 0 1-.4-8.4 5.6 5.6 0 0 1 10.8 1.3A3.6 3.6 0 0 1 17 15.5Z"/><path d="M8.5 18.5 7.6 21M12.5 18.5l-.9 2.5M16.5 18.5l-.9 2.5"/></g>`,
   parcels: html`<g><path d="M3.5 5.5 20 3.5l.5 16-17 1Z"/><path d="m11.5 4.5.6 15.6M3.5 13l8.3-.8M12 9.5l8.3-.8"/></g>`,
+  // A ladder stand.
+  stand: html`<g><path d="M8 3v18M14 3v18"/><path d="M8 8h6M8 12.5h6M8 17h6"/><path d="M14 8h6v-3.5"/></g>`,
   thermo: html`<path d="M14 14.8V5a2 2 0 0 0-4 0v9.8a4 4 0 1 0 4 0Z"/>`,
   download: html`<g><path d="M12 3v12"/><path d="m7 10.5 5 5 5-5"/><path d="M5 21h14"/></g>`,
   play: html`<path d="M8 5.5v13l10.5-6.5Z"/>`,

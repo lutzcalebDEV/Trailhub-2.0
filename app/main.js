@@ -29,6 +29,9 @@ import { Insights } from "./views/insights.js";
 import { Review } from "./views/review.js";
 import { Bucks } from "./views/bucks.js";
 import { Harvests } from "./views/harvest.js";
+import { Stands } from "./views/stands.js";
+import { LiveWind } from "./views/livewind.js";
+import { siteOf } from "./deercast.js";
 import { Uploads } from "./views/uploads.js";
 
 // Past this, the pull has missed far more runs than GitHub's usual throttling explains.
@@ -37,7 +40,7 @@ const STALE_SYNC_MS = 12 * 3600000;
 // data.js carries it for real, so the overlay only needs to outlive a pull run.
 const UPLOAD_EDIT_TTL_MS = 30 * 60000;
 
-const VIEW_COMPONENTS = { overview: Overview, deercast: DeerCast, gallery: Gallery, uploads: Uploads, bucks: Bucks, insights: Insights, map: MapView, review: Review, harvest: Harvests };
+const VIEW_COMPONENTS = { overview: Overview, deercast: DeerCast, gallery: Gallery, uploads: Uploads, bucks: Bucks, insights: Insights, map: MapView, review: Review, harvest: Harvests, stands: Stands };
 
 // Every screen and photo has its own address, like screens in an app. The phone's
 // back gesture (or the browser's Back) steps back through the screens you visited,
@@ -768,13 +771,17 @@ function App() {
       showToast("ok", done);
       return r.stand || true;
     } catch (e) {
-      if (e instanceof NotSignedIn) openSignIn("Sign in again to change stands.");
+      if (e instanceof NotSignedIn) { setWindOpen(null); openSignIn("Sign in again to change stands."); }
       else showToast("err", "Couldn’t save that — try again");
       return null;
     }
   }, [uploadAuth, withStandEdits, showToast, openSignIn]);
   const saveStand = useCallback((stand) => changeStand({ stand }, "Stand saved for everyone"), [changeStand]);
   const removeStand = useCallback((id) => changeStand({ remove: id }, "Stand deleted"), [changeStand]);
+  // The full-screen wind map: null, or { start, show } (views/livewind.js).
+  const [windOpen, setWindOpen] = useState(null);
+  const openWind = useCallback((opts) => setWindOpen(opts || {}), []);
+  const closeWind = useCallback(() => setWindOpen(null), []);
   const refreshWeather = useCallback(() => { refresh({ byHand: true }); }, [refresh]);
 
   // Exact camera spots from the Map page, shared with everyone signed in.
@@ -877,7 +884,7 @@ function App() {
     : "Up to date" + (status.newest ? ` · newest photo ${status.newest}` : "");
   // Anything open on top (a photo, a pop-up): the tab bar stays visible over it, and
   // tapping a tab closes it and goes to that tab. An upload in progress stays open.
-  const overlayOpen = !!(lightbox || alertsOpen || accountsOpen || faceIdOpen || passwordOpen || signIn || uploadOpen);
+  const overlayOpen = !!(lightbox || alertsOpen || accountsOpen || faceIdOpen || passwordOpen || signIn || uploadOpen || windOpen);
   // Going to another tab from the tab bar (or sidebar) starts it unfiltered. Links in
   // pages that set a filter on purpose (a camera card, a chart bar) use setView instead.
   // Saved scroll spots were for the filtered lists, so those tabs open at the top.
@@ -898,7 +905,7 @@ function App() {
     if (v !== view) clearFilters();
     setView(v);
   };
-  // Swipe from the left edge goes back from the pages on More (Uploads, Map, Harvests, Identify) and Bucks.
+  // Swipe from the left edge goes back from the pages on More (Stands, Map, Harvests, Uploads, Identify) and Bucks.
   useEdgeBack(!MOBILE_MAIN.includes(view) && !overlayOpen, swipeBack);
   const app = {
     more: {
@@ -915,7 +922,7 @@ function App() {
     openLightbox, reviewQ, counts, setView,
     uploads, allCaptures, comments, openUpload: () => setUploadOpen(true), openAlerts: () => setAlertsOpen(true),
     camName, camNames, bulkAssign, renameCamera, savePins,
-    stands: standRows, loadStands, saveStand, removeStand, refreshWeather,
+    openWind, stands: standRows, loadStands, saveStand, removeStand, refreshWeather,
     buckNames, harvests: harvestRows, harvestsReady, loadHarvests, saveHarvest, removeHarvest,
     metaMap, updateMeta, toggleFavorite,
     auth: uploadAuth, openSignIn,
@@ -954,6 +961,7 @@ function App() {
     </div>
 
     <${MobileNav} view=${view} onTab=${tabFromBar} counts=${counts} />
+    ${windOpen && siteOf(data) && html`<${LiveWind} app=${app} site=${siteOf(data)} start=${windOpen.start} show=${windOpen.show} onClose=${closeWind} />`}
     <${PullToRefresh} onRefresh=${pullRefresh} />
     <${InstallHint} />
 

@@ -2,16 +2,30 @@
 // drift the way the wind blows. One forecast covers the property, so every streak
 // moves the same way.
 import { html, useState, useEffect, useRef } from "../react.js";
-import { Icon } from "../icons.js";
 import { loadLeaflet, SAT_TILES, SAT_CREDIT } from "./mapview.js";
 
-const COUNT = 46;
+// Fewer streaks on a small map, so the photo shows through.
+const streaks = (w, h) => Math.round(Math.min(60, Math.max(20, (w * h) / 5200)));
 const rad = (d) => (d * Math.PI) / 180;
 const still = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 // Where scent blows from a stand, in the color of its rating.
 const PLUME = { good: "52,211,153", risky: "245,181,63", avoid: "240,113,111" };
-export const plumeColor = (rating) => PLUME[rating && rating.level] || "255,122,47";
+export const plumeColor = (rating, camera) => PLUME[rating && rating.level] || (camera ? "96,165,250" : "255,122,47");
+// A stand's name tag. Cameras are blue, start with "(Cam)" and carry a camera.
+export function makePin(s, extra = "") {
+  const el = document.createElement("div");
+  el.className = `windpin is-${s.rating ? s.rating.level : "none"}${s.camera ? " is-cam" : ""}${extra}`;
+  if (s.camera) {
+    const icon = document.createElement("i");
+    icon.setAttribute("aria-hidden", "true");
+    el.append(icon);
+  }
+  const name = document.createElement("b");
+  name.textContent = (s.camera ? "(Cam) " : "") + s.label; // typed by people, so never as HTML
+  el.append(name);
+  return el;
+}
 const PUFFS = 90;
 const puff = () => ({ at: Math.random(), side: (Math.random() + Math.random() + Math.random()) / 1.5 - 1, size: 1 + Math.random() * 1.7 });
 
@@ -24,13 +38,16 @@ export function runWind(canvas, getWind, getPlumes) {
   // Eased toward the chosen hour, so moving the slider swings the streaks around.
   let cur = null;
   const seed = () => ({ x: Math.random(), y: Math.random(), age: Math.random(), life: 2.6 + Math.random() * 2, phase: Math.random() * 6.3 });
-  const bits = Array.from({ length: COUNT }, seed);
+  const bits = [];
   const plumes = new Map(); // stand id -> its puffs
 
   const size = () => {
     const r = canvas.getBoundingClientRect();
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     w = r.width; h = r.height;
+    const n = streaks(w, h);
+    while (bits.length < n) bits.push(seed());
+    bits.length = n;
     canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   };
@@ -169,11 +186,7 @@ export function WindMap({ stands, site, wind, time, onOpen }) {
     if (!L || !map) return undefined;
     const group = L.layerGroup().addTo(map);
     stands.forEach((s) => {
-      const el = document.createElement("div");
-      el.className = "windpin is-" + (s.rating ? s.rating.level : "none");
-      const name = document.createElement("b");
-      name.textContent = s.label; // user-editable, so never as HTML
-      el.append(name);
+      const el = makePin(s);
       if (s.rating) { const r = document.createElement("span"); r.textContent = s.rating.text; el.append(r); }
       L.marker([s.latitude, s.longitude], { interactive: false, keyboard: false,
         icon: L.divIcon({ className: "", iconSize: [0, 0], html: el }) }).addTo(group);
@@ -187,7 +200,7 @@ export function WindMap({ stands, site, wind, time, onOpen }) {
       const map = mapRef.current;
       return map ? standsRef.current.map((s) => {
         const at = map.latLngToContainerPoint([s.latitude, s.longitude]);
-        return { id: s.id || s.name, x: at.x, y: at.y, color: plumeColor(s.rating) };
+        return { id: s.id || s.name, x: at.x, y: at.y, color: plumeColor(s.rating, s.camera) };
       }) : [];
     });
     animRef.current = a;
@@ -206,6 +219,6 @@ export function WindMap({ stands, site, wind, time, onOpen }) {
         <path d="M12 3v18M6 9l6-6 6 6" /></svg>
       <span><b className="tnum">${Math.round(wind.speed)} mph</b><small>${wind.unsure ? "direction uncertain" : `from ${wind.dir}`} · gusts ${Math.round(wind.gust)}</small></span>
     </div>`}
-    ${onOpen && html`<button type="button" className="mapbox__pill windmap__open" onClick=${onOpen}><${Icon} name="expand" size=${17} />Live wind</button>`}
+    ${onOpen && html`<button type="button" className="windmap__tap" onClick=${onOpen} aria-label="Open Live wind" />`}
   </div>`;
 }

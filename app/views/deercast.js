@@ -1,14 +1,15 @@
 // Vale Trails — DeerCast: the Home card and the forecast page. The math is in
 // ../deercast.js.
 import { html, useState, useEffect, useMemo, useRef } from "../react.js";
-import { Segmented, Empty } from "../ui.js";
+import { Segmented, Empty, Btn } from "../ui.js";
 import { Icon } from "../icons.js";
-import { LS, usePersistent, fmtTime, fmtDateLong, timeAgo, fetchWindNow } from "../core.js";
-import { buildCast, standWind, windOver, siteOf, bandOf, daylight, inDaylight, compass } from "../deercast.js";
+import { LS, usePersistent, fmtTime, fmtDateLong, timeAgo } from "../core.js";
+import { buildCast, standWind, windOver, siteOf, bandOf, daylight, inDaylight } from "../deercast.js";
 import { bestSit } from "../analytics.js";
 import { windowLabel } from "./insights.js";
 import { WindMap } from "./windmap.js";
-import { LiveWind, allStands } from "./livewind.js";
+import { allStands } from "./livewind.js";
+import { WindNow } from "./windnow.js";
 
 const cx = (...xs) => xs.filter(Boolean).join(" ");
 const tone = (band) => "cast-" + band.toLowerCase();
@@ -137,31 +138,6 @@ function Curve({ day, at, onPick, time }) {
   </div>`;
 }
 
-/* -------------------------------- Right now ------------------------------- */
-// The nearest airport's reading, beside what the forecast says for this hour. Checked
-// when the page opens and when the forecast is refreshed.
-function WindNow({ site, forecast, now }) {
-  const [obs, setObs] = useState(null);
-  const fetched = forecast ? forecast.fetchedAt : "";
-  useEffect(() => {
-    let live = true;
-    const load = () => fetchWindNow().then((o) => { if (live) setObs(o); });
-    load();
-    const id = setInterval(() => { if (!document.hidden) load(); }, 10 * 60000);
-    return () => { live = false; clearInterval(id); };
-  }, [fetched]);
-  if (!obs || now - obs.at > 2 * 3600000) return null;
-  const a = obs.airport;
-  const miles = Math.round(Math.hypot((a.lat - site.lat) * 69, (a.lng - site.lng) * 69 * Math.cos((site.lat * Math.PI) / 180)));
-  const calm = obs.speed < 1;
-  return html`<div className="windnow">
-    ${!calm && obs.deg != null && html`<svg className="castarrow" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"
-      style=${{ transform: `rotate(${obs.deg + 180}deg)` }}><path d="M12 3v18M6 9l6-6 6 6" /></svg>`}
-    <span><b>Right now: ${calm ? "calm" : `${obs.deg != null ? compass(obs.deg) + " " : ""}${Math.round(obs.speed)} mph${obs.gust ? `, gusts ${Math.round(obs.gust)}` : ""}`}</b>
-      <small>${a.name}, ${miles} miles away · ${timeAgo(new Date(obs.at), now)}</small></span>
-  </div>`;
-}
-
 /* ---------------------------------- Page ---------------------------------- */
 const pts = (n) => (n > 0 ? "+" : n < 0 ? "−" : "") + Math.abs(n).toFixed(1);
 const MAX_PTS = 2;
@@ -172,7 +148,6 @@ export function DeerCast(app) {
   const allHours = mode === "all";
   const [cast, now] = useCast(app, allHours);
   const [picked, setPicked] = useState(() => { const k = openOn; openOn = null; return k; });
-  const [live, setLive] = useState(false);
   useEffect(() => { app.loadStands(); }, [app.loadStands]);
   const [chosen, setChosen] = useState(null); // quarter hour of the day, or null for now/best
 
@@ -224,9 +199,12 @@ export function DeerCast(app) {
         <div><dt><${Icon} name="sunrise" size=${15} />Sunrise</dt><dd>${fmtTime(new Date(day.light.rise))}</dd></div>
         <div><dt><${Icon} name="sunset" size=${15} />Sunset</dt><dd>${fmtTime(new Date(day.light.set))}</dd></div>
       </dl>
-      ${site && html`<${WindMap} stands=${spots} site=${site} wind=${wind} time=${time} onOpen=${() => setLive(true)} />`}
-      ${live && site && html`<${LiveWind} app=${app} site=${site} onClose=${() => setLive(false)}
-        right=${html`<${WindNow} site=${site} forecast=${data.forecast} now=${now} />`} />`}
+      ${site && html`<${WindMap} stands=${spots} site=${site} wind=${wind} time=${time} onOpen=${() => app.openWind()} />`}
+      ${site && html`<div className="castacts">
+        <${Btn} variant="primary" icon="expand" onClick=${() => app.openWind()}>Live wind</${Btn}>
+        <${Btn} icon="pin" onClick=${() => app.openWind({ start: "new" })}>Add stand</${Btn}>
+        <${Btn} icon="stand" onClick=${() => app.setView("stands")}>Stands</${Btn}>
+      </div>`}
       ${site && html`<${WindNow} site=${site} forecast=${data.forecast} now=${now} />`}
       <div>
         <${Curve} day=${day} at=${at} onPick=${setChosen} time=${time} />

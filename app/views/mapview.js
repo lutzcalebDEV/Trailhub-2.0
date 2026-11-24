@@ -55,7 +55,7 @@ export function loadLeaflet() {
 const coarse = () => window.matchMedia("(pointer: coarse)").matches;
 
 export function MapView(app) {
-  const { data, captures, ov, filters, setFilter, setView, spList, theme, camName, renameCamera, savePins, stands, loadStands, harvests, loadHarvests, auth, openSignIn } = app;
+  const { data, captures, ov, filters, setFilter, setView, spList, theme, camName, renameCamera, savePins, openWind, stands, loadStands, harvests, loadHarvests, auth, openSignIn } = app;
   const [leafletReady, setLeafletReady] = useState(() => !!window.L);
   useEffect(() => {
     if (leafletReady) return;
@@ -364,6 +364,9 @@ export function MapView(app) {
         ${lines && html`<div className="mapbox__note" role="status">${parcelNote}</div>`}
         ${data.canPin && !moving && html`<button type="button" className="mapbox__move" onClick=${beginMove}>
           <${Icon} name="pin" size=${16} />Move pins
+        </button>`}
+        ${!moving && html`<button type="button" className="mapbox__move is-second" onClick=${() => openWind({ start: "new" })}>
+          <${Icon} name="stand" size=${16} />Add stand
         </button>`}
         ${moving && html`<div className="movebar" role="region" aria-label="Move pins">
           <span>${moved ? `${moved} pin${moved === 1 ? "" : "s"} moved` : "Drag each pin to its exact spot"}</span>

@@ -16,6 +16,7 @@ export const VIEWS = [
   { id: "bucks",    label: "Bucks",    icon: "target" },
   { id: "insights", label: "Patterns", icon: "chart" },
   { id: "map",      label: "Map",      icon: "map" },
+  { id: "stands",   label: "Stands",   icon: "stand" },
   { id: "harvest",  label: "Harvests", icon: "tag" },
   { id: "review",   label: "Identify", icon: "scan" },
 ];
@@ -146,7 +147,7 @@ export function LargeTitle({ title, sub, warn }) {
 // Seven tabs at phone width made every label tiny and easy to mis-tap.
 // Phone tab bar, in this order, then More; everything else is listed on More, also in order.
 export const MOBILE_MAIN = ["overview", "gallery", "deercast", "insights", "more"];
-export const MOBILE_MORE = ["uploads", "map", "harvest", "review"];
+export const MOBILE_MORE = ["stands", "map", "harvest", "uploads", "review"];
 const viewsIn = (ids) => ids.map((id) => VIEWS.find((v) => v.id === id)).filter(Boolean);
 const TABS = [...viewsIn(MOBILE_MAIN), { id: "more", label: "More", icon: "grid" }];
 
@@ -233,7 +234,7 @@ function MoreRow({ icon, tint, label, value, badge, chevron = true, tone, onClic
   </button>`;
 }
 
-const MORE_TINT = { uploads: "#c2820a", map: "#2a9d6f", harvest: "#b4532a", review: "#8e5bd8" };
+const MORE_TINT = { uploads: "#c2820a", map: "#2a9d6f", stands: "#3b7dd8", harvest: "#b4532a", review: "#8e5bd8" };
 export function MoreScreen({ more, counts, auth }) {
   const m = more || {};
   const status = m.status || {};
@@ -352,7 +353,7 @@ export function PullToRefresh({ onRefresh }) {
   const busyRef = useRef(false);
   useEffect(() => {
     const phone = window.matchMedia("(max-width: 900px)");
-    const blocked = (t) => t.closest && t.closest(".lb, .modal, .drawer, .leaflet-container, .scrim, input, textarea, select");
+    const blocked = (t) => t.closest && t.closest(".lb, .modal, .drawer, .livewind, .leaflet-container, .scrim, input, textarea, select");
     const onStart = (e) => {
       start.current = null;
       if (!phone.matches || busyRef.current || e.touches.length !== 1 || getScrollY() > 0) return;
