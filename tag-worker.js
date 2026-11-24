@@ -1323,6 +1323,68 @@ async function handlePins(request, env, who) {
   return json({ ok: true, pins: out });
 }
 
+/* ------------------------------- Harvests -------------------------------- */
+// Deer taken, with the exact spot, so they're kept with the pins: in the accounts
+// namespace, one entry each ("harvest:<id>"), never in R2 or the repo.
+//   GET  /harvests                      -> { harvests: [...] }
+//   POST /harvests { harvest: {...} }   adds one, or changes it when it has an id
+//   POST /harvests { remove: id }
+// People change their own entries; an admin can change any.
+const HARVEST_PREFIX = "harvest:";
+const HARVEST_ID = /^[0-9a-f-]{36}$/;
+function cleanHarvest(h) {
+  const date = String(h.date || ""), time = String(h.time || "");
+  const day = /^\d{4}-\d{2}-\d{2}$/.test(date) ? new Date(date + "T00:00:00Z") : null;
+  if (!day || Number.isNaN(day.getTime()) || day.toISOString().slice(0, 10) !== date || date < "1980-01-01"
+    || day.getTime() > Date.now() + 86400000) return { error: "Check the date." };
+  if (!HHMM.test(time)) return { error: "Check the time." };
+  if (h.kind !== "Buck" && h.kind !== "Doe") return { error: "Choose buck or doe." };
+  const none = h.lat == null && h.lng == null;
+  const spot = [h.lat, h.lng].every((v) => typeof v === "number" && Number.isFinite(v))
+    && Math.abs(h.lat) <= 85 && Math.abs(h.lng) <= 180;
+  if (!none && !spot) return { error: "That spot isn't valid." };
+  const place = cleanName(h.place);
+  if (none && !place) return { error: "Add a location." };
+  const round = (v) => (none ? null : Math.round(v * 1e5) / 1e5);
+  return { value: {
+    date, time, kind: h.kind, place, lat: round(h.lat), lng: round(h.lng),
+    hunter: cleanComment(h.hunter, 40), notes: cleanComment(h.notes, 300),
+  } };
+}
+async function handleHarvests(request, env, who) {
+  if (!env.ACCOUNTS) return json({ error: "Harvests need the ACCOUNTS namespace." }, 503);
+  if (request.method === "GET") {
+    const harvests = [];
+    let cursor;
+    do {
+      const page = await env.ACCOUNTS.list({ prefix: HARVEST_PREFIX, cursor });
+      const rows = await Promise.all(page.keys.map((k) => env.ACCOUNTS.get(k.name, "json")));
+      harvests.push(...rows.filter(Boolean));
+      cursor = page.list_complete ? undefined : page.cursor;
+    } while (cursor);
+    return json({ harvests });
+  }
+  if (request.method !== "POST") return json({ error: "Method not allowed." }, 405);
+  const payload = (await request.json().catch(() => null)) || {};
+  const wanted = payload.remove || (payload.harvest && payload.harvest.id) || null;
+  if (wanted && !HARVEST_ID.test(String(wanted))) return json({ error: "Not found." }, 404);
+  const old = wanted ? await env.ACCOUNTS.get(HARVEST_PREFIX + wanted, "json") : null;
+  if (wanted && !old) return json({ error: "Not found." }, 404);
+  if (old && !who.admin && String(old.by).toLowerCase() !== who.user.toLowerCase()) return json({ error: "Not yours." }, 403);
+  if (payload.remove) {
+    await env.ACCOUNTS.delete(HARVEST_PREFIX + wanted);
+    return json({ ok: true, removed: wanted });
+  }
+  if (!payload.harvest || typeof payload.harvest !== "object") return json({ error: "Nothing to save." }, 400);
+  const { value, error } = cleanHarvest(payload.harvest);
+  if (error) return json({ error }, 400);
+  const now = new Date().toISOString();
+  const entry = { ...value, hunter: value.hunter || who.user, id: wanted || crypto.randomUUID(),
+    by: old ? old.by : who.user, at: old ? old.at : now, ...(old ? { editedBy: who.user, editedAt: now } : {}) };
+  await env.ACCOUNTS.put(HARVEST_PREFIX + entry.id, JSON.stringify(entry));
+  return json({ ok: true, harvest: entry });
+}
+
 // From the workflow: { sightings: [{ species, title, body, url, tag }] }. Sends each
 // phone the sightings for its species: one notification each, or a summary.
 async function handlePushNotify(request, env) {
@@ -1439,6 +1501,7 @@ export default {
           headers: { "Content-Type": "application/javascript; charset=utf-8", "Cache-Control": "no-store", ...CORS },
         });
       }
+      if (path === "/harvests") return await handleHarvests(request, env, who);
       if (path === "/pins") return await handlePins(request, env, who);
       if (request.method === "GET" && path === "/media-token") return json(await makeMediaToken(env, who.user));
       if (request.method === "GET" && path !== "/accounts" && path !== "/passkeys" && path !== "/password") {

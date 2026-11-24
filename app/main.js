@@ -3,7 +3,7 @@ import { html, useState, useEffect, useLayoutEffect, useMemo, useRef, useCallbac
 import {
   LS, usePersistent, usePersistentSet, useData, loadOverrides, newerDeploy, reloadForDeploy, safeToReload,
   remoteLoadTags, remoteSaveTags, remoteSaveTagsBatch, hasSharedTags, effectiveSpecies, timeAgo,
-  loadCameraNames, remoteLoadCameraNames, remoteSaveCameraName, remoteSavePins, displayCamera,
+  loadCameraNames, remoteLoadCameraNames, remoteSaveCameraName, remoteSavePins, fetchHarvests, cachedHarvests, postHarvest, displayCamera,
   loadMetadata, remoteLoadMetadata, remoteSaveMetadata, applyMeta, metaOf, cameraLabels,
   remoteLoadComments, saveComment, updateUpload, NotSignedIn, TooManyAttempts,
   loadSession, saveSession, faceIdOn, faceIdName, setApiAuth, forgetPrivateData, getScrollY, scrollToY,
@@ -28,6 +28,7 @@ import { MapView } from "./views/mapview.js";
 import { Insights } from "./views/insights.js";
 import { Review } from "./views/review.js";
 import { Bucks } from "./views/bucks.js";
+import { Harvests } from "./views/harvest.js";
 import { Uploads } from "./views/uploads.js";
 
 // Past this, the pull has missed far more runs than GitHub's usual throttling explains.
@@ -36,7 +37,7 @@ const STALE_SYNC_MS = 12 * 3600000;
 // data.js carries it for real, so the overlay only needs to outlive a pull run.
 const UPLOAD_EDIT_TTL_MS = 30 * 60000;
 
-const VIEW_COMPONENTS = { overview: Overview, deercast: DeerCast, gallery: Gallery, uploads: Uploads, bucks: Bucks, insights: Insights, map: MapView, review: Review };
+const VIEW_COMPONENTS = { overview: Overview, deercast: DeerCast, gallery: Gallery, uploads: Uploads, bucks: Bucks, insights: Insights, map: MapView, review: Review, harvest: Harvests };
 
 // Every screen and photo has its own address, like screens in an app. The phone's
 // back gesture (or the browser's Back) steps back through the screens you visited,
@@ -699,6 +700,46 @@ function App() {
   }, [reviewed$, settleTags, showToast, uploadAuth, signInToast, syncFailed]);
 
   // Rename a camera for everyone (raw label is the stable key; "" resets it).
+  /* ----------------------------- Harvests ------------------------------- */
+  const [harvestRows, setHarvestRows] = useState([]);
+  const [harvestsReady, setHarvestsReady] = useState("loading");
+  // Cloudflare's copies can lag a save by a minute, so this device's own changes are
+  // laid over what it reads for a while: id -> { entry (null = deleted), at }.
+  const harvestEdits = useRef(new Map());
+  const harvestUser = uploadAuth ? uploadAuth.user : null;
+  useEffect(() => { harvestEdits.current = new Map(); setHarvestRows([]); setHarvestsReady("loading"); }, [harvestUser]);
+  const withEdits = useCallback((rows) => {
+    const byId = new Map(rows.map((h) => [h.id, h]));
+    for (const [id, e] of harvestEdits.current) {
+      if (Date.now() - e.at > 5 * 60000) harvestEdits.current.delete(id);
+      else if (e.entry) byId.set(id, e.entry);
+      else byId.delete(id);
+    }
+    return [...byId.values()];
+  }, []);
+  const loadHarvests = useCallback(async () => {
+    if (!harvestUser) return;
+    const kept = await cachedHarvests();
+    if (kept.length) setHarvestRows((now) => (now.length ? now : withEdits(kept)));
+    try { setHarvestRows(withEdits(await fetchHarvests())); setHarvestsReady("ok"); } catch (e) { setHarvestsReady("error"); }
+  }, [harvestUser, withEdits]);
+  const changeHarvest = useCallback(async (body, done) => {
+    try {
+      const r = await postHarvest(body, uploadAuth);
+      const id = body.remove || r.harvest.id;
+      harvestEdits.current.set(id, { entry: r.harvest || null, at: Date.now() });
+      setHarvestRows((rows) => withEdits(rows));
+      showToast("ok", done);
+      return true;
+    } catch (e) {
+      if (e instanceof NotSignedIn) openSignIn("Sign in again to save harvests.");
+      else showToast("err", "Couldn’t save that — try again");
+      return false;
+    }
+  }, [uploadAuth, withEdits, showToast, openSignIn]);
+  const saveHarvest = useCallback((harvest) => changeHarvest({ harvest }, "Harvest saved"), [changeHarvest]);
+  const removeHarvest = useCallback((id) => changeHarvest({ remove: id }, "Harvest deleted"), [changeHarvest]);
+
   // Exact camera spots from the Map page, shared with everyone signed in.
   const savePins = useCallback(async (changes) => {
     if (!uploadAuth) { openSignIn("Sign in to move pins for everyone."); return false; }
@@ -820,7 +861,7 @@ function App() {
     if (v !== view) clearFilters();
     setView(v);
   };
-  // Swipe from the left edge goes back from the pages on More (DeerCast, Map, Identify).
+  // Swipe from the left edge goes back from the pages on More (DeerCast, Map, Harvests, Identify).
   useEdgeBack(MOBILE_MORE.includes(view) && !overlayOpen, swipeBack);
   const app = {
     more: {
@@ -837,6 +878,7 @@ function App() {
     openLightbox, reviewQ, counts, setView,
     uploads, allCaptures, comments, openUpload: () => setUploadOpen(true), openAlerts: () => setAlertsOpen(true),
     camName, camNames, bulkAssign, renameCamera, savePins,
+    harvests: harvestRows, harvestsReady, loadHarvests, saveHarvest, removeHarvest,
     metaMap, updateMeta, toggleFavorite,
     auth: uploadAuth, openSignIn,
   };

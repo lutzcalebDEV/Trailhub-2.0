@@ -2110,3 +2110,26 @@ button.castwin { border: 0; color: inherit; font: inherit; text-align: left; cur
 .movepin i { position: absolute; inset: 12px; border-radius: 50%; background: var(--accent); border: 3px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,.6); }
 .movepin i::after { content: ""; position: absolute; inset: 6px; border-radius: 50%; background: #fff; }
 .movepin b { position: absolute; left: 50%; bottom: 42px; transform: translateX(-50%); padding: 3px 9px; border-radius: 8px; background: rgba(10,14,12,.86); color: #fff; font: 650 12px var(--font); white-space: nowrap; }
+
+/* Property lines and harvests */
+.mapbox__note { position: absolute; z-index: 2; left: 50%; top: 12px; transform: translateX(-50%); max-width: calc(100% - 130px); padding: 6px 12px; border-radius: 9px; background: rgba(10,14,12,.84); color: #fff; font-size: 12.5px; text-align: center; pointer-events: none; }
+.mapbox.is-full .mapbox__note { top: calc(14px + env(safe-area-inset-top, 0px)); }
+.map.spotmap { height: 300px; }
+.harvestpin { width: 44px; height: 44px; position: relative; }
+.harvestpin::after { content: ""; position: absolute; inset: 11px; border-radius: 50%; background: #e8590c; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,.6); }
+.harvestform .panel__body { display: flex; flex-direction: column; gap: 16px; }
+.harvestform__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.harvestform__grid > * { min-width: 0; }
+.harvestform .input { width: 100%; min-width: 0; }
+.harvestform .segmented { align-self: flex-start; }
+.harvestform__loc { display: flex; flex-direction: column; gap: 10px; }
+.harvestform__chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.harvestform__chips .chip { min-height: 38px; }
+.harvestform__foot { display: flex; align-items: center; gap: 10px; }
+.harvests { list-style: none; margin: 0; padding: 0; }
+.harvest { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; padding: 12px 0; border-top: 1px solid var(--border); }
+.harvest:first-child { border-top: 0; padding-top: 0; }
+.harvest__body { display: flex; flex-direction: column; gap: 3px; min-width: 0; overflow-wrap: anywhere; }
+.harvest__body b { font-size: 15px; }
+.harvest__body span { display: inline-flex; align-items: center; gap: 5px; font-size: 13.5px; color: var(--text-muted); }
+.harvest__body p { margin-top: 4px; font-size: 13.5px; }

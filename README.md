@@ -18,7 +18,7 @@ just static files — no server, no AI, no credentials in the cloud.
 - `tags.json` — your photo tags/reclassifications (shared source of truth, baked into `data.js`)
 - `tag-worker.js` — optional Cloudflare Worker that saves tags for everyone (see "Shared tags")
 
-The site has eight pages: **Home** (the deer forecast, the busiest camera, camera status
+The site has nine pages: **Home** (the deer forecast, the busiest camera, camera status
 and the latest photos), **DeerCast** (a 7-day deer movement forecast), **Photos** (everything from the cameras, grouped by day), **Uploads**
 (photos and videos people added), **Bucks** (a history for each
 deer you name), **Patterns** (when animals move, including by weather), **Map**, and
@@ -413,6 +413,10 @@ that line lists the field names SPYPOINT sent, so the extractor can be matched t
 - **Map pins**: `data.js` holds camera positions rounded to about 1 km. Exact spots are
   set with **Move pins** on the Map page and kept only in the Worker's private ACCOUNTS
   store (`/pins`), for signed-in people.
+- **Property lines** on the Map page are North Carolina's public tax parcels from
+  [NC OneMap](https://www.nconemap.gov/) (free, no key). They're approximate, not a survey.
+- **Harvests** (`/harvests` on the Worker) are kept in the private ACCOUNTS store. People
+  edit their own; admins edit any.
 - **DeerCast** is a starting estimate, not a tested prediction: time of day and the rut
   count most and weather only nudges the score (`app/deercast.js`). The forecast is
   refreshed every 3 hours by `pull.py` into `forecast.json`, and the app also gets the

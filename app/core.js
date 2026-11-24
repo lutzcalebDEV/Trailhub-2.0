@@ -233,7 +233,7 @@ export async function forgetPrivateData() {
   try { localStorage.removeItem(MEDIA_KEY); } catch (e) {}
   try {
     const kept = await caches.open(DATA_CACHE);
-    await Promise.all([kept.delete(DATA_KEY), kept.delete(PINS_KEY)]);
+    await Promise.all([kept.delete(DATA_KEY), kept.delete(PINS_KEY), kept.delete(HARVESTS_KEY)]);
     await caches.delete("vale-photos");
   } catch (e) {}
 }
@@ -266,6 +266,27 @@ export async function remoteSavePins(changes, auth) {
   if (!pins) throw new Error("Pins weren't saved");
   keepPins(pins);
   return pins;
+}
+
+// Harvests (views/harvest.js). The copy kept on this device shows with no signal.
+const HARVESTS_KEY = "/state/harvests";
+const harvestList = (raw) => (raw && Array.isArray(raw.harvests) ? raw.harvests.filter((h) => h && h.id && h.date && h.time) : null);
+export async function fetchHarvests() {
+  const list = harvestList(await getJSON("/harvests"));
+  if (!list) throw new Error("Harvests aren't available");
+  try { await (await caches.open(DATA_CACHE)).put(HARVESTS_KEY, new Response(JSON.stringify({ harvests: list }))); } catch (e) {}
+  return list;
+}
+export async function cachedHarvests() {
+  try {
+    const hit = await (await caches.open(DATA_CACHE)).match(HARVESTS_KEY);
+    return (hit && apiAuth && harvestList(await hit.json())) || [];
+  } catch (e) { return []; }
+}
+export async function postHarvest(body, auth) {
+  const r = await postJSON(TAGS_API + "/harvests", body, auth);
+  if (body.remove ? r.removed !== body.remove : !(r.harvest && r.harvest.id)) throw new Error("Not saved");
+  return r;
 }
 
 export async function fetchLatestData() {
@@ -863,6 +884,7 @@ export const LS = {
   faceIdUsers: "trailhub-faceid-users",
   homeLatest: "trailhub-home-latest",
   castHours: "trailhub-deercast-hours",
+  mapParcels: "trailhub-map-parcels",
   alertsNudge: "trailhub-alerts-nudge",
 };
 
@@ -979,7 +1001,7 @@ export function reloadForDeploy(deployed) {
 export function safeToReload() {
   const a = document.activeElement;
   if (a && a.matches && a.matches("input, textarea, select, [contenteditable]")) return false;
-  return !document.querySelector(".lb, .modal, .drawer, .mapbox.is-full");
+  return !document.querySelector(".lb, .modal, .drawer, .mapbox.is-full, .harvestform");
 }
 
 export function useData(auth, onSignedOut, pollMs = 5 * 60 * 1000) {
