@@ -184,7 +184,7 @@ export function LiveWind({ app, site, start, show, onClose }) {
       if (!map) return [];
       const at = (lat, lng) => map.latLngToContainerPoint([lat, lng]);
       const e = live.current.edit, c = e && map.getSize().divideBy(2);
-      return [...live.current.list.filter((s) => !e || e.id !== s.id).map((s) => ({ ...xy(at(s.latitude, s.longitude)), id: s.id, color: plumeColor(s.rating, s.camera), air: s.air })),
+      return [...live.current.list.filter((s) => !s.camera && (!e || e.id !== s.id)).map((s) => ({ ...xy(at(s.latitude, s.longitude)), id: s.id, color: plumeColor(s.rating, s.camera), air: s.air })),
         ...(c ? [{ x: c.x, y: c.y, id: "edit", color: plumeColor(null) }] : [])];
     });
     animRef.current = a;

@@ -209,7 +209,8 @@ export function WindMap({ stands, site, wind, time, onOpen }) {
     if (!canvasRef.current) return undefined;
     const a = runWind(canvasRef.current, () => windRef.current, () => {
       const map = mapRef.current;
-      return map ? standsRef.current.map((s) => {
+      // Nobody sits at a camera pin, so only stands get a trail.
+      return map ? standsRef.current.filter((s) => !s.camera).map((s) => {
         const at = map.latLngToContainerPoint([s.latitude, s.longitude]);
         return { id: s.id || s.name, x: at.x, y: at.y, color: plumeColor(s.rating, s.camera), air: s.air };
       }) : [];

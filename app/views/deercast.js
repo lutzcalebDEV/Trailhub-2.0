@@ -220,7 +220,7 @@ export function DeerCast(app) {
           <b>${when(v)}</b>
         </button>`)}
       </div>
-      <p className="castnote">Streaks show the wind, and the plumes where scent blows from each stand.${spots.some((s) => !s.pinned) ? " Pins are approximate until moved on the Map page." : ""}${stands.length ? " Stand ratings are best guesses and don't change the score." : ""}${wind && wind.unsure ? " Forecasts disagree by more than 45° here, so check the wind when you arrive." : ""}${wind && wind.speed < 3 ? " Wind this light can drift any direction." : ""}${spots.some((s) => s.air && s.air.toward != null) ? " In calm air, plumes follow the slope of the land: an estimate." : ""}</p>
+      <p className="castnote">Streaks show the wind.${spots.some((s) => !s.camera) ? " Trails show where scent blows from each stand." : ""}${spots.some((s) => !s.pinned) ? " Pins are approximate until moved on the Map page." : ""}${stands.length ? " Stand ratings are best guesses and don't change the score." : ""}${wind && wind.unsure ? " Forecasts disagree by more than 45° here, so check the wind when you arrive." : ""}${wind && wind.speed < 3 ? " Wind this light can drift any direction." : ""}${spots.some((s) => !s.camera && s.air && s.air.toward != null) ? " In calm air, plumes follow the slope of the land: an estimate." : ""}</p>
     </section>
 
     ${sit && html`<button type="button" className="linkrow" onClick=${() => { app.setFilter({ camera: sit.camera }); app.setView("gallery"); }}>
