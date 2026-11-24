@@ -121,7 +121,7 @@ export function WindMap({ stands, site, wind, time }) {
     const frame = () => {
       map.invalidateSize();
       const pts = stands.map((s) => [s.latitude, s.longitude]);
-      if (pts.length > 1) map.fitBounds(pts, { paddingTopLeft: [80, 84], paddingBottomRight: [80, 50], maxZoom: 15, animate: false });
+      if (pts.length > 1) map.fitBounds(pts, { paddingTopLeft: [80, 110], paddingBottomRight: [80, 50], maxZoom: 15.5, animate: false });
       else map.setView(pts[0] || [site.lat, site.lng], 15);
     };
     frame();

@@ -54,7 +54,7 @@ export function loadLeaflet() {
 const coarse = () => window.matchMedia("(pointer: coarse)").matches;
 
 export function MapView(app) {
-  const { data, captures, ov, filters, setFilter, setView, spList, theme, camName, renameCamera, auth, openSignIn } = app;
+  const { data, captures, ov, filters, setFilter, setView, spList, theme, camName, renameCamera, savePins, auth, openSignIn } = app;
   const [leafletReady, setLeafletReady] = useState(() => !!window.L);
   useEffect(() => {
     if (leafletReady) return;
@@ -75,6 +75,22 @@ export function MapView(app) {
   cameraRef.current = filters.camera;
   const [editing, setEditing] = useState(null);
   const [draft, setDraft] = useState("");
+
+  // Moving pins: drag each camera to its real spot on the full-screen map, then save.
+  const [moving, setMoving] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [moved, setMoved] = useState(0);
+  const draftsRef = useRef({});
+  const beginMove = () => { draftsRef.current = {}; setMoved(0); setMoving(true); setFull(true); };
+  const endMove = () => { draftsRef.current = {}; setMoving(false); setFull(false); };
+  const saveMove = async () => {
+    setSaving(true);
+    const ok = await savePins(draftsRef.current);
+    setSaving(false);
+    if (ok) endMove();
+  };
+  const endRef = useRef(endMove);
+  endRef.current = endMove;
 
   const beginEdit = (cam) => { setEditing(cam.name); setDraft(camName(cam.name)); };
   const cancelEdit = () => setEditing(null);
@@ -131,6 +147,25 @@ export function MapView(app) {
     const group = L.layerGroup().addTo(map);
     layerRef.current = group;
     markersRef.current = new Map();
+    if (moving) {
+      cams.forEach((cam) => {
+        const el = document.createElement("div");
+        el.className = "movepin";
+        const name = document.createElement("b");
+        name.textContent = camName(cam.name); // user-editable, so never as HTML
+        el.append(name, document.createElement("i"));
+        const mk = L.marker(draftsRef.current[cam.name] || [cam.latitude, cam.longitude], {
+          draggable: true, autoPan: true, title: "Drag to move",
+          icon: L.divIcon({ className: "", iconSize: [48, 48], iconAnchor: [24, 24], html: el }),
+        }).addTo(group);
+        mk.on("dragend", () => {
+          const at = mk.getLatLng();
+          draftsRef.current[cam.name] = [Number(at.lat.toFixed(5)), Number(at.lng.toFixed(5))];
+          setMoved(Object.keys(draftsRef.current).length);
+        });
+      });
+      return;
+    }
     const maxC = Math.max(1, ...cams.map((c) => countByCam.get(c.name) || 0));
     cams.forEach((cam) => {
       const count = countByCam.get(cam.name) || 0;
@@ -152,7 +187,7 @@ export function MapView(app) {
       mk.bindPopup(pop);
       mk.on("click", () => setFilter({ camera: cameraRef.current === cam.name ? "All" : cam.name }));
     });
-  }, [auth, cams, countByCam, camName, leafletReady, setFilter, setView]);
+  }, [auth, cams, countByCam, camName, leafletReady, setFilter, setView, moving]);
 
   useEffect(() => {
     const L = window.L;
@@ -169,7 +204,7 @@ export function MapView(app) {
     const root = document.documentElement;
     const before = root.style.overflow;
     root.style.overflow = "hidden";
-    const onKey = (e) => { if (e.key === "Escape") setFull(false); };
+    const onKey = (e) => { if (e.key === "Escape") endRef.current(); };
     window.addEventListener("keydown", onKey);
     return () => { root.style.overflow = before; window.removeEventListener("keydown", onKey); };
   }, [full, leafletReady]);
@@ -261,8 +296,18 @@ export function MapView(app) {
       </div>
       <div className=${cx("mapbox", full && "is-full")}>
         <div className=${cx("map", sat && "is-sat")} ref=${elRef} />
+        ${data.canPin && !moving && html`<button type="button" className="mapbox__move" onClick=${beginMove}>
+          <${Icon} name="pin" size=${16} />Move pins
+        </button>`}
+        ${moving && html`<div className="movebar" role="region" aria-label="Move pins">
+          <span>${moved ? `${moved} pin${moved === 1 ? "" : "s"} moved` : "Drag each pin to its exact spot"}</span>
+          <div className="row gap-sm">
+            <${Btn} sm onClick=${endMove} disabled=${saving}>Cancel</${Btn}>
+            <${Btn} sm variant="primary" icon="check" onClick=${saveMove} disabled=${!moved || saving}>${saving ? "Saving" : "Save"}</${Btn}>
+          </div>
+        </div>`}
         <div className="mapbox__tools">
-          <button className="mapbox__toggle" onClick=${() => setFull(!full)}
+          <button className="mapbox__toggle" onClick=${() => (moving ? endMove() : setFull(!full))}
             title=${full ? "Close the full-screen map" : "Full-screen map"}
             aria-label=${full ? "Close the full-screen map" : "Full-screen map"}>
             <${Icon} name=${full ? "x" : "expand"} size=${17} />

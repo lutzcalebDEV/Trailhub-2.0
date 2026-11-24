@@ -1289,6 +1289,40 @@ function inQuietHours(quiet, now = new Date()) {
   return from < to ? cur >= from && cur < to : cur >= from || cur < to;
 }
 
+/* ------------------------------- Map pins -------------------------------- */
+// Where each camera really stands, set by dragging its pin on the Map page. Kept in
+// the accounts namespace, which has no public address, and never written to R2 or the
+// repo: data.js only ever holds positions rounded to about 1 km.
+//   GET  /pins                                      -> { pins: { camera: [lat, lng] } }
+//   POST /pins { pins: { camera: [lat, lng] | null } }  (null = back to the rounded spot)
+const PINS_KEY = "meta:pins";
+const PINS_MAX = 40;
+async function handlePins(request, env, who) {
+  if (!env.ACCOUNTS) return json({ error: "Pins need the ACCOUNTS namespace." }, 503);
+  const saved = (await env.ACCOUNTS.get(PINS_KEY, "json")) || {};
+  const pins = saved.pins && typeof saved.pins === "object" ? saved.pins : {};
+  if (request.method === "GET") return json({ pins });
+  if (request.method !== "POST") return json({ error: "Method not allowed." }, 405);
+  const payload = await request.json().catch(() => null);
+  const changes = payload && payload.pins && typeof payload.pins === "object" && !Array.isArray(payload.pins)
+    ? Object.entries(payload.pins) : [];
+  if (!changes.length || changes.length > PINS_MAX) return json({ error: "No pins to save." }, 400);
+  const next = new Map(Object.entries(pins));
+  for (const [camera, spot] of changes) {
+    const name = cleanName(camera);
+    if (!name) return json({ error: "Missing camera." }, 400);
+    if (spot === null) { next.delete(name); continue; }
+    const ok = Array.isArray(spot) && spot.length === 2 && spot.every((v) => typeof v === "number" && Number.isFinite(v))
+      && Math.abs(spot[0]) <= 85 && Math.abs(spot[1]) <= 180;
+    if (!ok) return json({ error: "That spot isn't valid." }, 400);
+    next.set(name, spot.map((v) => Math.round(v * 1e5) / 1e5));
+  }
+  if (next.size > PINS_MAX) return json({ error: "Too many pins." }, 400);
+  const out = Object.fromEntries(next);
+  await env.ACCOUNTS.put(PINS_KEY, JSON.stringify({ pins: out, by: who.user, at: new Date().toISOString() }));
+  return json({ ok: true, pins: out });
+}
+
 // From the workflow: { sightings: [{ species, title, body, url, tag }] }. Sends each
 // phone the sightings for its species: one notification each, or a summary.
 async function handlePushNotify(request, env) {
@@ -1405,6 +1439,7 @@ export default {
           headers: { "Content-Type": "application/javascript; charset=utf-8", "Cache-Control": "no-store", ...CORS },
         });
       }
+      if (path === "/pins") return await handlePins(request, env, who);
       if (request.method === "GET" && path === "/media-token") return json(await makeMediaToken(env, who.user));
       if (request.method === "GET" && path !== "/accounts" && path !== "/passkeys" && path !== "/password") {
         const file = path === "/comments" ? COMMENTS_FILE : isCameras ? CAMERA_FILE : isMeta ? META_FILE : TAGS_FILE;

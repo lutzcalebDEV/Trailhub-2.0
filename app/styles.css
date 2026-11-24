@@ -2099,3 +2099,14 @@ button.castwin { border: 0; color: inherit; font: inherit; text-align: left; cur
   .caststrip dd { font-size: 14.5px; }
   .casthero { padding: 16px 14px; }
 }
+
+/* Moving map pins */
+.mapbox__move { position: absolute; left: 10px; bottom: 24px; z-index: 2; display: inline-flex; align-items: center; gap: 7px; min-height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); font: inherit; font-size: 13.5px; font-weight: 650; cursor: pointer; }
+.mapbox__move svg { color: var(--accent); }
+.mapbox.is-full .mapbox__move { bottom: calc(28px + var(--tab-bar-h, env(safe-area-inset-bottom, 0px))); left: 14px; }
+.movebar { position: absolute; z-index: 3; left: 50%; bottom: calc(28px + var(--tab-bar-h, env(safe-area-inset-bottom, 0px))); transform: translateX(-50%); width: min(440px, calc(100% - 24px)); display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px 10px 16px; border-radius: var(--r-lg); background: var(--surface); border: 1px solid var(--border-strong); font-size: 14px; font-weight: 600; }
+.movebar .btn { min-height: 40px; }
+.movepin { position: relative; width: 48px; height: 48px; cursor: grab; }
+.movepin i { position: absolute; inset: 12px; border-radius: 50%; background: var(--accent); border: 3px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,.6); }
+.movepin i::after { content: ""; position: absolute; inset: 6px; border-radius: 50%; background: #fff; }
+.movepin b { position: absolute; left: 50%; bottom: 42px; transform: translateX(-50%); padding: 3px 9px; border-radius: 8px; background: rgba(10,14,12,.86); color: #fff; font: 650 12px var(--font); white-space: nowrap; }

@@ -232,9 +232,40 @@ export async function forgetPrivateData() {
   mediaPass = null;
   try { localStorage.removeItem(MEDIA_KEY); } catch (e) {}
   try {
-    await (await caches.open(DATA_CACHE)).delete(DATA_KEY);
+    const kept = await caches.open(DATA_CACHE);
+    await Promise.all([kept.delete(DATA_KEY), kept.delete(PINS_KEY)]);
     await caches.delete("vale-photos");
   } catch (e) {}
+}
+
+// Exact camera spots set on the Map page: { camera: [lat, lng] }. They're kept apart
+// from the photo list, which only has rounded positions. Null means the Worker can't
+// save pins (an older one answers with something else).
+const PINS_KEY = "/state/pins";
+function cleanPins(raw) {
+  if (!raw || !raw.pins || typeof raw.pins !== "object" || Array.isArray(raw.pins)) return null;
+  return Object.fromEntries(Object.entries(raw.pins).filter(([, v]) =>
+    Array.isArray(v) && v.length === 2 && v.every(Number.isFinite)));
+}
+const keepPins = async (pins) => {
+  try { await (await caches.open(DATA_CACHE)).put(PINS_KEY, new Response(JSON.stringify({ pins }))); } catch (e) {}
+};
+async function fetchPins() {
+  const pins = cleanPins(await getJSON("/pins"));
+  if (pins) keepPins(pins);
+  return pins;
+}
+async function cachedPins() {
+  try {
+    const hit = await (await caches.open(DATA_CACHE)).match(PINS_KEY);
+    return hit && apiAuth ? cleanPins(await hit.json()) : null;
+  } catch (e) { return null; }
+}
+export async function remoteSavePins(changes, auth) {
+  const pins = cleanPins(await postJSON(TAGS_API + "/pins", { pins: changes }, auth));
+  if (!pins) throw new Error("Pins weren't saved");
+  keepPins(pins);
+  return pins;
 }
 
 export async function fetchLatestData() {
@@ -958,6 +989,7 @@ export function useData(auth, onSignedOut, pollMs = 5 * 60 * 1000) {
   // itself and every minute by hand.
   const [forecast, setForecast] = useState(null);
   const forecastAt = useRef(0);
+  const [pins, setPins] = useState(null);
   const mounted = useRef(true);
   const signedOut = useRef(onSignedOut);
   signedOut.current = onSignedOut;
@@ -975,6 +1007,7 @@ export function useData(auth, onSignedOut, pollMs = 5 * 60 * 1000) {
       const same = (prev) => prev.generatedAt && fresh.generatedAt &&
         prev.generatedAt.getTime() === fresh.generatedAt.getTime() && prev.captures.length === fresh.captures.length;
       if (mounted.current) setData((prev) => (same(prev) ? prev : fresh));
+      fetchPins().then((p) => { if (p && mounted.current) setPins(p); }).catch(() => {});
       if (!document.hidden && Date.now() - forecastAt.current > (byHand ? 60000 : 600000)) {
         const before = forecastAt.current;
         forecastAt.current = Date.now();
@@ -993,7 +1026,8 @@ export function useData(auth, onSignedOut, pollMs = 5 * 60 * 1000) {
 
   useEffect(() => {
     mounted.current = true;
-    if (!user) { setData(loadInitialData()); setForecast(null); forecastAt.current = 0; return undefined; }
+    if (!user) { setData(loadInitialData()); setForecast(null); setPins(null); forecastAt.current = 0; return undefined; }
+    cachedPins().then((p) => { if (p && mounted.current) setPins((now) => now || p); });
     loadCachedData().then((kept) => {
       if (kept && mounted.current) setData((prev) => (prev.captures.length ? prev : kept));
     });
@@ -1012,7 +1046,15 @@ export function useData(auth, onSignedOut, pollMs = 5 * 60 * 1000) {
   const shown = useMemo(() => {
     const kept = data.forecast;
     const newer = forecast && !(kept && Date.parse(kept.fetchedAt) > Date.parse(forecast.fetchedAt));
-    return newer ? { ...data, forecast } : data;
-  }, [data, forecast]);
-  return { data: shown, refresh, refreshing };
+    if (!newer && !pins) return data;
+    const out = { ...data };
+    if (newer) out.forecast = forecast;
+    if (pins) {
+      out.canPin = true;
+      if (data.cameras.some((c) => pins[c.name])) out.cameras = data.cameras.map((c) => (pins[c.name]
+        ? { ...c, latitude: pins[c.name][0], longitude: pins[c.name][1], pinned: true } : c));
+    }
+    return out;
+  }, [data, forecast, pins]);
+  return { data: shown, refresh, refreshing, setPins };
 }

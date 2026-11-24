@@ -3,7 +3,7 @@ import { html, useState, useEffect, useLayoutEffect, useMemo, useRef, useCallbac
 import {
   LS, usePersistent, usePersistentSet, useData, loadOverrides, newerDeploy, reloadForDeploy, safeToReload,
   remoteLoadTags, remoteSaveTags, remoteSaveTagsBatch, hasSharedTags, effectiveSpecies, timeAgo,
-  loadCameraNames, remoteLoadCameraNames, remoteSaveCameraName, displayCamera,
+  loadCameraNames, remoteLoadCameraNames, remoteSaveCameraName, remoteSavePins, displayCamera,
   loadMetadata, remoteLoadMetadata, remoteSaveMetadata, applyMeta, metaOf, cameraLabels,
   remoteLoadComments, saveComment, updateUpload, NotSignedIn, TooManyAttempts,
   loadSession, saveSession, faceIdOn, faceIdName, setApiAuth, forgetPrivateData, getScrollY, scrollToY,
@@ -125,7 +125,7 @@ function App() {
   // shown, or even fetched, without one: the app is the sign-in screen until then.
   const [uploadAuth, setUploadAuth] = useState(loadSession);
   setApiAuth(uploadAuth);
-  const { data, refresh, refreshing } = useData(uploadAuth, () => setUploadAuth(null));
+  const { data, refresh, refreshing, setPins } = useData(uploadAuth, () => setUploadAuth(null));
   // "dark", "light", or "auto" to follow the phone's own setting.
   const [themePref, setThemePref] = usePersistent(LS.theme, "dark");
   const systemDark = useMedia("(prefers-color-scheme: dark)");
@@ -699,6 +699,16 @@ function App() {
   }, [reviewed$, settleTags, showToast, uploadAuth, signInToast, syncFailed]);
 
   // Rename a camera for everyone (raw label is the stable key; "" resets it).
+  // Exact camera spots from the Map page, shared with everyone signed in.
+  const savePins = useCallback(async (changes) => {
+    if (!uploadAuth) { openSignIn("Sign in to move pins for everyone."); return false; }
+    try {
+      setPins(await remoteSavePins(changes, uploadAuth));
+      showToast("ok", "Pins saved for everyone");
+      return true;
+    } catch (e) { showToast("err", "Pins weren’t saved — try again"); return false; }
+  }, [uploadAuth, openSignIn, setPins, showToast]);
+
   const renameCamera = useCallback((rawName, name) => {
     const friendly = String(name || "").trim().slice(0, 60);
     setLocalCamNames((prev) => {
@@ -826,7 +836,7 @@ function App() {
     archived, reviewed, assignSpecies, keep, archive: archiveCap,
     openLightbox, reviewQ, counts, setView,
     uploads, allCaptures, comments, openUpload: () => setUploadOpen(true), openAlerts: () => setAlertsOpen(true),
-    camName, camNames, bulkAssign, renameCamera,
+    camName, camNames, bulkAssign, renameCamera, savePins,
     metaMap, updateMeta, toggleFavorite,
     auth: uploadAuth, openSignIn,
   };

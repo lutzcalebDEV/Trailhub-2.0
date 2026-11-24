@@ -158,7 +158,7 @@ export function DeerCast(app) {
   const band = bandOf(p.score);
   const site = siteOf(data);
   const spots = (data.cameras || []).filter((c) => c.latitude != null && c.longitude != null)
-    .map((c) => ({ name: c.name, label: camName(c.name), latitude: c.latitude, longitude: c.longitude,
+    .map((c) => ({ name: c.name, label: camName(c.name), latitude: c.latitude, longitude: c.longitude, pinned: c.pinned,
       rating: standWind((data.stands || {})[c.name], wind) }));
   const pickDay = (k) => { setPicked(k); setChosen(null); };
 
@@ -194,7 +194,7 @@ export function DeerCast(app) {
           ${chosen != null && html`<button type="button" onClick=${() => setChosen(null)}>${isNow ? "Back to now" : "Back to best time"}</button>`}
           <span>11 PM</span></div>
       </div>
-      <p className="castnote">Streaks show where the wind, and your scent, is headed. Pins are approximate.${wind && wind.speed < 3 ? " Wind this light can drift any direction." : ""}</p>
+      <p className="castnote">Streaks show where the wind, and your scent, is headed.${spots.some((s) => !s.pinned) ? " Pins are approximate until moved on the Map page." : ""}${wind && wind.speed < 3 ? " Wind this light can drift any direction." : ""}</p>
     </section>
 
     <section className="casthero">

@@ -410,6 +410,9 @@ that line lists the field names SPYPOINT sent, so the extractor can be matched t
 - Anything you publish to the static site is public to anyone with the URL. Camera
   coordinates are rounded to about 1 km for that reason, but the photos themselves
   and this repo's history are public.
+- **Map pins**: `data.js` holds camera positions rounded to about 1 km. Exact spots are
+  set with **Move pins** on the Map page and kept only in the Worker's private ACCOUNTS
+  store (`/pins`), for signed-in people.
 - **DeerCast** is a starting estimate, not a tested prediction: time of day and the rut
   count most and weather only nudges the score (`app/deercast.js`). The forecast is
   refreshed every 3 hours by `pull.py` into `forecast.json`, and the app also gets the
