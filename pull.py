@@ -51,8 +51,8 @@ STANDS_FILE = HERE / "stands.json"  # DeerCast wind notes by camera; private, ed
 WEATHER_FILE = HERE / "weather.json"  # hourly history from Open-Meteo, keyed by UTC hour
 UPLOADS_FILE = HERE / "uploads.json"  # photos added through the site, written by the Worker
 
-MAX_PUBLISHED = 1500   # cap captures written to data.js so the site stays light
-MAX_KEEP = 3000        # cap stored photos+images so the repo doesn't grow forever
+MAX_PUBLISHED = 4000   # cap captures written to data.js so the site stays light
+MAX_KEEP = 20000       # cap on photos remembered (years of six cameras)
 MAX_IMG_PX = 1600      # downscale long edge if Pillow is available
 THUMB_PX = 400         # long edge of the small copy that photo grids load
 THUMBS_PER_RUN = 150   # older photos get a small copy a batch at a time
@@ -868,7 +868,7 @@ def load_store():
 
 
 def save_store(store):
-    atomic_write_text(STORE_FILE, json.dumps(store, indent=1))
+    atomic_write_text(STORE_FILE, json.dumps(store, separators=(",", ":")))
 
 
 def blur_location(value):
@@ -1417,7 +1417,7 @@ def write_data_js(captures, cameras=None, demo=False, tags_map=None, meta_map=No
     if _recently_published(payload):
         print(f"{DATA_FILE.name} already up to date ({len(out_caps)} captures).")
         return
-    atomic_write_text(DATA_FILE, "window.TRAILHUB_DATA = " + json.dumps(payload, indent=2) + ";\n")
+    atomic_write_text(DATA_FILE, "window.TRAILHUB_DATA = " + json.dumps(payload, separators=(",", ":")) + ";\n")
     print(f"Wrote {DATA_FILE.name}  ({len(out_caps)} captures)")
 
 

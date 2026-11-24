@@ -2278,3 +2278,9 @@ button.harvest__photo { cursor: pointer; }
 .livewind__row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 58px; padding: 6px 4px; border: 0; border-top: 1px solid var(--border); background: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
 .livewind__row .livewind__head { flex: 1; min-width: 0; }
 .livewind__row.is-active { background: var(--surface-2); }
+
+.pagewait { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; min-height: 46vh; color: var(--text-muted); }
+.pagewait i { width: 26px; height: 26px; border-radius: 50%; border: 3px solid var(--border-strong); border-top-color: var(--accent); animation: pagespin .8s linear infinite; }
+.livewind .pagewait { min-height: 0; flex: 1; }
+@keyframes pagespin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .pagewait i { animation: none; } }

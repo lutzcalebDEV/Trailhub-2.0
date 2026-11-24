@@ -218,9 +218,18 @@ async function saveEntry(env, path, mutate, _message) {
 }
 
 // data.js as the photo job last wrote it.
-async function readDataScript(env) {
+async function dataResponse(env, have) {
   const obj = await env.PHOTOS.get(STATE_PREFIX + "data.js");
-  return obj ? obj.text() : "window.TRAILHUB_DATA = {};\n";
+  const tag = obj && obj.etag ? String(obj.etag) : "";
+  const headers = { "Cache-Control": "no-store", "Access-Control-Expose-Headers": "X-Data-Tag", ...CORS };
+  // The app already has this exact copy: nothing to send.
+  if (tag && have === tag) {
+    if (obj.body && obj.body.cancel) await obj.body.cancel();
+    return new Response(null, { status: 204, headers });
+  }
+  return new Response(obj ? await obj.text() : "window.TRAILHUB_DATA = {};\n", {
+    headers: { "Content-Type": "application/javascript; charset=utf-8", ...(tag ? { "X-Data-Tag": tag } : {}), ...headers },
+  });
 }
 
 /* Photos and videos: GET /media/<key>?m=<photo pass>. An <img> or <video> can't
@@ -1550,9 +1559,7 @@ export default {
       if (!who) return json({ error: "Sign in to see Vale Trails." }, 401);
 
       if (request.method === "GET" && path === "/data") {
-        return new Response(await readDataScript(env), {
-          headers: { "Content-Type": "application/javascript; charset=utf-8", "Cache-Control": "no-store", ...CORS },
-        });
+        return await dataResponse(env, url.searchParams.get("have"));
       }
       if (path === "/harvests") return await handleHarvests(request, env, who);
       if (path === "/stands") return await handleStands(request, env, who);

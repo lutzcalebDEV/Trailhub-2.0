@@ -1,97 +1,16 @@
-// Vale Trails — DeerCast: the Home card and the forecast page. The math is in
-// ../deercast.js.
-import { html, useState, useEffect, useMemo, useRef } from "../react.js";
+// Vale Trails — DeerCast: the forecast page. The math is in ../deercast.js.
+import { html, useState, useEffect, useRef } from "../react.js";
 import { Segmented, Empty, Btn } from "../ui.js";
 import { Icon } from "../icons.js";
-import { LS, usePersistent, fmtTime, fmtDateLong, timeAgo } from "../core.js";
-import { buildCast, standWind, windOver, siteOf, bandOf, daylight, inDaylight } from "../deercast.js";
+import { LS, usePersistent, fmtTime, timeAgo } from "../core.js";
+import { standWind, windOver, siteOf, bandOf, daylight, inDaylight } from "../deercast.js";
 import { bestSit } from "../analytics.js";
 import { windowLabel } from "./insights.js";
+import { cx, tone, dayName, when, FAR, useCast, Week, takeOpenDay } from "./castcard.js";
 import { WindMap } from "./windmap.js";
 import { allStands } from "./livewind.js";
 import { calmAir } from "../terrain.js";
 import { WindNow } from "./windnow.js";
-
-const cx = (...xs) => xs.filter(Boolean).join(" ");
-const tone = (band) => "cast-" + band.toLowerCase();
-const weekday = (d) => d.toLocaleDateString([], { weekday: "short" });
-const dayName = (day) => (day.ahead === 0 ? "Today" : day.ahead === 1 ? "Tomorrow" : fmtDateLong(day.date));
-const when = (w) => `${fmtTime(new Date(w.start))} – ${fmtTime(new Date(w.end))}`;
-// Forecasts this far out change a lot.
-const FAR = 5;
-
-// Moves on with the clock: the page can stay open past the end of a hunt.
-function useNow() {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const tick = () => setNow(Date.now());
-    const id = setInterval(tick, 5 * 60000);
-    document.addEventListener("visibilitychange", tick);
-    return () => { clearInterval(id); document.removeEventListener("visibilitychange", tick); };
-  }, []);
-  return now;
-}
-function useCast({ data, captures, ov }, allHours) {
-  const now = useNow();
-  const cast = useMemo(() => buildCast(data, captures, ov, { allHours, now }), [data, captures, ov, allHours, now]);
-  return [cast, now];
-}
-
-// The day tapped on the Home card, opened when the page appears.
-let openOn = null;
-
-function Week({ days, picked, onPick }) {
-  return html`<div className="cast__week" role="group" aria-label="Next 7 days">
-    ${days.map((d) => html`<button type="button" key=${d.key} onClick=${() => onPick(d.key)}
-      className=${cx("cast__day", tone(d.band), picked === d.key && "is-active")}
-      aria-pressed=${picked == null ? undefined : picked === d.key}
-      aria-label=${`${dayName(d)}: ${d.shown} out of 10, ${d.band}${d.ahead >= FAR ? ", less certain" : ""}`}>
-      <span>${d.ahead === 0 ? "Today" : weekday(d.date)}</span>
-      <b className="tnum">${d.shown}</b>
-      <i className=${d.ahead >= FAR ? "is-far" : ""} style=${{ "--fill": d.score * 10 + "%" }} />
-    </button>`)}
-  </div>`;
-}
-
-function Score({ day }) {
-  return html`<div className=${cx("cast__score", tone(day.band))}
-    role="img" aria-label=${`${day.shown} out of 10`}>
-    <b className="tnum">${day.shown}</b><span>/10</span>
-  </div>`;
-}
-
-/* ------------------------------- Home card -------------------------------- */
-export function CastCard(app) {
-  const [cast, now] = useCast(app, false);
-  if (!cast) return null;
-  const day = cast.days[0];
-  const left = day.windows.filter((w) => w.end > now);
-  const open = (key) => { openOn = key; app.setView("deercast"); };
-  const next = left[0] || day.windows[0];
-  const stands = next ? (app.data.cameras || []).map((c) => ({ name: app.camName(c.name), r: standWind((app.data.stands || {})[c.name], next.wind) })).filter((x) => x.r) : [];
-  return html`<section className="cast" aria-label="DeerCast">
-    <button type="button" className="cast__main" onClick=${() => open(day.key)}>
-      <span className="cast__text">
-        <span className="cast__k"><${Icon} name="gauge" size=${15} />DeerCast · ${dayName(day)}</span>
-        <span className="cast__head">${day.band} deer movement</span>
-        ${left.length > 0 && html`<span className="cast__best">
-          ${left.map((w) => html`<span key=${w.label}><${Icon} name=${w.label === "Morning" ? "sun" : "moon"} size=${14} />${when(w)}</span>`)}
-        </span>`}
-        <span className="cast__why">${day.why}${cast.stale ? " · forecast is out of date" : ""}</span>
-      </span>
-      <${Score} day=${day} />
-    </button>
-    ${stands.length > 0 && html`<div className="cast__stands">
-      ${stands.map((x) => html`<span key=${x.name}><b>${x.name}</b>
-        <span className=${"windpill is-" + x.r.level}><${Icon} name=${x.r.level === "good" ? "check" : x.r.level === "avoid" ? "x" : "info"} size=${13} />${x.r.text}</span></span>`)}
-      <small>${next.label} wind, ${next.wind.unsure ? "direction uncertain," : next.wind.dir} ${Math.round(next.wind.speed)} mph · best guess</small>
-    </div>`}
-    <${Week} days=${cast.days} onPick=${open} />
-    <button type="button" className="cast__more" onClick=${() => open(day.key)}>
-      <span>See hourly forecast and wind map</span><${Icon} name="chevronRight" size=${18} />
-    </button>
-  </section>`;
-}
 
 /* ------------------------------ Hourly curve ------------------------------ */
 // `at` is the chosen quarter hour; the chart is the slider that chooses it.
@@ -148,7 +67,7 @@ export function DeerCast(app) {
   const [mode, setMode] = usePersistent(LS.castHours, "day");
   const allHours = mode === "all";
   const [cast, now] = useCast(app, allHours);
-  const [picked, setPicked] = useState(() => { const k = openOn; openOn = null; return k; });
+  const [picked, setPicked] = useState(takeOpenDay);
   useEffect(() => { app.loadStands(); }, [app.loadStands]);
   const [chosen, setChosen] = useState(null); // quarter hour of the day, or null for now/best
 

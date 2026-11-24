@@ -5,7 +5,7 @@ import { Panel, Shot, Empty, Btn, CameraCard, Segmented } from "../ui.js";
 import { effectiveSpecies, LS, usePersistent } from "../core.js";
 import { cameraStatus, collapseBursts, withoutEmpty } from "../analytics.js";
 import { AlertsNudge } from "../alerts.js";
-import { CastCard } from "./deercast.js";
+import { CastCard } from "./castcard.js";
 
 // "Deer" on Home means any deer: bucks, does, and deer nobody has told apart yet.
 const DEER = new Set(["Buck", "Doe", "Deer"]);

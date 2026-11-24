@@ -67,6 +67,27 @@
     })();
   </script>
 
+  <!-- The files the app starts with, fetched together instead of one after another.
+       Keep in step with what app/main.js imports (pages load on their own). -->
+  <link rel="modulepreload" href="app/main.js" />
+  <link rel="modulepreload" href="app/react.js" />
+  <link rel="modulepreload" href="app/core.js" />
+  <link rel="modulepreload" href="app/analytics.js" />
+  <link rel="modulepreload" href="app/shell.js" />
+  <link rel="modulepreload" href="app/ui.js" />
+  <link rel="modulepreload" href="app/icons.js" />
+  <link rel="modulepreload" href="app/upload.js" />
+  <link rel="modulepreload" href="app/login.js" />
+  <link rel="modulepreload" href="app/comments.js" />
+  <link rel="modulepreload" href="app/account.js" />
+  <link rel="modulepreload" href="app/alerts.js" />
+  <link rel="modulepreload" href="app/faceid.js" />
+  <link rel="modulepreload" href="app/install.js" />
+  <link rel="modulepreload" href="app/views/overview.js" />
+  <link rel="modulepreload" href="app/deercast.js" />
+  <link rel="modulepreload" href="app/exif.js" />
+  <link rel="modulepreload" href="app/views/castcard.js" />
+
   <!-- Design system -->
   <link rel="stylesheet" href="app/styles.css" />
 

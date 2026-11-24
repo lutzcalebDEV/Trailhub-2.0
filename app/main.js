@@ -14,6 +14,7 @@ import {
   VIEWS, MOBILE_MAIN, loadFilters, defaultFilters,
 } from "./shell.js";
 import { Lightbox, Toast } from "./ui.js";
+import { Icon } from "./icons.js";
 import { UploadDialog, SignInDialog } from "./upload.js";
 import { LoginScreen } from "./login.js";
 import { Comments } from "./comments.js";
@@ -22,17 +23,7 @@ import { AlertsDialog } from "./alerts.js";
 import { FaceIdDialog, usePasskeySupport } from "./faceid.js";
 import { InstallHint } from "./install.js";
 import { Overview } from "./views/overview.js";
-import { DeerCast } from "./views/deercast.js";
-import { Gallery } from "./views/gallery.js";
-import { MapView } from "./views/mapview.js";
-import { Insights } from "./views/insights.js";
-import { Review } from "./views/review.js";
-import { Bucks } from "./views/bucks.js";
-import { Harvests } from "./views/harvest.js";
-import { Stands } from "./views/stands.js";
-import { LiveWind } from "./views/livewind.js";
 import { siteOf } from "./deercast.js";
-import { Uploads } from "./views/uploads.js";
 
 // Past this, the pull has missed far more runs than GitHub's usual throttling explains.
 const STALE_SYNC_MS = 12 * 3600000;
@@ -40,7 +31,47 @@ const STALE_SYNC_MS = 12 * 3600000;
 // data.js carries it for real, so the overlay only needs to outlive a pull run.
 const UPLOAD_EDIT_TTL_MS = 30 * 60000;
 
-const VIEW_COMPONENTS = { overview: Overview, deercast: DeerCast, gallery: Gallery, uploads: Uploads, bucks: Bucks, insights: Insights, map: MapView, review: Review, harvest: Harvests, stands: Stands };
+// Home starts with the app; every other page (and Live wind) loads when it's first
+// opened, or quietly in the background once Home is showing, so it's there offline.
+const PAGES = {
+  deercast: () => import("./views/deercast.js").then((m) => m.DeerCast),
+  gallery: () => import("./views/gallery.js").then((m) => m.Gallery),
+  insights: () => import("./views/insights.js").then((m) => m.Insights),
+  map: () => import("./views/mapview.js").then((m) => m.MapView),
+  stands: () => import("./views/stands.js").then((m) => m.Stands),
+  harvest: () => import("./views/harvest.js").then((m) => m.Harvests),
+  uploads: () => import("./views/uploads.js").then((m) => m.Uploads),
+  bucks: () => import("./views/bucks.js").then((m) => m.Bucks),
+  review: () => import("./views/review.js").then((m) => m.Review),
+  livewind: () => import("./views/livewind.js").then((m) => m.LiveWind),
+};
+const loadedPages = { overview: Overview };
+const pageLoads = {};
+function loadPage(id) {
+  if (loadedPages[id] || !PAGES[id]) return Promise.resolve();
+  if (!pageLoads[id]) {
+    pageLoads[id] = PAGES[id]().then((C) => { loadedPages[id] = C; }, (e) => { delete pageLoads[id]; throw e; });
+  }
+  return pageLoads[id];
+}
+// The page, or null while it loads; `failed` when it couldn't be had.
+function usePage(id) {
+  const [, redraw] = useState(0);
+  const [failed, setFailed] = useState(null);
+  useEffect(() => {
+    if (!id || loadedPages[id] || !PAGES[id]) return undefined;
+    let live = true;
+    loadPage(id).then(() => { if (live) redraw((n) => n + 1); }, () => { if (live) setFailed(id); });
+    return () => { live = false; };
+  }, [id]);
+  return { Page: loadedPages[id] || null, failed: failed === id };
+}
+function PageWait({ failed }) {
+  return failed
+    ? html`<div className="pagewait"><p>This page couldn’t load. Check your connection.</p>
+        <button type="button" className="btn btn--primary" onClick=${() => window.location.reload()}><span>Try again</span></button></div>`
+    : html`<div className="pagewait" role="status"><i /><span className="sr-only">Loading</span></div>`;
+}
 
 // Every screen and photo has its own address, like screens in an app. The phone's
 // back gesture (or the browser's Back) steps back through the screens you visited,
@@ -781,6 +812,7 @@ function App() {
   // The full-screen wind map: null, or { start, show } (views/livewind.js).
   const [windOpen, setWindOpen] = useState(null);
   const openWind = useCallback((opts) => setWindOpen(opts || {}), []);
+  const wind = usePage(windOpen ? "livewind" : "");
   const closeWind = useCallback(() => setWindOpen(null), []);
   const refreshWeather = useCallback(() => { refresh({ byHand: true }); }, [refresh]);
 
@@ -873,7 +905,8 @@ function App() {
 
   /* ----------------------------- Render --------------------------------- */
   const meta = VIEWS.find((v) => v.id === view) || (view === "more" ? MORE_META : VIEWS[0]);
-  const View = view === "more" ? MoreScreen : VIEW_COMPONENTS[view] || Overview;
+  const page = usePage(view === "more" ? "" : view);
+  const View = view === "more" ? MoreScreen : page.Page;
   const pageTitle = view === "overview" ? "Vale Trails" : meta.label;
   // Under the big title on Home and Photos: whether the photos are current. The time
   // of the last check isn't shown while all is well, because the file it comes from
@@ -941,6 +974,20 @@ function App() {
     onPassword: () => setPasswordOpen(true),
   };
 
+  // The other pages, once the photos are in and the phone has caught its breath.
+  const started = data.captures.length > 0;
+  useEffect(() => {
+    if (!started) return undefined;
+    let live = true;
+    const t = setTimeout(async () => {
+      for (const id of Object.keys(PAGES)) {
+        if (!live) return;
+        try { await loadPage(id); } catch (e) { return; }
+      }
+    }, 2500);
+    return () => { live = false; clearTimeout(t); };
+  }, [started]);
+
   // Nothing without signing in: until then the app is the sign-in screen.
   if (!uploadAuth) return html`<${LoginScreen} onDone=${signedIn} message=${signIn ? signIn.message : ""} />`;
 
@@ -955,13 +1002,14 @@ function App() {
         <${Topbar} title=${meta.label} ...${chrome}
           sidebarHidden=${sidebarCollapsed === "true"} onShowSidebar=${() => setSidebarCollapsed("false")} />
         <div className=${HAS_VT && !reduceMotion() ? "view" : "view view__enter"} key=${view}>
-          <${View} ...${app} />
+          ${View ? html`<${View} ...${app} />` : html`<${PageWait} failed=${page.failed} />`}
         </div>
       </main>
     </div>
 
     <${MobileNav} view=${view} onTab=${tabFromBar} counts=${counts} />
-    ${windOpen && siteOf(data) && html`<${LiveWind} app=${app} site=${siteOf(data)} start=${windOpen.start} show=${windOpen.show} onClose=${closeWind} />`}
+    ${windOpen && siteOf(data) && !wind.Page && html`<div className="livewind"><${PageWait} failed=${wind.failed} /><button type="button" className="livewind__round" style=${{ position: "absolute", top: "calc(10px + env(safe-area-inset-top, 0px))", left: 12 }} onClick=${closeWind} aria-label="Close"><${Icon} name="x" size=${22} /></button></div>`}
+    ${windOpen && siteOf(data) && wind.Page && html`<${wind.Page} app=${app} site=${siteOf(data)} start=${windOpen.start} show=${windOpen.show} onClose=${closeWind} />`}
     <${PullToRefresh} onRefresh=${pullRefresh} />
     <${InstallHint} />
 
@@ -1031,4 +1079,5 @@ function App() {
 }
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
-root.render(html`<${App} />`);
+// Opened straight onto another page: have it ready first, so its scroll spot holds.
+loadPage(readRoute().view || "overview").catch(() => {}).then(() => root.render(html`<${App} />`));

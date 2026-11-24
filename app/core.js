@@ -218,19 +218,29 @@ export function mediaUrl(url) {
 // photos kept for offline use (forgetPrivateData).
 const DATA_CACHE = "vale-state";
 const DATA_KEY = "/state/data";
-async function rememberData(text) {
-  try { await (await caches.open(DATA_CACHE)).put(DATA_KEY, new Response(text)); } catch (e) {}
+async function rememberData(text, tag) {
+  try { await (await caches.open(DATA_CACHE)).put(DATA_KEY, new Response(text, { headers: tag ? { "X-Data-Tag": tag } : {} })); } catch (e) {}
 }
+// The copy in hand, by its tag: while the Worker's is the same it isn't sent again.
+// `pass` is the photo pass its photo addresses were made with.
+let held = null; // { user, tag, text, data, pass }
+const hold = (tag, text, data) => {
+  held = tag && apiAuth ? { user: apiAuth.user, tag, text, data, pass: mediaPass && mediaPass.token } : null;
+};
 export async function loadCachedData() {
   try {
     const hit = await (await caches.open(DATA_CACHE)).match(DATA_KEY);
     if (!hit || !apiAuth) return null;
     await ensureMediaPass().catch(() => {});
-    return normalizePayload(parseDataScript(await hit.text()));
+    const text = await hit.text();
+    const data = normalizePayload(parseDataScript(text));
+    if (!held) hold(hit.headers.get("X-Data-Tag"), text, data);
+    return data;
   } catch (e) { return null; }
 }
 export async function forgetPrivateData() {
   mediaPass = null;
+  held = null;
   try { localStorage.removeItem(MEDIA_KEY); } catch (e) {}
   try {
     const kept = await caches.open(DATA_CACHE);
@@ -316,10 +326,19 @@ export async function postHarvest(body, auth) {
 }
 
 export async function fetchLatestData() {
-  const [res] = await Promise.all([apiGet("/data"), ensureMediaPass()]);
+  const had = held && apiAuth && held.user === apiAuth.user ? held : null;
+  const [res] = await Promise.all([apiGet("/data" + (had ? "?have=" + encodeURIComponent(had.tag) : "")), ensureMediaPass()]);
+  if (res.status === 204 && had) {
+    if (had.pass === (mediaPass && mediaPass.token)) return had.data;
+    const again = normalizePayload(parseDataScript(had.text)); // a new pass: new photo addresses
+    hold(had.tag, had.text, again);
+    return again;
+  }
   const text = await res.text();
   const data = normalizePayload(parseDataScript(text));
-  rememberData(text);
+  const tag = res.headers.get("X-Data-Tag");
+  hold(tag, text, data);
+  rememberData(text, tag);
   return data;
 }
 
@@ -1090,7 +1109,8 @@ export function useData(auth, onSignedOut, pollMs = 5 * 60 * 1000) {
       // Keeping the old object when it didn't saves re-filtering every photo on each
       // poll and every time the phone comes back to the app.
       const same = (prev) => prev.generatedAt && fresh.generatedAt &&
-        prev.generatedAt.getTime() === fresh.generatedAt.getTime() && prev.captures.length === fresh.captures.length;
+        prev.generatedAt.getTime() === fresh.generatedAt.getTime() && prev.captures.length === fresh.captures.length
+        && (!prev.captures[0] || prev.captures[0].image === fresh.captures[0].image);
       if (mounted.current) setData((prev) => (same(prev) ? prev : fresh));
       fetchPins().then((p) => { if (p && mounted.current) setPins(p); }).catch(() => {});
       if (!document.hidden && Date.now() - forecastAt.current > (byHand ? 60000 : 600000)) {
@@ -1113,16 +1133,19 @@ export function useData(auth, onSignedOut, pollMs = 5 * 60 * 1000) {
     mounted.current = true;
     if (!user) { setData(loadInitialData()); setForecast(null); setPins(null); forecastAt.current = 0; return undefined; }
     cachedPins().then((p) => { if (p && mounted.current) setPins((now) => now || p); });
+    // The kept copy first: it's on screen at once, and its tag lets the Worker say
+    // "nothing new" instead of sending the list again.
+    let gone = false;
     loadCachedData().then((kept) => {
-      if (kept && mounted.current) setData((prev) => (prev.captures.length ? prev : kept));
-    });
-    refresh();
+      if (kept && !gone) setData((prev) => (prev.captures.length ? prev : kept));
+    }).finally(() => { if (!gone) refresh(); });
     const t = setInterval(refresh, pollMs);
     // Coming back to the tab (or phone) should show new photos right away.
     const onVisible = () => { if (document.visibilityState === "visible") refresh(); };
     document.addEventListener("visibilitychange", onVisible);
     return () => {
       mounted.current = false;
+      gone = true;
       clearInterval(t);
       document.removeEventListener("visibilitychange", onVisible);
     };
